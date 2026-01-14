@@ -1,78 +1,162 @@
 import fetch from 'node-fetch';
-import yts from 'yt-search';
+import axios from 'axios';
+import { writeFileSync, readFileSync, existsSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
-/**
- * Configuración de APIs
- */
-const API_DELIRIUS = "https://api.delirius.store";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const CONTADOR_PATH = join(__dirname, '.contador_spotify.txt');
 
-const handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) return m.reply(`*¿Qué canción buscamos?*\nUso: ${usedPrefix + command} Twice`);
+// --- FUNCIONES DE UTILIDAD ---
 
+function contarDescarga() {
+  let contador = 0;
+  if (existsSync(CONTADOR_PATH)) {
     try {
-        await m.react('🔍');
-        
-        // 1. Buscar información en Spotify
-        const searchUrl = `${API_DELIRIUS}/search/spotify?q=${encodeURIComponent(text)}&limit=1`;
-        const response = await fetch(searchUrl);
-        const searchData = await response.json();
-
-        if (!searchData.status || searchData.data.length === 0) {
-            return m.reply("❌ No encontré resultados en Spotify.");
-        }
-
-        const track = searchData.data[0];
-        const trackUrl = track.url; // URL de Spotify
-
-        await m.react('📥');
-
-        // 2. Intentar descarga directa vía Delirius SpotifyDL
-        const dlUrl = `${API_DELIRIUS}/download/spotifydl?url=${encodeURIComponent(trackUrl)}`;
-        const dlRes = await fetch(dlUrl);
-        const dlData = await dlRes.json();
-
-        let audioBuffer;
-        let finalUrl;
-
-        if (dlData.status && dlData.data.download) {
-            // Caso exitoso: Descarga directa de Spotify
-            finalUrl = dlData.data.download;
-        } else {
-            // Caso respaldo: Buscar en YouTube si falla SpotifyDL
-            const ytSearch = await yts(`${track.title} ${track.artist}`);
-            if (ytSearch.videos.length > 0) {
-                // Aquí podrías usar tu lógica de Youtubers() para extraer el audio
-                // Para este ejemplo, usaremos la info de la búsqueda
-                finalUrl = ytSearch.videos[0].url; 
-                return m.reply(`⚠️ Descarga directa no disponible. Puedes buscar el video aquí: ${finalUrl}`);
-            }
-        }
-
-        // 3. Enviar el archivo
-        await conn.sendMessage(m.chat, {
-            audio: { url: finalUrl },
-            mimetype: 'audio/mpeg',
-            fileName: `${track.title}.mp3`,
-            contextInfo: {
-                externalAdReply: {
-                    title: track.title,
-                    body: track.artist,
-                    thumbnailUrl: track.image,
-                    sourceUrl: trackUrl,
-                    mediaType: 1,
-                    showAdAttribution: true
-                }
-            }
-        }, { quoted: m });
-
-        await m.react('✅');
-
-    } catch (e) {
-        console.error(e);
-        await m.react('❌');
-        m.reply(`Error interno: ${e.message}`);
+      contador = parseInt(readFileSync(CONTADOR_PATH, 'utf8')) || 0;
+    } catch (error) {
+      console.error('Error leyendo contador:', error);
     }
+  }
+  contador += 1;
+  try {
+    writeFileSync(CONTADOR_PATH, String(contador));
+  } catch (error) {
+    console.error('Error escribiendo contador:', error);
+  }
+  return contador;
+}
+
+function isSpotifyURL(text) {
+  const spotifyRegex = /^(https?:\/\/)?(open\.)?spotify\.com\/(track|album|playlist)\/.+/i;
+  return spotifyRegex.test(text);
+}
+
+// --- INTEGRACIÓN DE API DELIRIUS ---
+
+async function searchSpotify(query) {
+  try {
+    const response = await fetch(`https://api.delirius.store/search/spotify?q=${encodeURIComponent(query)}&limit=1`);
+    const res = await response.json();
+    if (!res.status || !res.data.length) return null;
+    return res.data[0]; // Retorna el primer resultado de la búsqueda
+  } catch (error) {
+    console.error('Error en búsqueda Spotify:', error);
+    return null;
+  }
+}
+
+async function downloadSpotify(url) {
+  try {
+    const response = await fetch(`https://api.delirius.store/download/spotifydl?url=${encodeURIComponent(url)}`);
+    const res = await response.json();
+    if (!res.status) return null;
+    return res.data; // Retorna title, author, image, download, etc.
+  } catch (error) {
+    console.error('Error en descarga Spotify:', error);
+    return null;
+  }
+}
+
+const sendAudioWithRetry = async (conn, chat, audioUrl, trackTitle, artistName, thumbnailUrl, maxRetries = 2) => {
+  let attempt = 0;
+  let thumbnailBuffer;
+
+  try {
+    const response = await axios.get(thumbnailUrl, { responseType: 'arraybuffer' });
+    thumbnailBuffer = Buffer.from(response.data, 'binary');
+  } catch (error) {
+    try {
+      const fallback = await axios.get('https://files.catbox.moe/bex83k.jpg', { responseType: 'arraybuffer' });
+      thumbnailBuffer = Buffer.from(fallback.data, 'binary');
+    } catch (e) {
+      thumbnailBuffer = Buffer.alloc(0);
+    }
+  }
+
+  const messageOptions = {
+    audio: { url: audioUrl },
+    mimetype: 'audio/mpeg',
+    ptt: false,
+    contextInfo: {
+      externalAdReply: {
+        title: trackTitle,
+        body: `${artistName} • 🎵 Spotify Downloader`,
+        previewType: 'PHOTO',
+        thumbnail: thumbnailBuffer,
+        mediaType: 1,
+        sourceUrl: 'https://api.delirius.store'
+      }
+    }
+  };
+
+  while (attempt < maxRetries) {
+    try {
+      await conn.sendMessage(chat, messageOptions);
+      return true;
+    } catch (error) {
+      attempt++;
+      if (attempt >= maxRetries) throw error;
+    }
+  }
 };
 
-handler.command = /^(spotify|sp)$/i;
+// --- HANDLER PRINCIPAL ---
+
+const handler = async (m, { conn, args, usedPrefix, command }) => {
+  if (!args[0]) {
+    return conn.reply(m.chat, `[❗️] ᴜsᴏ: ${usedPrefix}${command} <ɴᴏᴍʙʀᴇ ᴏ ᴜʀʟ ᴅᴇ sᴘᴏᴛɪғʏ>`, m);
+  }
+
+  try {
+    await m.react('🎵');
+    const input = args.join(" ");
+    let spotifyUrl = "";
+    let trackData = null;
+
+    await m.reply(`🔍 ʙᴜsᴄᴀɴᴅᴏ "${input}" ᴇɴ sᴘᴏᴛɪғʏ...`);
+
+    // 1. Obtener la URL de Spotify
+    if (isSpotifyURL(input)) {
+      spotifyUrl = input;
+    } else {
+      const searchResult = await searchSpotify(input);
+      if (!searchResult) throw "No se encontraron resultados en Spotify.";
+      spotifyUrl = searchResult.url;
+    }
+
+    // 2. Obtener link de descarga y metadatos
+    await m.react('📥');
+    trackData = await downloadSpotify(spotifyUrl);
+    
+    if (!trackData || !trackData.download) {
+      throw "No se pudo obtener el enlace de descarga directo.";
+    }
+
+    // 3. Enviar el audio
+    await m.react('📤');
+    await sendAudioWithRetry(
+      conn,
+      m.chat,
+      trackData.download,
+      trackData.title,
+      trackData.author || trackData.artist || "Spotify Artist",
+      trackData.image
+    );
+
+    contarDescarga();
+    await m.react('🟢');
+
+  } catch (e) {
+    console.error(e);
+    await m.react('🔴');
+    return m.reply(`❌ ᴇʀʀᴏʀ: ${e.toString()}`);
+  }
+};
+
+handler.command = /^spotify$/i;
+handler.help = ['spotify <query/url>'];
+handler.tags = ['descargas'];
+
 export default handler;
