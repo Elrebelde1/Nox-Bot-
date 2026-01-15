@@ -5,7 +5,7 @@ let chat = global.db.data.chats[m.chat]
 // Desactivar bienvenida temporalmente para que no se bugee al salir
 chat.welcome = false
 
-let videoUrl = 'https://qu.ax/UlTg7'
+let videoUrl = 'https://files.catbox.moe/ywgm94.mp4'
 
 try {
     // Enviar el video con el mensaje como subtítulo (caption)
