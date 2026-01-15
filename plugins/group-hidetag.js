@@ -3,7 +3,6 @@ import { generateWAMessageFromContent } from '@whiskeysockets/baileys'
 const handler = async (m, { conn, participants }) => {
   try {
     const users = participants.map(u => conn.decodeJid(u.id))
-    const watermark = '\n\n> Barboza'
     
     // 1. Detectar si es Business o Personal
     const isBusiness = conn.user.isBusiness || false
@@ -14,7 +13,7 @@ const handler = async (m, { conn, participants }) => {
     try {
       profilePic = await conn.profilePictureUrl(conn.user.jid, 'image')
     } catch {
-      profilePic = 'https://qu.ax/eaLLM' // Imagen por defecto si no tiene foto
+      profilePic = 'https://files.catbox.moe/zdp6m6.jpg' // Imagen por defecto si no tiene foto
     }
 
     const userText = m.text
@@ -25,7 +24,7 @@ const handler = async (m, { conn, participants }) => {
     const saskContext = {
       externalAdReply: {
         title: `${platformName} ✅`, 
-        body: 'Hola, Soy SASUKE BOT 👾',
+        body: '𝙃𝙤𝙡𝙖,𝙎𝙤𝙮 𝙎𝙖𝙨𝙪𝙠𝙚 𝘽𝙤𝙩 𝙈𝘿👾',
         thumbnailUrl: profilePic, 
         sourceUrl: 'https://www.whatsapp.com', 
         mediaType: 1,
@@ -43,7 +42,7 @@ const handler = async (m, { conn, participants }) => {
       }
 
       const baseText = q.text || q.caption || ''
-      const finalText = [userText, baseText].filter(Boolean).join('\n') + watermark
+      const finalText = [userText, baseText].filter(Boolean).join('\n')
 
       const messageOptions = {
         mentions: users,
@@ -66,7 +65,7 @@ const handler = async (m, { conn, participants }) => {
     } else {
       // SI NO RESPONDE A NADA
       await conn.sendMessage(m.chat, {
-        text: (userText || '') + watermark,
+        text: userText || '',
         mentions: users,
         contextInfo: saskContext
       })
