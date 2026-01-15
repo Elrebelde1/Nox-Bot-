@@ -1,32 +1,36 @@
 import { generateWAMessageFromContent } from '@whiskeysockets/baileys'
+import fetch from 'node-fetch'
 
 const handler = async (m, { conn, participants }) => {
   try {
     const users = participants.map(u => conn.decodeJid(u.id))
-
     const isBusiness = conn.user.isBusiness || false
     const platformName = isBusiness ? 'WhatsApp Business' : 'WhatsApp'
 
-    let profilePic
+    // 1. Intentar obtener la foto de perfil o usar una de las tuyas
+    let profilePicUrl
     try {
-      profilePic = await conn.profilePictureUrl(conn.user.jid, 'image')
+      profilePicUrl = await conn.profilePictureUrl(conn.user.jid, 'image')
     } catch {
-      // Usamos una URL de imagen directa (asegúrate de que termine en .jpg o .png)
-      profilePic = 'https://qu.ax/ZpYp.jpg' 
+      // Usa aquí la de Catbox que pasaste, es muy confiable
+      profilePicUrl = 'https://files.catbox.moe/zdp6m6.jpg' 
     }
+
+    // 2. DESCARGAR LA IMAGEN (Esto es clave para que no salga en negro)
+    const response = await fetch(profilePicUrl)
+    const buffer = await response.buffer()
 
     const userText = m.text ? m.text.slice(m.text.split(' ')[0].length).trim() : ''
 
-    // Cambiamos la estructura para forzar la visualización de la miniatura
     const saskContext = {
       externalAdReply: {
         title: `${platformName} ✅`, 
         body: '𝙃𝙤𝙡𝙖,𝙎𝙤𝙮 𝙎𝙖𝙨𝙪𝙠𝙚 𝘽𝙤𝙩 𝙈𝘿👾',
-        thumbnailUrl: profilePic, // URL de la imagen
-        sourceUrl: 'https://www.whatsapp.com', 
+        thumbnail: buffer, // USAMOS EL BUFFER DESCARGADO
+        sourceUrl: 'https://whatsapp.com/channel/0029VaeS99b96H4l9p9k4Y0e', // Cambia por tu canal si quieres
         mediaType: 1,
-        renderLargerThumbnail: true, // Cambiado a TRUE para que resalte más
-        showAdAttribution: true // A veces activarlo ayuda a que cargue el contexto visual
+        renderLargerThumbnail: true,
+        showAdAttribution: false // A veces desactivarlo ayuda a que no tape la imagen
       }
     }
 
@@ -35,45 +39,33 @@ const handler = async (m, { conn, participants }) => {
       contextInfo: saskContext
     }
 
+    // Lógica de envío (simplificada y funcional)
     if (m.quoted) {
       const q = m.quoted
-      const type = q.mtype
-      let media = null
-      if (q.download) {
-        try { media = await q.download() } catch {}
-      }
+      const media = q.download ? await q.download() : null
+      const finalText = [userText, q.text || q.caption || ''].filter(Boolean).join('\n')
 
-      const baseText = q.text || q.caption || ''
-      const finalText = [userText, baseText].filter(Boolean).join('\n')
-
-      if (type === 'imageMessage') {
+      if (q.mtype === 'imageMessage') {
         await conn.sendMessage(m.chat, { image: media, caption: finalText, ...messageOptions })
-      } else if (type === 'videoMessage') {
+      } else if (q.mtype === 'videoMessage') {
         await conn.sendMessage(m.chat, { video: media, caption: finalText, ...messageOptions })
-      } else if (type === 'audioMessage') {
-        await conn.sendMessage(m.chat, { audio: media, mimetype: 'audio/mp4', ...messageOptions })
-      } else if (type === 'documentMessage') {
-        await conn.sendMessage(m.chat, { document: media, fileName: q.fileName || 'archivo', mimetype: q.mimetype, caption: finalText, ...messageOptions })
       } else {
-        await conn.sendMessage(m.chat, { text: finalText, ...messageOptions })
+        await conn.sendMessage(m.chat, { text: finalText || 'Mensaje de grupo', ...messageOptions })
       }
     } else {
       await conn.sendMessage(m.chat, {
-        text: userText || 'Hola a todos! 👋',
+        text: userText || 'hola grupo',
         ...messageOptions
       })
     }
   } catch (e) {
     console.error(e)
-    m.reply('Ocurrió un error al procesar el hidetag')
+    m.reply('Error en hidetag')
   }
 }
 
-handler.help = ['hidetag']
-handler.tags = ['group']
 handler.command = /^(hidetag|notify|n)$/i
 handler.group = true
 handler.admin = true
-handler.botAdmin = true
 
 export default handler
