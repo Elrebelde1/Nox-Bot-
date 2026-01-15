@@ -1,97 +1,84 @@
-import fetch from 'node-fetch';
-import { writeFileSync, readFileSync, existsSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import yts from "yt-search";
+import fetch from "node-fetch";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const CONTADOR_PATH = join(__dirname, '.contador_play.txt');
+const handler = async (m, { conn, text, command, usedPrefix }) => {
+  if (!text || !text.trim()) return; 
 
-// --- UTILIDADES ---
-
-function contarDescarga() {
-  let contador = 0;
-  if (existsSync(CONTADOR_PATH)) {
-    try {
-      contador = parseInt(readFileSync(CONTADOR_PATH, 'utf8')) || 0;
-    } catch (error) { console.error(error); }
-  }
-  contador += 1;
-  try { writeFileSync(CONTADOR_PATH, String(contador)); } catch (e) { console.error(e); }
-  return contador;
-}
-
-// --- HANDLER PRINCIPAL ---
-
-const handler = async (m, { conn, args, usedPrefix, command }) => {
-  if (!args[0]) {
-    return conn.reply(m.chat, `[❗️] ᴜsᴏ:\n${usedPrefix}${command} <ɴᴏᴍʙʀᴇ ᴅᴇ ʟᴀ ᴄᴀɴᴄɪᴏ́ɴ>`, m);
-  }
-
-  // play = mp3 | play2 = mp4
-  const isVideo = command === 'play2';
-  const typeLabel = isVideo ? 'VIDEO' : 'AUDIO';
-  const apiKey = "799343a24b120a1a5798fe780b823230";
+  const isVideo = /^(play2|video)$/i.test(command);
+  const type = isVideo ? 'video' : 'audio';
 
   try {
-    await m.react('⏳');
-    const input = args.join(" ");
-    
-    await m.reply(`🔍 ᴘʀᴏᴄᴇsᴀɴᴅᴏ "${input}"...\nᴛɪᴘᴏ: ${typeLabel}`);
+    const isLink = text.includes('youtube.com') || text.includes('youtu.be');
+    let video;
 
-    // Construcción de la URL basada en tu ejemplo
-    const apiUrl = `https://optishield.uk/api/?type=mp3-mp4&apikey=${apiKey}&audio=${encodeURIComponent(input)}&image=${encodeURIComponent(input)}`;
-    
-    const response = await fetch(apiUrl);
-    const res = await response.json();
-
-    // Validamos que la API devuelva datos (ajusta según la respuesta real de la API)
-    const downloadUrl = isVideo ? (res.mp4 || res.result?.mp4) : (res.mp3 || res.result?.mp3);
-    const thumbnail = res.thumb || res.image || "https://files.catbox.moe/bex83k.jpg";
-
-    if (!downloadUrl) {
-      throw "No se encontró un enlace de descarga válido en la API.";
-    }
-
-    await m.react('📥');
-
-    if (isVideo) {
-      // Enviar como VIDEO (play2)
-      await conn.sendMessage(m.chat, { 
-        video: { url: downloadUrl }, 
-        caption: `✅ *${input}*\n\n> 📥 Descargado con éxito`,
-        mimetype: 'video/mp4' 
-      }, { quoted: m });
+    if (isLink) {
+      const videoId = text.split('v=')[1]?.split('&')[0] || text.split('/').pop();
+      const search = await yts({ videoId });
+      video = search;
     } else {
-      // Enviar como AUDIO (play)
-      await conn.sendMessage(m.chat, { 
-        audio: { url: downloadUrl }, 
-        mimetype: 'audio/mpeg',
-        ptt: false,
-        contextInfo: {
-          externalAdReply: {
-            title: input,
-            body: "🎵 Multimedia Downloader",
-            previewType: 'PHOTO',
-            thumbnailUrl: thumbnail,
-            sourceUrl: 'https://optishield.uk'
-          }
-        }
-      }, { quoted: m });
+      const search = await yts(text);
+      video = search.videos[0];
     }
 
-    contarDescarga();
-    await m.react('✅');
+    if (!video) return;
 
-  } catch (e) {
-    console.error(e);
-    await m.react('❌');
-    return m.reply(`❌ ᴇʀʀᴏʀ: No se pudo completar la solicitud.`);
+    // --- Diseño Uchiha ---
+    const caption = `
+╭─〔 ♆ *Uᴄʜɪʜᴀ Pʟᴀʏᴇʀ* ♆ 〕─╮
+│
+│ 🗡️ *Tɪᴛᴜʟᴏ:* ${video.title}
+│ 👤 *Aᴜᴛᴏʀ:* ${video.author.name}
+│ ⏳ *Dᴜʀᴀᴄɪᴏɴ:* ${video.timestamp}
+│ 👁️ *Vɪsᴛᴀs:* ${video.views.toLocaleString()}
+│
+╰─────────────────────╯
+
+🌑 *${isVideo ? 'Iɴᴠᴏᴄᴀɴᴅᴏ ᴠɪᴅᴇᴏ...' : 'Cᴀɴᴀʟɪᴢᴀɴᴅᴏ ᴀᴜᴅɪᴏ...'}*`.trim();
+
+    await conn.sendMessage(m.chat, { image: { url: video.thumbnail }, caption }, { quoted: m });
+    await m.react("⏳");
+
+    // --- Lógica de Descarga ---
+    try {
+      const apiURL = `https://optishield.uk/api/?type=youtubedl&apikey=c50919b9828c357cd81e753f03d4c000&url=${encodeURIComponent(video.url)}&video=${isVideo ? 1 : 0}`;
+      const res = await fetch(apiURL);
+      const json = await res.json();
+
+      if (json?.result?.download) {
+        await conn.sendMessage(m.chat, { 
+          [isVideo ? 'video' : 'audio']: { url: json.result.download }, 
+          mimetype: isVideo ? 'video/mp4' : 'audio/mpeg', 
+          fileName: `${video.title}.${isVideo ? 'mp4' : 'mp3'}`
+        }, { quoted: m });
+        return await m.react("✅");
+      }
+      throw new Error();
+
+    } catch (e) {
+      // Fallback Vreden
+      const vredenRes = await fetch(`https://api.vreden.my.id/api/v1/download/youtube/${type}?url=${encodeURIComponent(video.url)}&quality=128`);
+      const vJson = await vredenRes.json();
+      const dlUrl = vJson.result?.download?.url || vJson.result?.url;
+
+      if (dlUrl) {
+        await conn.sendMessage(m.chat, { 
+          [isVideo ? 'video' : 'audio']: { url: dlUrl }, 
+          mimetype: isVideo ? 'video/mp4' : 'audio/mpeg', 
+          fileName: `${video.title}` 
+        }, { quoted: m });
+        await m.react("✅");
+      } else {
+        await m.react("❌");
+      }
+    }
+
+  } catch (error) {
+    console.error(error);
   }
 };
 
-handler.command = /^(play|play2)$/i;
-handler.help = ['play <query>', 'play2 <query>'];
-handler.tags = ['descargas'];
+handler.help = ["play", "play2"];
+handler.tags = ["descargas"];
+handler.command = /^(play|play2|video|audio)$/i;
 
 export default handler;
