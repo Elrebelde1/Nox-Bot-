@@ -51,7 +51,6 @@ return conn.reply(m.chat, typeof e === 'string' ? e : '⚠︎ Se ha producido un
 
 handler.command = handler.help = ['play', 'yta', 'ytmp3', 'play2', 'ytv', 'ytmp4', 'playaudio', 'mp4']
 handler.tags = ['descargas']
-handler.group = true
 
 export default handler
 
