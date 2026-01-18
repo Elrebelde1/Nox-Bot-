@@ -1,39 +1,37 @@
-import fetch from 'node-fetch'
-import { Sticker} from 'wa-sticker-formatter'
+import fetch from "node-fetch"
+import { sticker } from '../lib/sticker.js'
 
-let handler = async (m, { conn, args}) => {
-  await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key}})
+const handler = async (m, { conn, text, usedPrefix, command }) => {
+    try {
+        if (!text) return conn.reply(m.chat, `❀ Por favor, escribe el texto que deseas convertir en sticker.\n\nEjemplo: *${usedPrefix + command}* Texto aquí`, m)
+        
+        await m.react('🕒')
 
-  try {
-    const texto = args.join(' ')
-    if (!texto) throw new Error('Ejemplo:.bratv hola mundo')
+        const apiKey = 'sylphy-6f150d'
+        const apiUrl = `https://sylphy.xyz/tools/brat?text=${encodeURIComponent(text)}&color=white&fondo=black&api_key=${apiKey}`
 
-    const urlApi = `https://api.ypnk.dpdns.org/api/video/bratv?text=${encodeURIComponent(texto)}`
-    const respuesta = await fetch(urlApi)
-    if (!respuesta.ok) throw new Error('Error al obtener el video')
+        const res = await fetch(apiUrl)
+        
+        if (!res.ok) throw 'Error al conectar con el servidor de diseño.'
+        
+        const buffer = await res.buffer()
+        const stiker = await sticker(buffer, false, 'Brat Sticker', 'Bot')
 
-    const videoBuffer = await respuesta.buffer()
-    const sticker = new Sticker(videoBuffer, {
-      pack: 'Video BRAT',
-      author: 'Yupra AI',
-      type: 'crop',
-      quality: 50
-})
+        if (stiker) {
+            await conn.sendFile(m.chat, stiker, 'brat.webp', '', m)
+            await m.react('✅')
+        } else {
+            throw 'No se pudo procesar el sticker.'
+        }
 
-    await conn.sendMessage(m.chat, {
-      sticker: await sticker.toBuffer()
-}, { quoted: m})
-    await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key}})
-
-} catch (e) {
-    console.error(e)
-    await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key}})
-    m.reply('Error al crear el sticker de video')
-}
+    } catch (e) {
+        await m.react('✖️')
+        conn.reply(m.chat, `⚠︎ Ocurrió un fallo al generar el sticker.`, m)
+    }
 }
 
-handler.help = ['bratv <texto>']
+handler.command = /^(brat|sbrat)$/i
 handler.tags = ['sticker']
-handler.command = /^bratv$/i
+handler.help = ['brat <texto>']
 
 export default handler
