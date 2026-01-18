@@ -30,8 +30,8 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 }
 
-handler.command = /^(brat|sbrat)$/i
+handler.command = /^(brat2|sbrat)$/i
 handler.tags = ['sticker']
-handler.help = ['brat <texto>']
+handler.help = ['brat2 <texto>']
 
 export default handler
