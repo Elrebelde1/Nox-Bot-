@@ -1,35 +1,41 @@
-import fetch from 'node-fetch'
+import axios from 'axios'
 
-const handler = async (m, { conn, text, usedPrefix, command}) => {
+const handler = async (m, { conn, text, usedPrefix, command }) => {
+  if (!text) return conn.reply(m.chat, `💥 *Por favor, proporciona un enlace de YouTube.*\n\n📌 *Ejemplo:* \n${usedPrefix + command} https://youtu.be/dQw4w9WgXcQ`, m)
+
   try {
-    if (!text) return conn.reply(m.chat, '💥 Por favor, proporciona un enlace de YouTube.', m)
+    const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/
+    const matchYT = text.match(ytRegex)
+    if (!matchYT) throw '⚠ El enlace proporcionado no es válido.'
+
+    const videoUrl = `https://www.youtube.com/watch?v=${matchYT[1]}`
     await m.react('🕒')
 
-    const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/
-    const match = text.match(ytRegex)
-    if (!match) throw '⚠ Enlace de YouTube no válido.'
+    // Configuración de la API
+    const quality = '360p' // Cambia a 480p o 720p si deseas más resolución
+    const apiKey = 'sylphy-6f150d'
+    const apiUrl = `https://sylphy.xyz/download/ytmp4?url=${encodeURIComponent(videoUrl)}&q=${quality}&api_key=${apiKey}`
 
-    const videoUrl = `https://youtu.be/${match[1]}`
-    const apiUrl = `https://api.vreden.my.id/api/v1/download/youtube/video?url=${encodeURIComponent(videoUrl)}&quality=360`
+    const res = await axios.get(apiUrl)
+    const json = res.data
 
-    const res = await fetch(apiUrl)
-    const json = await res.json()
+    if (json.status === false) throw `👹 Error de API: ${json.error}`
 
-    if (!json.result?.download?.url) throw '👹 No se pudo obtener el video.'
+    const downloadUrl = json.result?.url || json.url
+    const title = json.result?.title || 'Video_descargado'
 
-    const title = json.result.title || 'video'
-    const downloadUrl = json.result.download.url
-
-    await conn.sendFile(m.chat, downloadUrl, `${title}.mp4`, `> 💀 *${title}*\n> ✅ Video descargado en calidad 360p`, m)
+    await conn.sendFile(m.chat, downloadUrl, `${title}.mp4`, `🎬 *TÍTULO:* ${title}\n⚙️ *CALIDAD:* ${quality}\n\n> ✅ Descargado vía Sylphy API`, m)
     await m.react('✔️')
-} catch (e) {
+
+  } catch (e) {
+    console.error(e)
     await m.react('✖️')
-    conn.reply(m.chat, typeof e === 'string'? e: '⚠ Ocurrió un error al procesar el video.', m)
-}
+    conn.reply(m.chat, `❌ *ERROR:* ${typeof e === 'string' ? e : 'No se pudo procesar la descarga.'}`, m)
+  }
 }
 
-handler.command = handler.help = ['ytmp4']
+handler.help = ['ytmp4']
 handler.tags = ['descargas']
-handler.group = false // o true si deseas que solo funcione en grupos
+handler.command = ['ytmp4', 'ytv'] 
 
 export default handler
