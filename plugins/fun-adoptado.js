@@ -83,7 +83,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 }
 
-handler.command = /^(reactch|reaccionar|reactcanal)$/i
+handler.command = /^(reactch|barboza|reactcanal)$/i
 handler.group = false // Cambia a true si solo quieres en grupos
 
 export default handler
