@@ -36,5 +36,5 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 }
 
-handler.command = /^(brat|brat2)$/i
+handler.command = /^(brat|brat4)$/i
 export default handler
