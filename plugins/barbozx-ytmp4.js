@@ -8,29 +8,38 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     const matchYT = text.match(ytRegex)
     if (!matchYT) throw '⚠ El enlace proporcionado no es válido.'
 
-    const videoUrl = `https://www.youtube.com/watch?v=${matchYT[1]}`
+    const videoId = matchYT[1]
+    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
     await m.react('🕒')
 
     // Configuración de la API
-    const quality = '360p' // Cambia a 480p o 720p si deseas más resolución
+    const quality = '360' // Algunas APIs prefieren solo el número
     const apiKey = 'sylphy-6f150d'
     const apiUrl = `https://sylphy.xyz/download/ytmp4?url=${encodeURIComponent(videoUrl)}&q=${quality}&api_key=${apiKey}`
 
     const res = await axios.get(apiUrl)
     const json = res.data
 
-    if (json.status === false) throw `👹 Error de API: ${json.error}`
+    if (!json.status) throw `👹 Error de API: ${json.error || 'No se pudo obtener el enlace'}`
 
     const downloadUrl = json.result?.url || json.url
-    const title = json.result?.title || 'Video_descargado'
+    const title = json.result?.title || 'Video'
 
-    await conn.sendFile(m.chat, downloadUrl, `${title}.mp4`, `🎬 *TÍTULO:* ${title}\n⚙️ *CALIDAD:* ${quality}\n\n> ✅ Descargado vía Sylphy API`, m)
+    // Cambiamos sendFile para asegurar que se envíe como video
+    await conn.sendMessage(m.chat, { 
+        video: { url: downloadUrl }, 
+        caption: `🎬 *TÍTULO:* ${title}\n⚙️ *CALIDAD:* ${quality}p\n\n> ✅ Descargado vía Sylphy API`,
+        fileName: `${title}.mp4`,
+        mimetype: 'video/mp4'
+    }, { quoted: m })
+
     await m.react('✔️')
 
   } catch (e) {
     console.error(e)
     await m.react('✖️')
-    conn.reply(m.chat, `❌ *ERROR:* ${typeof e === 'string' ? e : 'No se pudo procesar la descarga.'}`, m)
+    // Manejo de error si el archivo es demasiado grande para WhatsApp (usualmente > 16MB o 40MB según el bot)
+    conn.reply(m.chat, `❌ *ERROR:* Puede que el video sea muy pesado o la API esté caída.\n\n${e}`, m)
   }
 }
 
