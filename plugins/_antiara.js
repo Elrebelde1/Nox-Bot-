@@ -1,43 +1,64 @@
-import fetch from "node-fetch";
+import axios from 'axios';
 
-let handler = async (m, { text, usedPrefix, command }) => {
-  if (!text || !text.trim()) {
-    return m.reply(`📌 *Uso correcto:*\n${usedPrefix + command} <nombre de la canción>\n📍 *Ejemplo:* ${usedPrefix + command} Feel Special`);
-  }
+const handler = async (m, { conn, args, usedPrefix, command }) => {
+    if (!args[0]) return m.reply(`*Uso:* ${usedPrefix + command} <url_terabox>`);
 
-  await m.react("🎵");
+    const targetUrl = args[0];
+    m.reply("_Generando enlaces de descarga..._");
 
-  try {
-    // Nueva URL de la API de Delirius
-    const url = `https://api.delirius.store/search/lyrics?query=${encodeURIComponent(text.trim())}`;
-    const res = await fetch(url);
-    const json = await res.json();
+    try {
+        const { data: cf } = await axios.post('https://api.nekolabs.web.id/tls/bypass/cf-turnstile', {
+            url: 'https://teraboxdl.site',
+            siteKey: '0x4AAAAAACG0B7jzIiua8JFj'
+        }, {
+            headers: { 'Content-Type': 'application/json' }
+        });
 
-    // Verificación basada en la estructura de Delirius
-    if (!json.status || !json.data) {
-      return m.reply("❌ No se encontró la letra de esa canción.");
+        if (!cf.result) throw new Error('No se pudo obtener el token de seguridad.');
+
+        const { data: res } = await axios.post('https://teraboxdl.site/api/proxy', {
+            url: targetUrl,
+            cf_token: cf.result
+        }, {
+            headers: {
+                'User-Agent': "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+                'Accept': 'application/json, text/plain, */*',
+                'Content-Type': 'application/json',
+                'Referer': 'https://teraboxdl.site/',
+                'Origin': 'https://teraboxdl.site'
+            }
+        });
+
+        if (!res.list || res.list.length === 0) throw new Error('No se encontraron archivos.');
+
+        const file = res.list[0];
+        let txt = `✅ *Archivo Encontrado*\n\n`;
+        txt += `*Nombre:* ${file.server_filename}\n`;
+        txt += `*Tamaño:* ${(file.size / (1024 * 1024)).toFixed(2)} MB\n\n`;
+        txt += `*Enlace Directo:* ${file.direct_link}\n\n`;
+        txt += `*Stream:* ${file.stream_url}`;
+
+        await conn.sendMessage(m.chat, { 
+            text: txt,
+            contextInfo: {
+                externalAdReply: {
+                    title: "Terabox Downloader",
+                    body: file.server_filename,
+                    thumbnailUrl: file.thumbs?.url1,
+                    sourceUrl: targetUrl,
+                    mediaType: 1,
+                    renderLargerThumbnail: true
+                }
+            }
+        }, { quoted: m });
+
+    } catch (err) {
+        m.reply(`❌ *Error:* ${err.message}`);
     }
-
-    const { title, artists, album, lyrics } = json.data;
-
-    const caption = `
-🎶 *${title}* — *${artists}*
-💿 *Álbum:* ${album}
-
-📝 *Letra:*
-${lyrics}
-`.trim();
-
-    await m.reply(caption);
-    await m.react("✅");
-  } catch (error) {
-    console.error("❌ Error:", error);
-    m.reply("⚠️ *Ocurrió un error al obtener la letra.*");
-  }
 };
 
-handler.help = ["letra <nombre>", "lyrics <nombre>"];
-handler.tags = ["musica"];
-handler.command = ["letra", "lyrics"];
+handler.help = ['terabox'];
+handler.tags = ['tools'];
+handler.command = /^(terabox|dlterabox)$/i;
 
 export default handler;
