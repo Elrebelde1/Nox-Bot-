@@ -129,5 +129,5 @@ let handler = async(m, { conn, usedPrefix, command, text }) => {
 handler.help = ["morse"].map(v => v + " *<encode|decode>*")
 handler.tags = ["fun"]
 handler.command = /^(morse)/i
-handler.register = false
+handler.register = true
 export default handler
