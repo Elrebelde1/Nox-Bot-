@@ -22,5 +22,5 @@ let handler = async (m, { args }) => {
 handler.help = ['retirar']
 handler.tags = ['rpg']
 handler.command = ['withdraw', 'retirar', 'wd']
-handler.register = false
+handler.register = true
 export default handler
