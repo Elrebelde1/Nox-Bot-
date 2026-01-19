@@ -82,6 +82,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
 handler.help = ['xvideosearch'];
 handler.command = ['xvideosearch', 'xvideosearch'];
-handler.register = false
+handler.register = true
 
 export default handler;
