@@ -67,7 +67,7 @@ _¡Felices Fiestas! 🌟 Crea tu logo navideño con \`.logochristmas\`_
 handler.help = ['menu3']
 handler.tags = ['main', 'logo']
 handler.command = ['menulogos', 'logos', 'menu3'] 
-
+handler.register = true 
 export default handler
 
 function msToTime(duration) {
