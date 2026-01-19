@@ -23,7 +23,7 @@ let handler = async (m, { conn, text, args}) => {
 
 handler.command = ['setprefijo']
 handler.owner = true
-handler.register = false
+handler.register = true
 
 export const getSubbotPrefix = (jid) => subbotPrefixes[jid] || '.'
 
