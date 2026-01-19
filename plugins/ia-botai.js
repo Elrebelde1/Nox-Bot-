@@ -1,28 +1,33 @@
+
 import fetch from "node-fetch";
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (!text) {
-    return conn.reply(m.chat, ` ¡Hola! ¿cómo puedo ayudarte hoy?`, m, rcanal);
+    return conn.reply(m.chat, `¡Hola! ¿En qué puedo ayudarte hoy? Por favor, ingresa una consulta.`, m, rcanal);
   }
 
   try {
-    // Nuevo endpoint con parámetros prompt y country
-    const url = `https://api.dorratz.com/ai/gpt?prompt=${encodeURIComponent(text)}&country=venezuela`;
+    // Configuración de la nueva API
+    const apiKey = "sylphy-6f150d";
+    const url = `https://sylphy.xyz/ai/copilot?text=${encodeURIComponent(text)}&api_key=${apiKey}`;
+    
     const res = await fetch(url);
     const data = await res.json();
 
-    if (!data || !data.response) {
-      return conn.reply(m.chat, "❌ No recibí respuesta de la IA, intenta de nuevo.", m, fake);
+    // Verificación de la respuesta según la estructura de la API
+    if (data.status && data.result && data.result.text) {
+      await conn.reply(m.chat, data.result.text, m, rcanal);
+    } else {
+      await conn.reply(m.chat, "❌ No se pudo obtener una respuesta válida de la IA.", m, fake);
     }
 
-    await conn.reply(m.chat, `${data.response}`, m, rcanal);
   } catch (e) {
     console.error(e);
-    await conn.reply(m.chat, "⚠️ Hubo un error al conectar con la IA.", m, fake);
+    await conn.reply(m.chat, "⚠️ Hubo un error al conectar con el servicio de IA.", m, fake);
   }
 };
 
 handler.tags = ["ia"];
-handler.command = handler.help = ['gpt', 'chatgpt'];
+handler.command = handler.help = ['ia', 'copilot'];
 
 export default handler;
