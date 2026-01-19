@@ -47,6 +47,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
 handler.help = ["gemini", "ia"];
 handler.tags = ["ia"];
-handler.command = /^(gemini|ia|chatgpt)$/i;
+handler.command = /^(gemini|chatgpt)$/i;
 
 export default handler;
