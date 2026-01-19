@@ -16,7 +16,7 @@ handler.help = ['waifu']
 handler.tags = ['search']
 handler.command = ['waifu']
 //handler.limit = 1
-handler.register = false
+handler.register = true
 
 
 export default handler
