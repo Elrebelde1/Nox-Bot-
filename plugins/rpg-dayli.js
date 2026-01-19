@@ -17,7 +17,7 @@ let handler = async (m) => {
 handler.help = ['claim']
 handler.tags = ['rpg']
 handler.command = ['daily', 'claim']
-handler.register = false
+handler.register = true
 
 export default handler
 
