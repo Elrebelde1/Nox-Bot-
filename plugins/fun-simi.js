@@ -1,35 +1,52 @@
 import fetch from "node-fetch";
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
+  // 1. Verificación de texto
   if (!text) {
-    return conn.reply(m.chat, `💥 ¡Hola! ¿En qué puedo ayudarte hoy? (Respondo en español)`, m);
+    return conn.reply(m.chat, `*¡Hola!* 🤖\n\nEscribe tu pregunta para recibir una respuesta de la IA.\n\n*Ejemplo:* ${usedPrefix + command} ¿Quién es Messi?`, m);
   }
 
+  // Mostramos un mensaje de "escribiendo" para que el usuario sepa que la IA está pensando
+  await conn.sendMessage(m.chat, { react: { text: "⏳", key: m.key } });
+
   try {
-    // Definimos la instrucción de idioma
-    const sistema = "Por favor, responde exclusivamente en español: ";
-    const query = encodeURIComponent(sistema + text);
+    // 2. Configuración de parámetros
+    const apiKey = "sylphy-6f150d";
+    const basePrompt = "Tu nombre es Gemini. Eres un asistente útil y amable. Debes responder SIEMPRE en español, de forma detallada y profesional.";
     
-    // Nueva API de Sylphy (Gemini)
-    const url = `https://sylphy.xyz/ai/gemini?q=${query}&prompt=&api_key=sylphy-6f150d`;
+    // Construcción de la URL de forma segura
+    const endpoint = new URL("https://sylphy.xyz/ai/gemini");
+    endpoint.searchParams.append("q", text);
+    endpoint.searchParams.append("prompt", basePrompt);
+    endpoint.searchParams.append("api_key", apiKey);
 
-    const res = await fetch(url);
-    const data = await res.json();
+    // 3. Petición a la API
+    const response = await fetch(endpoint.href);
+    
+    if (!response.ok) throw new Error("Error en la conexión con la API");
 
-    // Verificamos la estructura según el JSON que proporcionaste
-    if (data.status && data.result && data.result.text) {
-      await conn.reply(m.chat, data.result.text, m);
+    const json = await response.json();
+
+    // 4. Validación del resultado según el formato JSON proporcionado
+    if (json.status && json.result && json.result.text) {
+      const finalResult = json.result.text.trim();
+      
+      // Enviamos la respuesta limpia
+      await conn.reply(m.chat, finalResult, m);
+      await conn.sendMessage(m.chat, { react: { text: "✅", key: m.key } });
     } else {
-      await conn.reply(m.chat, "❌ La IA no devolvió un formato válido.", m);
+      throw new Error("Respuesta de API vacía o mal estructurada");
     }
 
-  } catch (e) {
-    console.error(e);
-    await conn.reply(m.chat, "⚠️ Error al conectar con el servidor de Sylphy.", m);
+  } catch (error) {
+    console.error("Error en el comando IA:", error);
+    await conn.sendMessage(m.chat, { react: { text: "❌", key: m.key } });
+    await conn.reply(m.chat, "⚠️ *Error del servidor:* No se pudo obtener una respuesta en este momento. Inténtalo más tarde.", m);
   }
 };
 
+handler.help = ["gemini", "ia"];
 handler.tags = ["ia"];
-handler.command = handler.help = ["ia", "gemini", "chatgpt"];
+handler.command = /^(gemini|ia|chatgpt)$/i;
 
 export default handler;
