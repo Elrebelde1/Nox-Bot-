@@ -138,4 +138,5 @@ ${saludo} ${tagUsuario} 🎁
 };
 
 handler.command = ['menu', 'help', 'menú'];
+handler.register = true 
 export default handler;
