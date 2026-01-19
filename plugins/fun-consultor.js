@@ -59,6 +59,6 @@ let handler = async (m, { conn, usedPrefix, command, text }) => {
 handler.tags = ['consultor'];
 handler.help = ['cpf *<numero>*'];
 handler.command = ['cpf', 'consultacpf'];
-handler.register = false;
+handler.register = true;
 
 export default handler;
