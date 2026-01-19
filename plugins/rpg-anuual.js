@@ -43,7 +43,7 @@ var handler = async (m, { conn, text }) => {
 handler.help = ['annual', 'yearly']; 
 handler.tags = ['rpg']; 
 handler.command = ['annual', 'yearly']; 
-handler.register = false; 
+handler.register = true;
 
 export default handler; 
 
