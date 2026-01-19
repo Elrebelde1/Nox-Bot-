@@ -127,5 +127,6 @@ const handler = async (m, { isPrems, conn }) => {
 handler.help = ['menu2']
 handler.tags = ['main']
 handler.command = ['menu2', 'menuaudios']
+handler.register = true
 
 export default handler
