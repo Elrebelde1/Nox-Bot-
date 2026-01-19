@@ -25,7 +25,6 @@ var handler = async (m, { conn }) => {
     let username = conn.getName(who);
     role = role || 'Aldeano';
 
-    // Texto para usuarios normales (Simplificado)
     let noprem = `
 「 𖤘 *Perfil De Usuario* 」
 ❀ *N᥆mᑲrᥱ:* ${username}
@@ -54,7 +53,6 @@ var handler = async (m, { conn }) => {
 │⧼⚜️⧽ *ʀᴀɴɢᴏ:* ${role}
 ╰───⪨ *𝓤𝓼𝓾𝓪𝓻𝓲𝓸 𝓓𝓮𝓼𝓽𝓪𝓬𝓪𝓭𝓸* ⪩`.trim();
 
-    // Enviar solo el texto sin imagen
     conn.reply(m.chat, premium ? prem : noprem, m, { mentions: [who] });
 }
 
@@ -62,5 +60,6 @@ handler.help = ['profile'];
 handler.group = false;
 handler.tags = ['rg'];
 handler.command = ['profile', 'perfil'];
+handler.limit = 4;
 
 export default handler;
