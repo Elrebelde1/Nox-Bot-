@@ -25,6 +25,6 @@ global.db.data.users[m.sender].lastcofre = new Date * 1
 handler.help = ['reglaslideres2']
 handler.tags = ['freefire']
 handler.command = ['reglaslideres2'] 
-handler.register = false
+handler.register = true
 handler.admin = false
 export default handler
