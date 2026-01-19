@@ -35,6 +35,6 @@ return {
 handler.help = ['letra *<texto>*']
 handler.tags = ['fun']
 handler.command = ['letra']
-handler.register = false
+handler.register = true
 
 export default handler
