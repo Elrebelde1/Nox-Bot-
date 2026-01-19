@@ -61,5 +61,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
 handler.command = /^(play|yta|ytmp3|play2|ytv|ytmp4|playaudio|mp4)$/i
 handler.group = false
+handler.register = true
 
 export default handler
