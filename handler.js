@@ -38,6 +38,8 @@ export async function handler(chatUpdate) {
                     user.exp = 0
                 if (!isNumber(user.limit))
                     user.limit = 10
+                if (!isNumber(user.coin))
+                    user.coin = 10
                 if (!('premium' in user)) 
                     user.premium = false
                 if (!user.premium) 
@@ -72,6 +74,7 @@ export async function handler(chatUpdate) {
                     name: m.name,
                     age: -1,
                     regTime: -1,
+                    coin: 10,
                     afk: -1,
                     afkReason: '',
                     banned: false,
