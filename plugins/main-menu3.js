@@ -1,3 +1,6 @@
+import { readFileSync } from 'fs'
+import { join } from 'path'
+
 const handler = async (m, { isPrems, conn }) => {
   const last = global.db.data.users[m.sender].lastcofre || 0
   const now = new Date() * 1
@@ -7,7 +10,10 @@ const handler = async (m, { isPrems, conn }) => {
     const wait = msToTime((last + cooldown) - now)
     throw `⏳ El sistema está procesando datos. Vuelve en *${wait}* para generar más logos.`
   }
-   const img = readFileSync(join(process.cwd(), 'storage', 'img', 'catalogo.png')) 
+
+  // Corregido: Se requiere importar readFileSync y join
+  const img = readFileSync(join(process.cwd(), 'storage', 'img', 'catalogo.png')) 
+  
   const texto = `
 ⚡ *𝖲𝖠𝖲𝖴𝖪𝖤 𝖫𝖮𝖦𝖮 𝖬𝖠𝖪𝖤𝖱* ⚡
 ––––––––––––––––––––––––––––––
@@ -53,7 +59,8 @@ _Uso: Prefijo + comando + espacio + texto_
 _Ejemplo: .logoneon SasukeBot_
 `.trim()
 
-  await conn.sendMessage(m.chat, { image: { url: img }, caption: texto }, { quoted: m })
+  // Corregido: Se envía 'img' directamente como buffer
+  await conn.sendMessage(m.chat, { image: img, caption: texto }, { quoted: m })
 
   global.db.data.users[m.sender].lastcofre = now
 }
@@ -62,6 +69,7 @@ handler.help = ['menu3']
 handler.tags = ['main', 'logo']
 handler.command = ['menulogos', 'logos', 'menu3'] 
 handler.register = true 
+
 export default handler
 
 function msToTime(duration) {
