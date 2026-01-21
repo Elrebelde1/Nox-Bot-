@@ -1,5 +1,8 @@
+import { readFileSync } from 'fs'
+import { join } from 'path'
+
 const handler = async (m, { isPrems, conn }) => {
-  const img = 'https://qu.ax/T0e0O' 
+  const img = readFileSync(join(process.cwd(), 'storage', 'img', 'catalogo.png'))
   const texto = `*🎵 _S A S U K E - S O U N D B O A R D_ 🎧*
 
 *¡Explora la colección de sonidos!*
@@ -118,7 +121,7 @@ const handler = async (m, { isPrems, conn }) => {
 
 > 💻 *SISTEMA DE AUDIO V2.0*`
 
-  await conn.sendMessage(m.chat, { image: { url: img }, caption: texto }, { quoted: m })
+  await conn.sendMessage(m.chat, { image: img, caption: texto }, { quoted: m })
 
   global.db.data.users[m.sender].lastcofre = Date.now()
 }
