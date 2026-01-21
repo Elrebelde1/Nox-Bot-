@@ -1,4 +1,6 @@
 import { generateWAMessageFromContent } from '@whiskeysockets/baileys'
+import { readFileSync, existsSync } from 'fs'
+import { join } from 'path'
 
 const handler = async (m, { conn, participants }) => {
   try {
@@ -6,11 +8,13 @@ const handler = async (m, { conn, participants }) => {
     const isBusiness = conn.user.isBusiness || false
     const platformName = isBusiness ? 'WhatsApp Business' : 'WhatsApp'
 
-    let profilePic
-    try {
-      profilePic = await conn.profilePictureUrl(conn.user.jid, 'image')
-    } catch {
-      profilePic = 'https://files.catbox.moe/zdp6m6.jpg'
+    // Lógica para cargar la imagen del catálogo local
+    const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
+    let catalogoImg
+    if (existsSync(pathImg)) {
+      catalogoImg = readFileSync(pathImg)
+    } else {
+      catalogoImg = { url: 'https://files.catbox.moe/t7uytz.png' }
     }
 
     const userText = m.text ? m.text.slice(m.text.split(' ')[0].length).trim() : ''
@@ -19,10 +23,10 @@ const handler = async (m, { conn, participants }) => {
       externalAdReply: {
         title: `${platformName} ✅`, 
         body: '𝙃𝙤𝙡𝙖,𝙎𝙤𝙮 𝙎𝙖𝙨𝙪𝙠𝙚 𝘽𝙤𝙩 𝙈𝘿👾',
-        thumbnailUrl: profilePic,
-        sourceUrl: 'https://www.whatsapp.com', 
+        thumbnail: catalogoImg.byteLength ? catalogoImg : { url: catalogoImg.url },
+        sourceUrl: 'https://github.com/Barboza-Team', 
         mediaType: 1,
-        renderLargerThumbnail: true,
+        renderLargerThumbnail: false, // Asegura que la imagen sea pequeña
         showAdAttribution: true
       }
     }
@@ -56,7 +60,7 @@ const handler = async (m, { conn, participants }) => {
       }
     } else {
       await conn.sendMessage(m.chat, {
-        text: userText || 'Hola a todos! 👋',
+        text: userText || '¡Atención a todos! 👋',
         ...messageOptions
       })
     }
