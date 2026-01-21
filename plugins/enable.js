@@ -1,3 +1,6 @@
+import { readFileSync, existsSync } from 'fs'
+import { join } from 'path'
+
 let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isROwner }) => {
   let isEnable = /true|enable|(turn)?on|1/i.test(command);
   let chat = global.db.data.chats[m.chat];
@@ -5,6 +8,10 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
   let bot = global.db.data.settings[conn.user.jid] || {};
   let type = (args[0] || '').toLowerCase();
   let isAll = false, isUser = false;
+
+  // Lógica para cargar la imagen del catálogo
+  const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
+  let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
 
   switch (type) {
     case 'welcome':
@@ -106,47 +113,37 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
       break;
 
     default:
-      if (!/[01]/.test(command)) return m.reply(`
-┏━━━━━━━━━━━━━━━━━━━━━┓
-┃ ⚙️ *INTERFACE DE AJUSTES* ⚙️
-┗━━━━━━━━━━━━━━━━━━━━━┃
-┃ 🟢 *Usar:* ${usedPrefix + command} <opción>
-┃━━━━━━━━━━━━━━━━━━━━━┃
-┃ 💻 *SISTEMA*
-┃ ◦ _autoread_
-┃ ◦ _subbots_
-┃ ◦ _restrict_
-┃ ◦ _antispam_
-┃ ◦ _antiprivado_
-┃
-┃ 🛡️ *SEGURIDAD GRUPOS*
-┃ ◦ _welcome_
-┃ ◦ _antilink_
-┃ ◦ _antibot_
-┃ ◦ _detect_
-┃ ◦ _antiarabes_
-┃ ◦ _antilag_
-┃
-┃ 🔞 *CONTENIDO & MÁS*
-┃ ◦ _nsfw_
-┃ ◦ _antinopor_
-┃ ◦ _audios_
-┃ ◦ _modoadmin_
-┃ ◦ _document_
-┗━━━━━━━━━━━━━━━━━━━━━┛`.trim())
+      if (!/[01]/.test(command)) {
+        let txt = `┏━━━━━━━━━━━━━━━━━━━━━┓\n┃ ⚙️ *INTERFACE DE AJUSTES* ⚙️\n┗━━━━━━━━━━━━━━━━━━━━━┃\n┃ 🟢 *Usar:* ${usedPrefix + command} <opción>\n┃━━━━━━━━━━━━━━━━━━━━━┃\n┃ 💻 *SISTEMA*\n┃ ◦ _autoread_\n┃ ◦ _subbots_\n┃ ◦ _restrict_\n┃ ◦ _antispam_\n┃ ◦ _antiprivado_\n┃\n┃ 🛡️ *SEGURIDAD GRUPOS*\n┃ ◦ _welcome_\n┃ ◦ _antilink_\n┃ ◦ _antibot_\n┃ ◦ _detect_\n┃ ◦ _antiarabes_\n┃ ◦ _antilag_\n┃\n┃ 🔞 *CONTENIDO & MÁS*\n┃ ◦ _nsfw_\n┃ ◦ _antinopor_\n┃ ◦ _audios_\n┃ ◦ _modoadmin_\n┃ ◦ _document_\n┗━━━━━━━━━━━━━━━━━━━━━┛`
+        
+        return conn.sendMessage(m.chat, {
+          text: txt,
+          contextInfo: {
+            externalAdReply: {
+              title: 'Sᴀsᴜᴋᴇ Bᴏᴛ ─ Cᴏɴғɪɢ',
+              body: 'Ajustes del Sistema',
+              thumbnail: catalogoImg,
+              mediaType: 1,
+              showAdAttribution: true
+            }
+          }
+        }, { quoted: m })
+      }
       throw false
   }
 
-  let statusTxt = `
-┏━━━━━━━━━━━━━━━━━━━━━┓
-┃ ✨ *AJUSTE ACTUALIZADO* ✨
-┃━━━━━━━━━━━━━━━━━━━━━┃
-┃ ⚙️ *Opción:* ${type}
-┃ 📊 *Estado:* ${isEnable ? 'Activado ✅' : 'Desactivado ❌'}
-┃ 📍 *Ámbito:* ${isAll ? 'Global 🌐' : isUser ? 'Usuario 👥' : 'Chat Actual 💬'}
-┗━━━━━━━━━━━━━━━━━━━━━┛`.trim()
+  let statusTxt = `┏━━━━━━━━━━━━━━━━━━━━━┓\n┃ ✨ *AJUSTE ACTUALIZADO* ✨\n┃━━━━━━━━━━━━━━━━━━━━━┃\n┃ ⚙️ *Opción:* ${type}\n┃ 📊 *Estado:* ${isEnable ? 'Activado ✅' : 'Desactivado ❌'}\n┃ 📍 *Ámbito:* ${isAll ? 'Global 🌐' : isUser ? 'Usuario 👥' : 'Chat Actual 💬'}\n┗━━━━━━━━━━━━━━━━━━━━━┛`
 
-  await m.reply(statusTxt)
+  await conn.sendMessage(m.chat, {
+    text: statusTxt,
+    contextInfo: {
+      externalAdReply: {
+        title: 'Sᴀsᴜᴋᴇ Bᴏᴛ ─ Uᴘᴅᴀᴛᴇ',
+        thumbnail: catalogoImg,
+        mediaType: 1
+      }
+    }
+  }, { quoted: m })
 }
 
 handler.help = ['enable', 'disable', 'on', 'off']
