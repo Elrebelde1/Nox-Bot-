@@ -2,31 +2,29 @@ import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 
 let handler = async (m, { conn, isAdmin, isROwner }) => {
-    // 1. Verificación de permisos
+    // Verificación de permisos
     if (!(isAdmin || isROwner)) {
         if (global.dfail) return global.dfail('admin', m, conn)
         throw '⚠️ Este comando solo puede ser utilizado por *Administradores*.'
     }
 
     let chat = global.db.data.chats[m.chat]
-    
-    // 2. Lógica de activación (Cambiamos el return por un aviso visual)
-    let yaEstabaActivo = !chat.isBanned
-    chat.isBanned = false
+    chat.isBanned = false // Aseguramos que se active
 
-    // 3. Gestión de la imagen (Segura)
+    // Gestión de la imagen del catálogo
     let catalogoImg
     const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
     
     if (existsSync(pathImg)) {
         catalogoImg = readFileSync(pathImg)
     } else {
+        // Enlace de respaldo por si no encuentra la imagen en la carpeta
         catalogoImg = { url: 'https://files.catbox.moe/t7uytz.png' }
     }
 
-    // 4. Construcción del mensaje
+    // Texto solicitado
     let txt = `┏━━━━━━━━━━━━━━━━━━┓\n`
-    txt += `┃ ✨ *${yaEstabaActivo ? 'BOT YA ACTIVO' : 'BOT ACTIVADO'}* ✨\n`
+    txt += `┃ ✨ *BOT YA ACTIVO* ✨\n`
     txt += `┃━━━━━━━━━━━━━━━━━━┃\n`
     txt += `┃ 📝 *Estado:* Operativo\n`
     txt += `┃ 🛡️ *Admin:* ${m.pushName}\n`
@@ -34,24 +32,13 @@ let handler = async (m, { conn, isAdmin, isROwner }) => {
     txt += `┗━━━━━━━━━━━━━━━━━━┛\n\n`
     txt += `> *Use .menu para ver los comandos disponibles.*`
 
-    // 5. Envío del mensaje con catálogo
+    // Envío limpio: Solo imagen y texto (sin publicidad de externalAdReply)
     await conn.sendMessage(m.chat, {
-        image: catalogoImg.buffer ? catalogoImg : (catalogoImg.url ? { url: catalogoImg.url } : catalogoImg),
-        caption: txt,
-        contextInfo: {
-            externalAdReply: {
-                title: 'Sᴀsᴜᴋᴇ Bᴏᴛ ─ Sʏsᴛᴇᴍ',
-                body: '🔋 Catálogo de Servicios',
-                sourceUrl: 'https://github.com/Barboza-Team',
-                thumbnail: catalogoImg.buffer ? catalogoImg : (catalogoImg.url ? { url: catalogoImg.url } : catalogoImg),
-                mediaType: 1,
-                showAdAttribution: true,
-                renderLargerThumbnail: true // Hace que el catálogo se vea mejor
-            }
-        }
+        image: catalogoImg.byteLength ? catalogoImg : { url: catalogoImg.url },
+        caption: txt
     }, { quoted: m })
 
-    await m.react(yaEstabaActivo ? '✅' : '🔋')
+    await m.react('✅')
 }
 
 handler.help = ['desbanearbot']
