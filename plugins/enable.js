@@ -1,4 +1,3 @@
-
 let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isROwner }) => {
   let isEnable = /true|enable|(turn)?on|1/i.test(command);
   let chat = global.db.data.chats[m.chat];
@@ -11,233 +10,143 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
     case 'welcome':
     case 'bv':
     case 'bienvenida':
-      if (!m.isGroup) {
-        if (!isOwner) {
-          global.dfail('group', m, conn);
-          throw false;
-        }
-      } else if (!isAdmin) {
-        global.dfail('admin', m, conn);
-        throw false;
-      }
+      if (m.isGroup && !isAdmin) return global.dfail('admin', m, conn)
+      if (!m.isGroup && !isOwner) return global.dfail('owner', m, conn)
       chat.bienvenida = isEnable;
       break;
 
     case 'antiprivado2':
-  if (!m.isGroup) {
-    if (!isOwner) {
-      global.dfail('group', m, conn);
-      throw false;
-}
-} else if (!isAdmin) {
-    global.dfail('admin', m, conn);
-    throw false;
-}
-  chat.antiPrivate2 = isEnable;
-  break;
+      if (m.isGroup && !isAdmin) return global.dfail('admin', m, conn)
+      chat.antiPrivate2 = isEnable;
+      break;
 
     case 'antilag':
-  chat.antiLag = isEnable;
-  m.reply(`✅ Modo Anti-Lag ${isEnable? 'activado': 'desactivado'} correctamente.`);
-  break;
+      chat.antiLag = isEnable;
+      break;
 
     case 'autoread':
     case 'autoleer':
       isAll = true;
-      if (!isROwner) {
-        global.dfail('rowner', m, conn);
-        throw false;
-      }
+      if (!isROwner) return global.dfail('rowner', m, conn)
       global.opts['autoread'] = isEnable;
       break;
 
     case 'antispam':
       isAll = true;
-      if (!isOwner) {
-        global.dfail('owner', m, conn);
-        throw false;
-      }
+      if (!isOwner) return global.dfail('owner', m, conn)
       bot.antiSpam = isEnable;
       break;
 
-     case 'antinopor':
+    case 'antinopor':
       isAll = true;
-      if (!isOwner) {
-        global.dfail('owner', m, conn);
-        throw false;
-      }
+      if (!isOwner) return global.dfail('owner', m, conn)
       chat.antiLinkxxx = isEnable;
       break;
 
     case 'audios':
     case 'audiosbot':
-    case 'botaudios':
-      if (!m.isGroup) {
-        if (!isOwner) {
-          global.dfail('group', m, conn);
-          throw false;
-        }
-      } else if (!isAdmin) {
-        global.dfail('admin', m, conn);
-        throw false;
-      }
+      if (m.isGroup && !isAdmin) return global.dfail('admin', m, conn)
       chat.audios = isEnable;
       break;
 
     case 'detect':
     case 'avisos':
-      if (!m.isGroup) {
-        if (!isOwner) {
-          global.dfail('group', m, conn);
-          throw false;
-        }
-      } else if (!isAdmin) {
-        global.dfail('admin', m, conn);
-        throw false;
-      }
+      if (m.isGroup && !isAdmin) return global.dfail('admin', m, conn)
       chat.detect = isEnable;
       break;
 
-    case 'jadibotmd':
-    case 'serbot':
     case 'subbots':
+    case 'serbot':
       isAll = true;
-      if (!isOwner) {
-        global.dfail('rowner', m, conn);
-        throw false;
-      }
+      if (!isROwner) return global.dfail('rowner', m, conn)
       bot.jadibotmd = isEnable;
       break;
 
     case 'restrict':
-    case 'restringir':
       isAll = true;
-      if (!isOwner) {
-        global.dfail('rowner', m, conn);
-        throw false;
-      }
+      if (!isROwner) return global.dfail('rowner', m, conn)
       bot.restrict = isEnable;
       break;
 
     case 'document':
-    case 'documento':
       isUser = true;
       user.useDocument = isEnable;
       break;
 
     case 'antilink':
-      if (m.isGroup) {
-        if (!(isAdmin || isOwner)) {
-          global.dfail('admin', m, conn);
-          throw false;
-        }
-      }
+      if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn)
       chat.antiLink = isEnable;
       break;
 
     case 'antibot':
-      if (m.isGroup) {
-        if (!(isAdmin || isOwner)) {
-          global.dfail('admin', m, conn);
-          throw false;
-        }
-      }
+      if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn)
       chat.antiBot = isEnable;
       break;
 
     case 'modoadmin':
-    case 'soloadmin':
-    case 'modeadmin':
-      if (m.isGroup) {
-        if (!(isAdmin || isOwner)) {
-          global.dfail('admin', m, conn);
-          throw false;
-        }
-      }
+      if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn)
       chat.modoadmin = isEnable;
       break;
 
     case 'antiprivado':
-      // Ahora cualquiera puede activarlo o desactivarlo
+      isAll = true;
+      if (!isOwner) return global.dfail('owner', m, conn)
       bot.antiPrivate = isEnable;
       break;
 
     case 'nsfw':
-    case 'modohorny':
-      if (m.isGroup) {
-        if (!(isAdmin || isOwner)) {
-          global.dfail('admin', m, conn);
-          throw false;
-        }
-      }
+      if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn)
       chat.nsfw = isEnable;
       break;
 
     case 'antiarabes':
-    case 'antinegros':
     case 'antifakes':
-    case 'onlylatinos':
-      if (m.isGroup) {
-        if (!(isAdmin || isOwner)) {
-          global.dfail('admin', m, conn);
-          throw false;
-        }
-      }
+      if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn)
       chat.onlyLatinos = isEnable;
       break;
 
     default:
       if (!/[01]/.test(command)) return m.reply(`
-*🧑‍💻 INGRESE UNA OPCIÓN PARA ACTIVAR O DESACTIVAR*
-
-*🔖 LISTA DE OPCIONES*
-*Tipo :* welcome
-*Descripción :* Des/Activa la *Bienvenida* y *Despedida* para Grupos
-
-*Tipo :* nsfw 
-*Descripción :* Des/Activa los comandos *NSFW* para Grupos
-
-*Tipo :* antilag
-*Descripción :* Des/Activa el *AntiLag* en un grupo*
-*Tipo :* antiarabes 
-*Descripción :* Des/Activa el *AntiArabes* para Grupos
-
-*Tipo :* antilink 
-*Descripción :* Des/Activa el *AntiLink* para Grupos
-
-*Tipo :* autoread 
-*Descripción :* Des/Activa el *AutoRead* para el Bot
-
-*Tipo :* restrict
-*Description :* Des/Activa el *Restrict*
-para el bot
-
-*Tipo :* document 
-*Descripción :* Des/Activa la *Descarga En Documentos* para el Usuario
-
-*Tipo :* modoadmin
-*Descripción :* Des/Activa la *modoadmin* para el Usuario
-
-*Tipo :* audios
-*Descripción :* Des/Activa la *audios* para el Usuario
-
-*Tipo :* subbots
-*Descripción :* Des/Activa la *subbots* para el Usuario
-
-
-*• Ejemplo:*
-*- ${usedPrefix + command}* welcome
-`.trim())
+┏━━━━━━━━━━━━━━━━━━━━━┓
+┃ ⚙️ *INTERFACE DE AJUSTES* ⚙️
+┗━━━━━━━━━━━━━━━━━━━━━┃
+┃ 🟢 *Usar:* ${usedPrefix + command} <opción>
+┃━━━━━━━━━━━━━━━━━━━━━┃
+┃ 💻 *SISTEMA*
+┃ ◦ _autoread_
+┃ ◦ _subbots_
+┃ ◦ _restrict_
+┃ ◦ _antispam_
+┃ ◦ _antiprivado_
+┃
+┃ 🛡️ *SEGURIDAD GRUPOS*
+┃ ◦ _welcome_
+┃ ◦ _antilink_
+┃ ◦ _antibot_
+┃ ◦ _detect_
+┃ ◦ _antiarabes_
+┃ ◦ _antilag_
+┃
+┃ 🔞 *CONTENIDO & MÁS*
+┃ ◦ _nsfw_
+┃ ◦ _antinopor_
+┃ ◦ _audios_
+┃ ◦ _modoadmin_
+┃ ◦ _document_
+┗━━━━━━━━━━━━━━━━━━━━━┛`.trim())
       throw false
   }
 
-m.reply(`⚠️ *sᥲsᥙkᥱ ᑲ᥆𝗍 mძ 🌀 Notificación* ⚠️
+  let statusTxt = `
+┏━━━━━━━━━━━━━━━━━━━━━┓
+┃ ✨ *AJUSTE ACTUALIZADO* ✨
+┃━━━━━━━━━━━━━━━━━━━━━┃
+┃ ⚙️ *Opción:* ${type}
+┃ 📊 *Estado:* ${isEnable ? 'Activado ✅' : 'Desactivado ❌'}
+┃ 📍 *Ámbito:* ${isAll ? 'Global 🌐' : isUser ? 'Usuario 👥' : 'Chat Actual 💬'}
+┗━━━━━━━━━━━━━━━━━━━━━┛`.trim()
 
-💎 *Comando ejecutado:* *${type}*
-👤 *Estado actual:* *${isEnable? 'Activado ✅': 'Desactivado ❌'}*
-📍 *Ámbito:* ${isAll? '*Todo el Bot* 🌐': isUser? '*Usuario específico* 👥': '*Este Chat* 💬'}
-
-🚀 *Muchas gracias por usar sᥲsᥙkᥱ ᑲ᥆𝗍 mძ 🌀*🎖️`)
+  await m.reply(statusTxt)
 }
 
 handler.help = ['enable', 'disable', 'on', 'off']
