@@ -1,8 +1,28 @@
+import { readFileSync } from 'fs'
+import { join } from 'path'
+
 let handler = async (m, { conn, isAdmin, isROwner }) => {
-    if (!(isAdmin || isROwner)) return dfail('admin', m, conn)
-    
-    global.db.data.chats[m.chat].isBanned = false
-    
+    // Verificación de permisos
+    if (!(isAdmin || isROwner)) {
+        if (global.dfail) return global.dfail('admin', m, conn)
+        throw '⚠️ Este comando solo puede ser utilizado por *Administradores*.'
+    }
+
+    let chat = global.db.data.chats[m.chat]
+    if (!chat.isBanned) return m.reply('✅ El bot ya está activo y operativo en este grupo.')
+
+    // Cambiar estado a NO baneado
+    chat.isBanned = false
+
+    // Intentar leer la imagen del catálogo local
+    let catalogoImg
+    try {
+        catalogoImg = readFileSync(join(process.cwd(), 'storage', 'img', 'catalogo.png'))
+    } catch (e) {
+        // Enlace de respaldo si no se encuentra el archivo físico
+        catalogoImg = 'https://files.catbox.moe/t7uytz.png'
+    }
+
     let txt = `┏━━━━━━━━━━━━━━━━━━┓\n`
     txt += `┃ ✨ *BOT ACTIVADO* ✨\n`
     txt += `┃━━━━━━━━━━━━━━━━━━┃\n`
@@ -11,7 +31,22 @@ let handler = async (m, { conn, isAdmin, isROwner }) => {
     txt += `┃ ✅ *Listo para usar*\n`
     txt += `┗━━━━━━━━━━━━━━━━━━┛`
 
-    await conn.reply(m.chat, txt, m, rcanal)
+    // Enviar mensaje con imagen y configuración de anuncio
+    await conn.sendMessage(m.chat, {
+        image: catalogoImg.length ? catalogoImg : { url: catalogoImg },
+        caption: txt,
+        contextInfo: {
+            externalAdReply: {
+                title: 'Sᴀsᴜᴋᴇ Bᴏᴛ ─ Sʏsᴛᴇᴍ',
+                body: '🔋 Sistema Restaurado',
+                sourceUrl: 'https://github.com/Barboza-Team',
+                thumbnail: catalogoImg.length ? catalogoImg : { url: catalogoImg },
+                mediaType: 1,
+                showAdAttribution: true
+            }
+        }
+    }, { quoted: m })
+
     await m.react('🔋')
 }
 
