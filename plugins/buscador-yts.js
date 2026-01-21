@@ -1,47 +1,50 @@
-
 import fetch from "node-fetch";
 
-let handler = async (m, { conn, text, usedPrefix, command}) => {
-  if (!text ||!text.trim()) {
+let handler = async (m, { conn, text, usedPrefix, command }) => {
+  if (!text || !text.trim()) {
     return m.reply(`📌 *Uso correcto:*\n${usedPrefix + command} <término de búsqueda>\n📍 *Ejemplo:* ${usedPrefix + command} Messi goles`);
-}
+  }
 
   const query = text.trim();
-  const url = `https://api.starlights.uk/api/search/youtube?q=${encodeURIComponent(query)}`;
-  const res = await fetch(url);
+  const url = `https://api.dorratz.com/v3/yt-search?query=${encodeURIComponent(query)}`;
+  
+  try {
+    const res = await fetch(url);
+    const json = await res.json();
 
-  if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
+    if (!json.status || !json.data || json.data.length === 0) {
+      return m.reply("❌ No se encontraron resultados.");
+    }
 
-  const json = await res.json();
+    const videos = json.data.slice(0, 5);
 
-  if (!json.status ||!json.result || json.result.length === 0) {
-    return m.reply("❌ No se encontraron resultados.");
-}
-
-  const videos = json.result.slice(0, 5);
-
-  for (const video of videos) {
-    const caption = `
+    for (const video of videos) {
+      const caption = `
 ╭─🎶 *Sasuke Bot - Audio YouTube* 🎶─╮
 │ 🎵 *Título:* ${video.title}
-│ 👤 *Autor:* ${video.channel}
+│ 👤 *Autor:* ${video.author.name}
 │ ⏱️ *Duración:* ${video.duration}
-│ 🔗 *Enlace:* ${video.link}
+│ 📅 *Publicado:* ${video.publishedAt}
+│ 👁️ *Vistas:* ${video.views}
+│ 🔗 *Enlace:* ${video.url}
 │
 │ 🎧 *Para descargar:*
-│.ytmp3+ ${video.link}  ➤ Audio
-│.ytmp4+ ${video.link}  ➤ Video
+│ .ytmp3 ${video.url}
+│ .ytmp4 ${video.url}
 ╰──────────────────────────────────╯
 
 > © Código Oficial de Barboza MD™
 `;
 
-    await conn.sendMessage(
-      m.chat,
-      { image: { url: video.imageUrl}, caption},
-      { quoted: m}
-);
-}
+      await conn.sendMessage(
+        m.chat,
+        { image: { url: video.thumbnail }, caption },
+        { quoted: m }
+      );
+    }
+  } catch (e) {
+    m.reply("❌ Ocurrió un error.");
+  }
 };
 
 handler.help = ["ytsearch", "yts <texto>"];
