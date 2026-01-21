@@ -15,7 +15,7 @@ const saludarSegunHora = () => {
   return '🌙 ¡Buenas noches!';
 };
 
-const img = 'https://qu.ax/Ny958';
+const img = 'https://files.catbox.moe/t7uytz.png';
 const sectionDivider = '╰━━━━━━━━━━━━━━━━━━━━━⭓';
 
 const menuFooter = `
