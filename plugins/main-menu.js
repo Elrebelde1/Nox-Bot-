@@ -1,6 +1,9 @@
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { xpRange } from '../lib/levelling.js';
 import axios from 'axios';
 
+// Configuración de utilidades
 const clockString = ms => {
   const h = Math.floor(ms / 3600000);
   const m = Math.floor(ms / 60000) % 60;
@@ -15,7 +18,8 @@ const saludarSegunHora = () => {
   return '🌙 ¡Buenas noches!';
 };
 
-const img = 'https://files.catbox.moe/t7uytz.png';
+// Variables de diseño
+const imgDefault = 'https://files.catbox.moe/t7uytz.png';
 const sectionDivider = '╰━━━━━━━━━━━━━━━━━━━━━⭓';
 
 const menuFooter = `
@@ -45,12 +49,13 @@ const handler = async (m, { conn, usedPrefix }) => {
     const text = ["SASUKE-BOT INTERFACE", "SYSTEM CORE", "DASHBOARD V2"].getRandom();
     const imgRandom = ["https://iili.io/FKVDVAN.jpg", "https://iili.io/FKVbUrJ.jpg"].getRandom();
 
+    // Intentar obtener el thumbnail para el mensaje citado (izumi)
     let thumbnailBuffer;
     try {
       const response = await axios.get(imgRandom, { responseType: 'arraybuffer' });
       thumbnailBuffer = Buffer.from(response.data);
     } catch (e) {
-      const fallback = await axios.get(img, { responseType: 'arraybuffer' });
+      const fallback = await axios.get(imgDefault, { responseType: 'arraybuffer' });
       thumbnailBuffer = Buffer.from(fallback.data);
     }
 
@@ -66,6 +71,7 @@ const handler = async (m, { conn, usedPrefix }) => {
       participant: "0@s.whatsapp.net"
     };
 
+    // Lógica de categorización de comandos
     let categorizedCommands = {};
     Object.values(global.plugins)
       .filter(p => p?.help && !p.disabled)
@@ -104,11 +110,19 @@ ${saludo} ${tagUsuario} 👋
 
     const fullMenu = `${header}\n\n${menuBody}\n\n${menuFooter}`;
 
-    const botSettings = global.db.data.settings?.[conn.user.jid] || {};
-    const bannerr = botSettings.banner || img;
+    // Lógica para decidir si usar imagen local o URL
+    let finalImage;
+    try {
+        // Intenta leer la imagen local del catálogo
+        finalImage = readFileSync(join(process.cwd(), 'storage', 'img', 'catalogo.png'));
+    } catch {
+        // Si no existe el archivo local, usa el banner de los ajustes o la URL default
+        const botSettings = global.db.data.settings?.[conn.user.jid] || {};
+        finalImage = { url: botSettings.banner || imgDefault };
+    }
 
     await conn.sendMessage(m.chat, {
-      image: { url: bannerr },
+      image: finalImage.length ? finalImage : finalImage, // Detecta si es Buffer o URL object
       caption: fullMenu,
       mentions: [m.sender]
     }, { quoted: izumi });
