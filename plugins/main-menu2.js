@@ -1,5 +1,5 @@
 const handler = async (m, { isPrems, conn }) => {
-  const img = 'https://files.catbox.moe/t7uytz.png' 
+  const img = 'https://qu.ax/T0e0O' 
   const texto = `*🎵 _S A S U K E - S O U N D B O A R D_ 🎧*
 
 *¡Explora la colección de sonidos!*
