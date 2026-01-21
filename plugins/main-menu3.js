@@ -12,7 +12,7 @@ const handler = async (m, { isPrems, conn }) => {
   }
 
   // Corregido: Se requiere importar readFileSync y join
-  const img = readFileSync(join(process.cwd(), 'storage', 'img', 'catalogo.png')) 
+  const img = readFileSync(join(process.cwd(), 'storage', 'img', 'miniurl.jpg')) 
   
   const texto = `
 ⚡ *𝖲𝖠𝖲𝖴𝖪𝖤 𝖫𝖮𝖦𝖮 𝖬𝖠𝖪𝖤𝖱* ⚡
