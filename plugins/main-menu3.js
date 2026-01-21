@@ -1,66 +1,61 @@
 const handler = async (m, { isPrems, conn }) => {
-  // Última vez que reclamó
   const last = global.db.data.users[m.sender].lastcofre || 0
   const now = new Date() * 1
-  const cooldown = 0 // aquí puedes poner milisegundos de espera si quieres (ej: 3600000 para 1h)
+  const cooldown = 0 
 
   if (now - last < cooldown) {
     const wait = msToTime((last + cooldown) - now)
-    throw `⏳ El Trineo de Santa está ocupado. Vuelve en *${wait}* para reclamar tus regalos.`
+    throw `⏳ El sistema está procesando datos. Vuelve en *${wait}* para generar más logos.`
   }
 
-  const img = 'https://qu.ax/Ny958' // Imagen navideña
+  const img = 'https://qu.ax/Ny958' 
   const texto = `
-🎁🔔 *𝕄𝔼ℕ𝕌́ 𝔽𝔼𝕊𝕋𝕀𝕍𝕆 𝔻𝔼 𝕃𝕆𝔾𝕆𝕊* ❄️🎄
-––––––––––––––––––––––––––––––––––––––
+⚡ *𝖲𝖠𝖲𝖴𝖪𝖤 𝖫𝖮𝖦𝖮 𝖬𝖠𝖪𝖤𝖱* ⚡
+––––––––––––––––––––––––––––––
 
-_¡Crea logos increíbles con un solo comando!_
+_Crea diseños personalizados al instante usando los comandos de la lista._
 
-*Comandos Destacados de Temporada:*
-🎄 .logochristmas (texto)
+💠 *𝖤𝖲𝖳𝖨𝖫𝖮𝖲 𝖯𝖱𝖨𝖭𝖢𝖨𝖯𝖠𝖫𝖤𝖲:*
+✨ .logochristmas (texto)
 👼 .logoangel (texto)
 🌌 .logocielo (texto)
-
-*Otros Estilos Disponibles:*
 💖 .logocorazon (texto)
 💑 .logopareja (texto)
+
+🎮 *𝖦𝖠𝖬𝖨𝖭𝖦 & 𝖠𝖭𝖨𝖬𝖤:*
 👾 .logoglitch (texto)
-😔 .logosad (texto)
 🎮 .logogaming (texto)
-🚶‍♂️ .logosolitario (texto)
 🐉 .logodragonball (texto)
-💡 .logoneon (texto)
-🐱 .logogatito (texto)
-👧🎮 .logochicagamer (texto)
-🎖️ .logoarmy (texto)
 🥷 .logonaruto (texto)
+🎧 .logoportadaplayer (texto)
+🔥 .logoportadaff (texto)
+👸🔫 .logopubgfem (texto)
+
+🎨 *𝖤𝖥𝖤𝖢𝖳𝖮𝖲 𝖵𝖨𝖲𝖴𝖠𝖫𝖤𝖲:*
+💡 .logoneon (texto)
 🚀 .logofuturista (texto)
-☁️ .logonube (texto)
 ✍️ .logograffiti3d (texto)
 💻 .logomatrix (texto)
-🔪 .logohorror (texto)
+🎬✨ .logovideointro (texto)
+☁️ .logonube (texto)
+
+🎭 *𝖮𝖳𝖱𝖮𝖲 𝖣𝖨𝖲𝖤𝖭̃𝖮𝖲:*
+🐱 .logogatito (texto)
+🎖️ .logoarmy (texto)
 🦅 .logoalas (texto) 
 🔫 .logopubg (texto)
 ⚔️ .logoguerrero (texto)
-👸🔫 .logopubgfem (texto)
-👑 .logolol (texto)
 👽 .logoamongus (texto)
-🎧 .logoportadaplayer (texto)
-🔥 .logoportadaff (texto)
-🐯🎬 .logovideotiger (texto)
-🎬✨ .logovideointro (texto)
-🎮🎬 .logovideogaming (texto)
 😼 .sadcat (texto)
 🐦 .tweet (comentario)
 
-––––––––––––––––––––––––––––––––––––––
-_¡Felices Fiestas! 🌟 Crea tu logo navideño con \`.logochristmas\`_
-`
+––––––––––––––––––––––––––––––
+_Uso: Prefijo + comando + espacio + texto_
+_Ejemplo: .logoneon SasukeBot_
+`.trim()
 
-  // Enviar imagen + caption
   await conn.sendMessage(m.chat, { image: { url: img }, caption: texto }, { quoted: m })
 
-  // Actualizar última vez
   global.db.data.users[m.sender].lastcofre = now
 }
 
@@ -79,5 +74,5 @@ function msToTime(duration) {
   minutes = (minutes < 10) ? "0" + minutes : minutes
   seconds = (seconds < 10) ? "0" + seconds : seconds
 
-  return `${hours} horas ${minutes} minutos ${seconds} segundos`
+  return `${hours}h ${minutes}m ${seconds}s`
 }
