@@ -7,8 +7,7 @@ const handler = async (m, { isPrems, conn }) => {
     const wait = msToTime((last + cooldown) - now)
     throw `⏳ El sistema está procesando datos. Vuelve en *${wait}* para generar más logos.`
   }
-
-  const img = 'https://files.catbox.moe/t7uytz.png' 
+   const img = readFileSync(join(process.cwd(), 'storage', 'img', 'catalogo.png')) 
   const texto = `
 ⚡ *𝖲𝖠𝖲𝖴𝖪𝖤 𝖫𝖮𝖦𝖮 𝖬𝖠𝖪𝖤𝖱* ⚡
 ––––––––––––––––––––––––––––––
