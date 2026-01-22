@@ -34,20 +34,20 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const res = await fetch(apiUrl)
         const json = await res.json()
 
-        // Validación basada en la respuesta JSON que proporcionaste
         if (!json.status || !json.result || !json.result.url) {
             throw '🛑 La API no devolvió un enlace de descarga válido.'
         }
 
         const downloadLink = json.result.url
-        const fileName = json.result.filename || `${title}.mp4`
+        // Limpiar el nombre del archivo de caracteres extraños para evitar errores en el sistema de archivos
+        const fileName = `${title.replace(/[\\/:*?"<>|]/g, '')}.mp4`
 
-        // Enviar el video
+        // ENVIAR COMO ARCHIVO (DOCUMENTO)
         await conn.sendMessage(m.chat, { 
-            video: { url: downloadLink }, 
+            document: { url: downloadLink }, 
             fileName: fileName, 
-            caption: `✅ *Descargado:* ${title}`,
-            mimetype: 'video/mp4'
+            mimetype: 'video/mp4',
+            caption: `✅ *Vídeo enviado como archivo:* ${title}`
         }, { quoted: m })
 
         await m.react('✅')
@@ -59,7 +59,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 }
 
-// Comandos activadores, incluyendo play3
+// Comandos activadores
 handler.command = /^(play|play2|play3|ytv|ytmp4|mp4)$/i
 handler.group = false
 handler.register = false
