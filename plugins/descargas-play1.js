@@ -73,7 +73,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 }
 
-handler.command = /^(play|yta|ytmp3|play2|ytv|ytmp4|playaudio|mp4)$/i
+handler.command = /^(play|yta|ytmp3|play5|ytv|ytmp4|playaudio|mp4)$/i
 handler.group = false
 
 export default handler
