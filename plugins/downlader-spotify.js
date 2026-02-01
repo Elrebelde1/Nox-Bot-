@@ -37,7 +37,7 @@ function isSpotifyURL(text) {
 
 async function searchSpotify(query) {
   try {
-    const response = await fetch(`https://api.delirius.store/search/spotify?q=${encodeURIComponent(query)}&limit=1`);
+    const response = await fetch(`https://api.delirius.store/search/spotify?q=${encodeURIComponent(query)}&limit=20`);
     const res = await response.json();
     if (!res.status || !res.data.length) return null;
     return res.data[0]; // Retorna el primer resultado de la búsqueda
