@@ -129,7 +129,7 @@ const handler = async (m, { conn, args, usedPrefix, command }) => {
     // 2. Obtener link de descarga y metadatos
     await m.react('📥');
     trackData = await downloadSpotify(spotifyUrl);
-    
+
     if (!trackData || !trackData.download) {
       throw "No se pudo obtener el enlace de descarga directo.";
     }
