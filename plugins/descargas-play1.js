@@ -61,6 +61,3 @@ handler.command = /^(play|yta|ytmp3|play5|ytv|ytmp4|playaudio|mp4)$/i
 handler.group = false
 
 export default handler
-
-
-600 robux Shi go go amorshito
