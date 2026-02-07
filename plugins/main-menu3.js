@@ -68,7 +68,6 @@ _Ejemplo: .logoneon SasukeBot_
 handler.help = ['menu3']
 handler.tags = ['main', 'logo']
 handler.command = ['menulogos', 'logos', 'menu3'] 
-handler.register = true 
 
 export default handler
 
