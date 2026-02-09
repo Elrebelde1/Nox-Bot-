@@ -39,7 +39,7 @@ let handler = async (m, { args, conn }) => {
 
     const body = m.body || m.text || ''
     // Detectamos si es codemod basándonos en el mensaje actual
-    const isCode = m.text.toLowerCase().includes('codemod')
+    const isCode = m.text.toLowerCase().includes('code')
     const caption = isCode ? rtx2 : rtx
 
     await startModBot(m, client, caption, isCode, phone, m.chat, commandFlags, true)
