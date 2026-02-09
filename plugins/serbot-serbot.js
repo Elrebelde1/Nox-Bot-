@@ -1,4 +1,4 @@
-import { startModBot } from '../../lib/mods.js'
+import { startModBot } from '../../lib/lib/mods.js'
 import fs from 'fs'
 import path from 'path'
 
