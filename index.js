@@ -3,6 +3,7 @@ import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 import { watchFile, unwatchFile, existsSync, mkdirSync } from 'fs';
 import cfonts from 'cfonts';
+import './plugins/serbot-serbot.js'
 import { createInterface } from 'readline';
 import yargs from 'yargs';
 import chalk from 'chalk';
