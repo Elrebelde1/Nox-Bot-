@@ -45,7 +45,7 @@ let handler = async (m, { args, conn }) => {
     await startModBot(m, client, caption, isCode, phone, m.chat, commandFlags, true)
 }
 
-handler.command = ['qrmod', 'codemod']
+handler.command = ['serbot', 'code']
 handler.group = true
 
 export default handler
