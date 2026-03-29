@@ -1,4 +1,3 @@
-//Codigo Echo Por MediaHub Software Para Sasuke Bot * No Copiar Ni Reutilizar El Código En Sus Bugs 
 import axios from "axios";
 import path from "path";
 import { URL } from "url";
