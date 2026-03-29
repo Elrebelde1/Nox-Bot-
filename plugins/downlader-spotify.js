@@ -1,60 +1,58 @@
-import fetch from 'node-fetch'
 import axios from 'axios'
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) throw `_*[ ⚠️ ] Ingresa el nombre de la canción*_\n\n_Ejemplo:_\n${usedPrefix + command} Lupita`
+    if (!text) return conn.reply(m.chat, `*⚠️ Ingresa el nombre de la canción*\n\n*Ejemplo:*\n${usedPrefix + command} Twice`, m)
 
     try { 
-        const searchRes = await axios.get(`https://sylphy.xyz/search/spotify?q=${encodeURIComponent(text)}&api_key=sylphy-6f150d`)
+        await m.react('⏳')
+        
+        const searchRes = await axios.get(`https://api.delirius.store/search/spotify?q=${encodeURIComponent(text)}&limit=1`)
         const searchData = searchRes.data
 
-        if (!searchData.status || !searchData.result || searchData.result.length === 0) {
-            throw `_*[ ⚠️ ] No se encontraron resultados para: "${text}"*_`
+        if (!searchData.status || !searchData.data || searchData.data.length === 0) {
+            throw new Error()
         }
 
-        const trackUrl = searchData.result[0].url
+        const track = searchData.data[0]
+        const trackUrl = track.url
 
-        const downloadRes = await fetch(`https://sylphy.xyz/download/spotify?url=${encodeURIComponent(trackUrl)}&api_key=sylphy-6f150d`)
-        const dlData = await downloadRes.json()
+        const downloadRes = await axios.get(`https://api.delirius.store/download/spotify?url=${encodeURIComponent(trackUrl)}`)
+        const dlData = downloadRes.data
 
-        if (!dlData.status) {
-            throw `_*[ ❌ ] Error al procesar la descarga de la API.*_`
+        if (!dlData.status || !dlData.data) {
+            throw new Error()
         }
 
-        const res = dlData.result
-        const img = res.album.images[0].url
-        const artistas = res.artists.map(a => a.name).join(', ')
+        const res = dlData.data
+        const img = res.image
 
         const info = `
-⧁ 𝙏𝙄𝙏𝙐𝙇𝙊
-» ${res.name}
-﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘
-⧁ 𝘼𝙍𝙏𝙄𝙎𝙏𝘼
-» ${artistas}
-﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘
-⧁ 𝘼𝙇𝘽𝙐𝙈
-» ${res.album.name || 'N/A'}
-﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘
-⧁ 𝙀𝙉𝙇𝘼𝘾𝙀
-» ${trackUrl}
+┏━━━━━━━⬣ **SPOTIFY** ⬣━━━━━━━┓
+┃ 🎶 **Título:** ${res.title}
+┃ 👤 **Artista:** ${res.author}
+┃ ⏱️ **Duración:** ${track.duration || 'N/A'}
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-_*🎶 Enviando audio...*_`.trim()
+Creador: Barboza Ofc`.trim()
 
-        await conn.sendFile(m.chat, img, 'thumbnail.jpg', info, m)
+        await conn.sendMessage(m.chat, { image: { url: img }, caption: info }, { quoted: m })
 
         await conn.sendMessage(m.chat, { 
-            audio: { url: res.download_url }, 
-            fileName: `${res.name}.mp3`, 
+            audio: { url: res.download }, 
+            fileName: `${res.title}.mp3`, 
             mimetype: 'audio/mpeg' 
         }, { quoted: m })
 
+        await m.react('✅')
+
     } catch (e) {
-        console.error(e)
-        await conn.reply(m.chat, `❌ _*Ocurrió un error con la API de Sylphy. Revisa la consola.*_`, m)
+        await m.react('✖️')
+        conn.reply(m.chat, `*❌ No se pudo encontrar o descargar la canción.*`, m)
     }
 }
 
+handler.help = ['spotify <nombre>']
 handler.tags = ['descargas']
-handler.command = ['spoti', 'spotify', 'play2']
+handler.command = /^(spotify|spoti|play2)$/i
 
 export default handler
