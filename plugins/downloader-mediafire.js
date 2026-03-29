@@ -6,54 +6,41 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
 
   if (!text.match(/mediafire\.com\//i)) {
-    return conn.reply(m.chat, `*❌ El enlace no parece ser de MediaFire.*`, m);
+    return conn.reply(m.chat, `*❌ El enlace no es válido de MediaFire.*`, m);
   }
 
   await m.react('⏳');
   
   try {
-    if (text.includes('/folder/')) {
-      const folderApi = `https://api.delirius.store/download/mediafire?url=${encodeURIComponent(text)}`;
-      const { data: folderData } = await axios.get(folderApi);
+    const apiUrl = `https://api.delirius.store/download/mediafire?url=${encodeURIComponent(text)}`;
+    const { data: res } = await axios.get(apiUrl);
 
-      if (!folderData.status || !folderData.data) throw new Error();
+    if (!res.status || !res.data) {
+      throw new Error("No se obtuvo respuesta de la API.");
+    }
 
-      await m.reply(`📂 *Carpeta detectada:* Procesando ${folderData.data.length} archivos...`);
+    // La API de Delirius devuelve un array en 'data' tanto para archivos como para carpetas
+    const files = Array.isArray(res.data) ? res.data : [res.data];
 
-      for (let file of folderData.data) {
-        // Obtenemos el link directo usando la API de Sylphy para cada link de la carpeta
-        const { data: fileRes } = await axios.get(`https://sylphy.xyz/download/mediafire?url=${encodeURIComponent(file.link)}&api_key=sylphy-6f150d`);
-        
-        if (fileRes.status) {
-          await conn.sendMessage(m.chat, {
-            document: { url: fileRes.result.download },
-            fileName: file.filename,
-            mimetype: file.mime || 'application/octet-stream',
-            caption: `📁 *Nombre:* ${file.filename}\n⚖️ *Tamaño:* ${file.size}\n\nCreador: Barboza Ofc`
-          }, { quoted: m });
-        }
-      }
-    } else {
-      const fileApi = `https://sylphy.xyz/download/mediafire?url=${encodeURIComponent(text)}&api_key=sylphy-6f150d`;
-      const { data } = await axios.get(fileApi);
-
-      if (!data.status || !data.result) throw new Error();
-
-      const { title, size, ext, download, mime } = data.result;
+    for (let file of files) {
+      // Usamos 'link' que es la URL de descarga directa que devuelve Delirius
+      const downloadUrl = file.link;
+      
+      if (!downloadUrl) continue;
 
       let cap = `
 ┏━━━━━━━⬣ **MEDIAFIRE** ⬣━━━━━━━┓
-┃ 📁 *Nombre:* ${title || 'Archivo'}
-┃ ⚖️ *Tamaño:* ${size || 'Desconocido'}
-┃ ⚙️ *Extensión:* ${ext || 'bin'}
+┃ 📁 *Nombre:* ${file.filename}
+┃ ⚖️ *Tamaño:* ${file.size}
+┃ ⚙️ *Tipo:* ${file.mime}
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 Creador: Barboza Ofc`.trim();
 
       await conn.sendMessage(m.chat, {
-        document: { url: download },
-        fileName: title,
-        mimetype: mime || `application/${ext || 'octet-stream'}`,
+        document: { url: downloadUrl },
+        fileName: file.filename,
+        mimetype: file.mime || 'application/octet-stream',
         caption: cap
       }, { quoted: m });
     }
@@ -62,7 +49,7 @@ Creador: Barboza Ofc`.trim();
 
   } catch (e) {
     await m.react('✖️');
-    conn.reply(m.chat, `*❌ Error al procesar el archivo o carpeta.*`, m);
+    conn.reply(m.chat, `*❌ Error al procesar con Delirius API.*`, m);
   }
 };
 
