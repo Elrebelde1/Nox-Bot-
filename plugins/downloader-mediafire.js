@@ -6,7 +6,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   }
 
   if (!text.match(/mediafire\.com\//i)) {
-    return conn.reply(m.chat, `*❌ El enlace no es válido de MediaFire.*`, m);
+    return conn.reply(m.chat, `*❌ El enlace no es de MediaFire.*`, m);
   }
 
   await m.react('⏳');
@@ -16,23 +16,28 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     const { data: res } = await axios.get(apiUrl);
 
     if (!res.status || !res.data) {
-      throw new Error("No se obtuvo respuesta de la API.");
+      throw new Error();
     }
 
-    // La API de Delirius devuelve un array en 'data' tanto para archivos como para carpetas
     const files = Array.isArray(res.data) ? res.data : [res.data];
 
     for (let file of files) {
-      // Usamos 'link' que es la URL de descarga directa que devuelve Delirius
       const downloadUrl = file.link;
-      
       if (!downloadUrl) continue;
+
+      let mimeType = file.mime || 'application/octet-stream';
+      
+      if (file.filename.endsWith('.zip')) mimeType = 'application/zip';
+      if (file.filename.endsWith('.jpg') || file.filename.endsWith('.jpeg')) mimeType = 'image/jpeg';
+      if (file.filename.endsWith('.png')) mimeType = 'image/png';
+      if (file.filename.endsWith('.mp4')) mimeType = 'video/mp4';
+      if (file.filename.endsWith('.pdf')) mimeType = 'application/pdf';
 
       let cap = `
 ┏━━━━━━━⬣ **MEDIAFIRE** ⬣━━━━━━━┓
-┃ 📁 *Nombre:* ${file.filename}
-┃ ⚖️ *Tamaño:* ${file.size}
-┃ ⚙️ *Tipo:* ${file.mime}
+┃ 📁 **Nombre:** ${file.filename}
+┃ ⚖️ **Tamaño:** ${file.size}
+┃ ⚙️ **Tipo:** ${mimeType}
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 Creador: Barboza Ofc`.trim();
@@ -40,7 +45,7 @@ Creador: Barboza Ofc`.trim();
       await conn.sendMessage(m.chat, {
         document: { url: downloadUrl },
         fileName: file.filename,
-        mimetype: file.mime || 'application/octet-stream',
+        mimetype: mimeType,
         caption: cap
       }, { quoted: m });
     }
@@ -49,7 +54,7 @@ Creador: Barboza Ofc`.trim();
 
   } catch (e) {
     await m.react('✖️');
-    conn.reply(m.chat, `*❌ Error al procesar con Delirius API.*`, m);
+    conn.reply(m.chat, `*❌ Error al procesar el archivo.*`, m);
   }
 };
 
