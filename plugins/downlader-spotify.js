@@ -1,58 +1,67 @@
 import axios from 'axios'
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) return conn.reply(m.chat, `*⚠️ Ingresa el nombre de la canción*\n\n*Ejemplo:*\n${usedPrefix + command} Twice`, m)
+    if (!text) return conn.reply(m.chat, `*｢ ⚠ ｣ ESCRIBE EL NOMBRE DE LA CANCIÓN*\n\n*Ejemplo:*\n${usedPrefix + command} Twice - Moonlight Sunrise`, m)
 
     try { 
-        await m.react('⏳')
+        await m.react('🔍')
+
+        // 1. Fase de Búsqueda
+        const { data: search } = await axios.get(`https://api.delirius.store/search/spotify?q=${encodeURIComponent(text)}&limit=1`)
         
-        const searchRes = await axios.get(`https://api.delirius.store/search/spotify?q=${encodeURIComponent(text)}&limit=1`)
-        const searchData = searchRes.data
-
-        if (!searchData.status || !searchData.data || searchData.data.length === 0) {
-            throw new Error()
+        if (!search.status || !search.data?.[0]) {
+            await m.react('✖️')
+            return conn.reply(m.chat, `*｢ ✘ ｣ NO SE ENCONTRÓ EL TEMA:* ${text}`, m)
         }
 
-        const track = searchData.data[0]
-        const trackUrl = track.url
+        const target = search.data[0]
+        await m.react('⏳')
 
-        const downloadRes = await axios.get(`https://api.delirius.store/download/spotify?url=${encodeURIComponent(trackUrl)}`)
-        const dlData = downloadRes.data
+        // 2. Fase de Descarga Directa
+        const { data: dl } = await axios.get(`https://api.delirius.store/download/spotify?url=${target.url}`)
 
-        if (!dlData.status || !dlData.data) {
-            throw new Error()
+        if (!dl.status || !dl.data) {
+            await m.react('✖️')
+            return conn.reply(m.chat, `*｢ ✘ ｣ FALLÓ EL SERVIDOR DE DESCARGA.*`, m)
         }
 
-        const res = dlData.data
-        const img = res.image
+        const { title, author, image, download } = dl.data
 
-        const info = `
-┏━━━━━━━⬣ **SPOTIFY** ⬣━━━━━━━┓
-┃ 🎶 **Título:** ${res.title}
-┃ 👤 **Artista:** ${res.author}
-┃ ⏱️ **Duración:** ${track.duration || 'N/A'}
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+        // 3. Respuesta Visual
+        const report = `
+╭─━━━─「 **SPOTIFY DL** 」─━━━─
+┃ 🎧 **TEMA:** ${title}
+┃ 👤 **AUTOR:** ${author}
+┃ ⏱️ **LAPSO:** ${target.duration || '00:00'}
+┃ 📅 **FECHA:** ${target.publish || 'N/A'}
+╰─━━━━━━━─━━━━━━━─╯
 
 Creador: Barboza Ofc`.trim()
 
-        await conn.sendMessage(m.chat, { image: { url: img }, caption: info }, { quoted: m })
-
         await conn.sendMessage(m.chat, { 
-            audio: { url: res.download }, 
-            fileName: `${res.title}.mp3`, 
-            mimetype: 'audio/mpeg' 
+            image: { url: image }, 
+            caption: report 
+        }, { quoted: m })
+
+        // 4. Envío del Audio
+        await conn.sendMessage(m.chat, { 
+            audio: { url: download }, 
+            fileName: `${title}.mp3`, 
+            mimetype: 'audio/mpeg',
+            ptt: false // Cambia a true si quieres que se envíe como nota de voz
         }, { quoted: m })
 
         await m.react('✅')
 
     } catch (e) {
         await m.react('✖️')
-        conn.reply(m.chat, `*❌ No se pudo encontrar o descargar la canción.*`, m)
+        console.error(e)
+        conn.reply(m.chat, `*｢ ✘ ｣ ERROR CRÍTICO:* Intenta de nuevo más tarde.`, m)
     }
 }
 
-handler.help = ['spotify <nombre>']
-handler.tags = ['descargas']
+handler.help = ['spotify']
+handler.tags = ['dl']
 handler.command = /^(spotify|spoti|play2)$/i
 
 export default handler
