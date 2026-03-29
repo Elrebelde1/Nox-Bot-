@@ -12,17 +12,36 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   await m.react('⏳');
   
   try {
-    const apiUrl = `https://sylphy.xyz/download/mediafire?url=${encodeURIComponent(text)}&api_key=sylphy-6f150d`;
-    
-    const { data } = await axios.get(apiUrl);
+    if (text.includes('/folder/')) {
+      const folderApi = `https://api.delirius.store/download/mediafire?url=${encodeURIComponent(text)}`;
+      const { data: folderData } = await axios.get(folderApi);
 
-    if (!data.status || !data.result) {
-      throw new Error("No se pudo obtener una respuesta válida.");
-    }
+      if (!folderData.status || !folderData.data) throw new Error();
 
-    const { title, size, ext, download } = data.result;
+      await m.reply(`📂 *Carpeta detectada:* Procesando ${folderData.data.length} archivos...`);
 
-    let cap = `
+      for (let file of folderData.data) {
+        // Obtenemos el link directo usando la API de Sylphy para cada link de la carpeta
+        const { data: fileRes } = await axios.get(`https://sylphy.xyz/download/mediafire?url=${encodeURIComponent(file.link)}&api_key=sylphy-6f150d`);
+        
+        if (fileRes.status) {
+          await conn.sendMessage(m.chat, {
+            document: { url: fileRes.result.download },
+            fileName: file.filename,
+            mimetype: file.mime || 'application/octet-stream',
+            caption: `📁 *Nombre:* ${file.filename}\n⚖️ *Tamaño:* ${file.size}\n\nCreador: Barboza Ofc`
+          }, { quoted: m });
+        }
+      }
+    } else {
+      const fileApi = `https://sylphy.xyz/download/mediafire?url=${encodeURIComponent(text)}&api_key=sylphy-6f150d`;
+      const { data } = await axios.get(fileApi);
+
+      if (!data.status || !data.result) throw new Error();
+
+      const { title, size, ext, download, mime } = data.result;
+
+      let cap = `
 ┏━━━━━━━⬣ **MEDIAFIRE** ⬣━━━━━━━┓
 ┃ 📁 *Nombre:* ${title || 'Archivo'}
 ┃ ⚖️ *Tamaño:* ${size || 'Desconocido'}
@@ -31,22 +50,19 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
 Creador: Barboza Ofc`.trim();
 
-    await conn.sendMessage(
-      m.chat,
-      {
+      await conn.sendMessage(m.chat, {
         document: { url: download },
         fileName: title,
-        mimetype: `application/${ext || 'octet-stream'}`,
+        mimetype: mime || `application/${ext || 'octet-stream'}`,
         caption: cap
-      },
-      { quoted: m }
-    );
+      }, { quoted: m });
+    }
 
     await m.react('✅');
 
   } catch (e) {
     await m.react('✖️');
-    conn.reply(m.chat, `*❌ Error al procesar el archivo.*`, m);
+    conn.reply(m.chat, `*❌ Error al procesar el archivo o carpeta.*`, m);
   }
 };
 
