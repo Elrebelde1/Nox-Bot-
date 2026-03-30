@@ -1,57 +1,60 @@
-import fetch from 'node-fetch';
+import fetch from 'node-fetch'
+import axios from 'axios'
 
-let handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) return m.reply(`*¿Qué deseas buscar o descargar de Spotify?*\n\n> *Ejemplo de búsqueda:* ${usedPrefix + command} Lupe Fiasco\n> *Ejemplo de link:* ${usedPrefix + command} https://open.spotify.com/track/...`);
+const handler = async (m, { conn, text, usedPrefix, command }) => {
+    if (!text) throw `_*[ ⚠️ ] Ingresa el nombre de la canción*_\n\n_Ejemplo:_\n${usedPrefix + command} Lupita`
 
-    try {
-        let apiUrl;
-        let isLink = text.match(/^(https?:\/\/)?(open\.spotify\.com|googleusercontent\.com\/spotify\.com)\/(track|album|playlist)/gi);
+    try { 
+        const searchRes = await axios.get(`https://sylphy.xyz/search/spotify?q=${encodeURIComponent(text)}&api_key=sylphy-6f150d`)
+        const searchData = searchRes.data
 
-        if (isLink) {
-            // Si es un link, usamos directamente el endpoint de descarga
-            apiUrl = `https://sylphy.xyz/download/spotify?url=${encodeURIComponent(text)}&api_key=sylphy-6f150d`;
-        } else {
-            // Si es texto, buscamos primero el link de la canción
-            let searchRes = await fetch(`https://sylphy.xyz/search/spotify?q=${encodeURIComponent(text)}&api_key=sylphy-6f150d`);
-            let searchData = await searchRes.json();
-
-            if (!searchData.status || searchData.result.length === 0) return m.reply('❌ No se encontraron resultados para tu búsqueda.');
-            
-            // Tomamos el primer resultado de la búsqueda
-            let trackUrl = searchData.result[0].url;
-            apiUrl = `https://sylphy.xyz/download/spotify?url=${encodeURIComponent(trackUrl)}&api_key=sylphy-6f150d`;
+        if (!searchData.status || !searchData.result || searchData.result.length === 0) {
+            throw `_*[ ⚠️ ] No se encontraron resultados para: "${text}"*_`
         }
 
-        // Proceso de descarga final
-        let res = await fetch(apiUrl);
-        let data = await res.json();
+        const trackUrl = searchData.result[0].url
 
-        if (!data.status) return m.reply('❌ Hubo un error al procesar la descarga.');
+        const downloadRes = await fetch(`https://sylphy.xyz/download/spotify?url=${encodeURIComponent(trackUrl)}&api_key=sylphy-6f150d`)
+        const dlData = await downloadRes.json()
 
-        let { name, artists, album, download_url } = data.result;
-        let cap = `*S P O T I F Y  -  D O W N L O A D*\n\n` +
-                  `🎵 *Título:* ${name}\n` +
-                  `👤 *Artista:* ${artists.map(a => a.name).join(', ')}\n` +
-                  `💿 *Álbum:* ${album.name || 'N/A'}\n` +
-                  `✨ *Enviando audio... por favor espere.*`;
+        if (!dlData.status) {
+            throw `_*[ ❌ ] Error al procesar la descarga de la API.*_`
+        }
 
-        // Enviar la portada
-        await conn.sendFile(m.chat, album.images[0].url, 'thumb.jpg', cap, m);
+        const res = dlData.result
+        const img = res.album.images[0].url
+        const artistas = res.artists.map(a => a.name).join(', ')
 
-        // Enviar el archivo de audio
+        const info = `
+⧁ 𝙏𝙄𝙏𝙐𝙇𝙊
+» ${res.name}
+﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘
+⧁ 𝘼𝙍𝙏𝙄𝙎𝙏𝘼
+» ${artistas}
+﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘
+⧁ 𝘼𝙇𝘽𝙐𝙈
+» ${res.album.name || 'N/A'}
+﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘
+⧁ 𝙀𝙉𝙇𝘼𝘾𝙀
+» ${trackUrl}
+
+_*🎶 Enviando audio...*_`.trim()
+
+        await conn.sendFile(m.chat, img, 'thumbnail.jpg', info, m)
+
         await conn.sendMessage(m.chat, { 
-            audio: { url: download_url }, 
-            mimetype: 'audio/mpeg',
-            fileName: `${name}.mp3`
-        }, { quoted: m });
+            audio: { url: res.download_url }, 
+            fileName: `${res.name}.mp3`, 
+            mimetype: 'audio/mpeg' 
+        }, { quoted: m })
 
     } catch (e) {
-        console.error(e);
-        m.reply('🚀 *Ocurrió un error inesperado.* Inténtalo de nuevo más tarde.');
+        console.error(e)
+        await conn.reply(m.chat, `❌ _*Ocurrió un error con la API de Sylphy. Revisa la consola.*_`, m)
     }
-};
+}
 
-handler.command = ['spotify', 'spdl', 'play'];
-handler.tags = ['dl'];
+handler.tags = ['descargas']
+handler.command = ['spoti', 'spotify', 'play2']
 
-export default handler;
+export default handler
