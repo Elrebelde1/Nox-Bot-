@@ -17,13 +17,12 @@ export async function before(m, { conn, groupMetadata }) {
     const groupName = groupMetadata.subject;
     const groupDesc = groupMetadata.desc || 'Sin reglas, pero no molestes.';
     const membersCount = groupMetadata.participants.length;
-    const owner = `@${groupMetadata.owner?.split('@')[0] || 'Nadie'}`;
 
     let txt = '';
 
     if (m.messageStubType === WAMessageStubType.GROUP_PARTICIPANT_ADD) {
       txt = chat.customWelcome ? chat.customWelcome.replace(/@user/gi, userTag).replace(/@group/gi, groupName).replace(/@desc/gi, groupDesc) : 
-      `😏 *Vaya, alguien nuevo...*\n\nBienvenido ${userTag} a *${groupName}*.\n\n🔥 *DATOS DEL GRUPO:*\n│ 👤 *Miembro:* #${membersCount}\n│ 👑 *Admin Supremo:* ${owner}\n│ 📝 *Info:* ${groupDesc}\n\n> Intenta no hacer que te echen rápido.`;
+      `😏 *Vaya, alguien nuevo...*\n\nBienvenido ${userTag} a *${groupName}*.\n\n📂 *REGISTRO DE ACCESO:*\n│ 👤 *Miembro:* #${membersCount}\n│ 🛠️ *Creador: Barboza*\n│ 📝 *Info:* ${groupDesc}\n\n> Intenta no hacer que te echen rápido.`;
     } 
     
     else if (m.messageStubType === WAMessageStubType.GROUP_PARTICIPANT_LEAVE) {
@@ -33,11 +32,11 @@ export async function before(m, { conn, groupMetadata }) {
     
     else if (m.messageStubType === WAMessageStubType.GROUP_PARTICIPANT_REMOVE) {
       txt = chat.customKick ? chat.customKick.replace(/@user/gi, userTag).replace(/@group/gi, groupName) : 
-      `⚡ *ELIMINADO POR INÚTIL*\n\n${userTag} fue borrado de la existencia en *${groupName}*.\n\n🚮 *Causa:* Estorbaba.\n👥 *Población actual:* ${membersCount}`;
+      `⚡ *SISTEMA: ACCESO DENEGADO*\n\n${userTag} fue borrado de la existencia en *${groupName}*.\n\n🚮 *Causa:* Estorbaba.\n👥 *Población actual:* ${membersCount}`;
     }
 
     if (txt) {
-      await conn.sendMessage(m.chat, { image: img, caption: txt, mentions: [userJid, groupMetadata.owner] });
+      await conn.sendMessage(m.chat, { image: img, caption: txt, mentions: [userJid] });
     }
 
   } catch (e) {
