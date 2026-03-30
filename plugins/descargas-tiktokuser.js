@@ -51,6 +51,6 @@ let handler = async (m, { conn, usedPrefix, command, text }) => {
 
 handler.tags = ['info'];
 handler.help = ['tkstalk *<usuario>*'];
-handler.command = ['tkstalk', 'stalk', 'tiktokstalk'];
+handler.command = ['tiktokuser', 'stalk', 'tiktokstalk'];
 
 export default handler;
