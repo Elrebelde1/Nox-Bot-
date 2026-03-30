@@ -2,59 +2,78 @@ import fetch from 'node-fetch'
 import axios from 'axios'
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) throw `_*[ ⚠️ ] Ingresa el nombre de la canción*_\n\n_Ejemplo:_\n${usedPrefix + command} Lupita`
+    // Validar que el usuario ingrese texto
+    if (!text) throw `_*[ ⚠️ ] Ingresa el nombre de la canción*_\n\n_Ejemplo:_\n${usedPrefix + command} Leap of Faith`
 
     try { 
-        const searchRes = await axios.get(`https://sylphy.xyz/search/spotify?q=${encodeURIComponent(text)}&api_key=sylphy-6f150d`)
-        const searchData = searchRes.data
+        const apiKey = 'sylphy-6f150d'
+        let trackUrl = text
 
-        if (!searchData.status || !searchData.result || searchData.result.length === 0) {
-            throw `_*[ ⚠️ ] No se encontraron resultados para: "${text}"*_`
+        // 1. Si NO es un link, buscamos la canción primero
+        if (!text.includes('googleusercontent.com') && !text.includes('spotify.com')) {
+            const searchRes = await axios.get(`https://sylphy.xyz/search/spotify?q=${encodeURIComponent(text)}&api_key=${apiKey}`)
+            const searchData = searchRes.data
+
+            if (!searchData.status || !searchData.result || searchData.result.length === 0) {
+                throw `_*[ ⚠️ ] No encontré resultados para: "${text}"*_`
+            }
+            // Según tu JSON de búsqueda, la URL está en result[0].url
+            trackUrl = searchData.result[0].url
         }
 
-        const trackUrl = searchData.result[0].url
-
-        const downloadRes = await fetch(`https://sylphy.xyz/download/spotify?url=${encodeURIComponent(trackUrl)}&api_key=sylphy-6f150d`)
+        // 2. Obtener los datos de descarga
+        const downloadRes = await fetch(`https://sylphy.xyz/download/spotify?url=${encodeURIComponent(trackUrl)}&api_key=${apiKey}`)
         const dlData = await downloadRes.json()
 
-        if (!dlData.status) {
-            throw `_*[ ❌ ] Error al procesar la descarga de la API.*_`
+        // Validar respuesta de la API de descarga
+        if (!dlData.status || !dlData.result) {
+            throw `_*[ ❌ ] La API no devolvió datos válidos para este enlace.*_`
         }
 
+        // 3. Extraer datos según tu JSON de "Download"
         const res = dlData.result
-        const img = res.album.images[0].url
-        const artistas = res.artists.map(a => a.name).join(', ')
+        const titulo = res.name
+        const linkDescarga = res.download_url
+        const portada = res.album.images[0]?.url || 'https://i.imgur.com/893IDY9.png'
+        
+        // Mapear artistas (es un array de objetos: [{name: 'Lueen'}])
+        const artistas = res.artists.map(v => v.name).join(', ')
 
         const info = `
-⧁ 𝙏𝙄𝙏𝙐𝙇𝙊
-» ${res.name}
-﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘
-⧁ 𝘼𝙍𝙏𝙄𝙎𝙏𝘼
-» ${artistas}
-﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘
-⧁ 𝘼𝙇𝘽𝙐𝙈
-» ${res.album.name || 'N/A'}
-﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘﹘
-⧁ 𝙀𝙉𝙇𝘼𝘾𝙀
-» ${trackUrl}
+┏━━━━━━ ⚡ 𝙎𝙋𝙊𝙏𝙄𝙁𝙔 ⚡ ━━━━━━┓
+┃ 
+┃ ⧁ 𝙏𝙄𝙏𝙐𝙇𝙊
+┃ » ${titulo}
+┃ 
+┃ ⧁ 𝘼𝙍𝙏𝙄𝙎𝙏𝘼
+┃ » ${artistas}
+┃ 
+┃ ⧁ 𝙄𝘿
+┃ » ${res.id}
+┃ 
+┗━━━━━━━━━━━━━━━━━━━━━━┛
 
-_*🎶 Enviando audio...*_`.trim()
+_*🎶 Enviando audio, por favor espera...*_`.trim()
 
-        await conn.sendFile(m.chat, img, 'thumbnail.jpg', info, m)
+        // Enviar la imagen con la información
+        await conn.sendFile(m.chat, portada, 'thumbnail.jpg', info, m)
 
+        // 4. Enviar el archivo de audio MP3
         await conn.sendMessage(m.chat, { 
-            audio: { url: res.download_url }, 
-            fileName: `${res.name}.mp3`, 
-            mimetype: 'audio/mpeg' 
+            audio: { url: linkDescarga }, 
+            fileName: `${titulo}.mp3`, 
+            mimetype: 'audio/mpeg',
+            ptt: false 
         }, { quoted: m })
 
     } catch (e) {
-        console.error(e)
-        await conn.reply(m.chat, `❌ _*Ocurrió un error con la API de Sylphy. Revisa la consola.*_`, m)
+        console.error('Error en Spotify:', e)
+        m.reply(`❌ *Ocurrió un error:* ${e.message || e}`)
     }
 }
 
+handler.help = ['spotify']
 handler.tags = ['descargas']
-handler.command = ['spoti', 'spotify', 'play2']
+handler.command = /^(spoti|spotify|play2)$/i
 
 export default handler
