@@ -1,114 +1,94 @@
-/*
-- ðŸ’™ Setbanner By WillZek >> https://github.com/WillZek
-- ðŸª CDN SUNFLARE by WillZek y SunFlare Team
-- ðŸ“ CDN RUSSELLXZ by Russel.xyz
-*/
-
-// dejar crÃ©ditos por si llego a poner la base pÃºblica.
-
-import fs from 'fs';
-import path from 'path';
 import fetch from "node-fetch";
-import crypto from "crypto";
 import { FormData, Blob } from "formdata-node";
 import { fileTypeFromBuffer } from "file-type";
-import axios from "axios";
 
-global.emoji = 'ðŸ®'
-global.emoji2 = 'ðŸ®'
+global.emoji = '🍮';
+global.emoji2 = '🍮';
 
-let handler = async (m, { conn, isRowner }) => {
+let handler = async (m, { conn }) => {
+  const q = m.quoted ? m.quoted : m;
+  const mime = (q.msg || q).mimetype || '';
+  if (!/image/.test(mime)) return m.reply(`${emoji} Responde a una imagen con *setbanner*.`);
 
-if (!m.quoted || !/image/.test(m.quoted.mimetype)) return m.reply(`${emoji} Por favor, responde a una imagen con el comando *setbanner* para actualizar la foto del menÃº.`);
+  let { key } = await conn.sendMessage(m.chat, { text: `${emoji} Subiendo...` }, { quoted: m });
 
-try {
-const media = await m.quoted.download();
+  try {
+    const media = await q.download();
+    if (!media) throw new Error('Error al descargar');
 
-/* if (!isImageValid(media)) {
-return m.reply(`${emoji2} El archivo enviado no es una imagen vÃ¡lida.`);
-}
-*/
-const filetype = await fileTypeFromBuffer(media);
-if (!filetype || !filetype.mime.startsWith('image/')) {
-return m.reply(`${emoji2} El archivo enviado no es una imagen vÃ¡lida.`);
-}
+    const filetype = await fileTypeFromBuffer(media);
+    if (!filetype || !filetype.mime.startsWith('image/')) return m.reply(`${emoji2} No es una imagen válida.`);
 
-let url;
-try {
-const sunflare = await uploadToSunflare(media);
-url = sunflare.url;
-} catch (e) {
-const russell = await uploadToRussellXZ(media);
-url = russell.url;
-}
+    let url;
+    try {
+      url = await uploadToQuax(media);
+    } catch (e1) {
+      try {
+        url = await uploadToTelegraph(media);
+      } catch (e2) {
+        throw new Error("Servidores caídos.");
+      }
+    }
 
-// global.banner = url;
-let botData = global.db.data.settings[conn.user.jid] || {};
+    if (!global.db.data.settings) global.db.data.settings = {};
+    if (!global.db.data.settings[conn.user.jid]) global.db.data.settings[conn.user.jid] = {};
 
-botData.banner = url;
-global.db.data.settings[conn.user.jid] = botData;
+    global.db.data.settings[conn.user.jid].banner = url;
 
-await conn.sendFile(m.chat, media, 'banner.jpg', `${emoji} Banner Actualizado.`, m);
+    await conn.sendMessage(m.chat, { 
+      image: media, 
+      caption: `${emoji} *Banner actualizado:*\n${url}`,
+      edit: key
+    });
 
-} catch (e) {
-m.reply(`ðŸª Error: ${e.message}`)
-}}
-
-const isImageValid = (buffer) => {
-const magicBytes = buffer.slice(0, 4).toString('hex');
-return ['ffd8ffe0', 'ffd8ffe1', 'ffd8ffe2', '89504e47', '47494638'].includes(magicBytes);
-}
+  } catch (e) {
+    await conn.sendMessage(m.chat, { text: `🪐 Error: ${e.message}`, edit: key });
+  }
+};
 
 handler.help = ['setbanner'];
-handler.tags = ['tools'];
+handler.tags = ['herramientas'];
 handler.command = ['setbanner'];
-handler.rowner = false
 
 export default handler;
 
-async function uploadToSunflare(buffer) {
-const { ext, mime } = await fileTypeFromBuffer(buffer) || { ext: 'bin', mime: 'application/octet-stream' };
-const blob = new Blob([buffer], { type: mime });
-const randomName = crypto.randomBytes(5).toString('hex') + '.' + ext;
+async function uploadToQuax(buffer) {
+  const { ext, mime } = await fileTypeFromBuffer(buffer) || { ext: 'jpg', mime: 'image/jpeg' };
+  const form = new FormData();
+  form.set("files[]", new Blob([buffer], { type: mime }), `file.${ext}`);
 
-let folder = 'files';
-if (mime.startsWith('image/')) folder = 'images';
-else if (mime.startsWith('video/')) folder = 'videos';
+  const resp = await fetch("https://qu.ax/upload.php", {
+    method: "POST",
+    body: form,
+    headers: { 'User-Agent': 'Mozilla/5.0' }
+  });
 
-const arrayBuffer = await blob.arrayBuffer();
-const base64Content = Buffer.from(arrayBuffer).toString('base64');
+  const resText = await resp.text();
+  try {
+    const json = JSON.parse(resText);
+    if (json.success && json.files?.[0]?.url) return json.files[0].url;
+    throw new Error();
+  } catch {
+    throw new Error();
+  }
+}
 
-const resp = await fetch('https://cdn-sunflareteam.vercel.app/api/upload', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      folder,
-      filename: randomName,
-      base64Content
-    })
-  })
+async function uploadToTelegraph(buffer) {
+  const { ext, mime } = await fileTypeFromBuffer(buffer) || { ext: 'jpg', mime: 'image/jpeg' };
+  const form = new FormData();
+  form.set("file", new Blob([buffer], { type: mime }), `file.${ext}`);
 
-const result = await resp.json();
-
-if (resp.ok && result?.url) {
-    return { url: result.url, name: randomName };
-  } else {
-    throw new Error(result?.error || 'Error cdn.sunflare');
-  }}
-
-async function uploadToRussellXZ(buffer) {
-const form = new FormData();
-form.set("file", new Blob([buffer], { type: 'image/jpeg' }), "imagen.jpg");
-
-const resp = await fetch("https://cdn.russellxz.click/upload.php", {
+  const resp = await fetch("https://telegra.ph/upload", {
     method: "POST",
     body: form
-  })
+  });
 
-const result = await resp.json();
-
-if (resp.ok && result?.url) {
-return { url: result.url };
-} else {
-throw new Error(result?.error || 'error cdn.russellxz');
-}}
+  const resText = await resp.text();
+  try {
+    const json = JSON.parse(resText);
+    if (json[0]?.src) return "https://telegra.ph" + json[0].src;
+    throw new Error();
+  } catch {
+    throw new Error();
+  }
+}
