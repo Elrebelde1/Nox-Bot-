@@ -1,39 +1,41 @@
-import fetch from "node-fetch"
 import { sticker } from '../lib/sticker.js'
+import axios from 'axios'
 
-const handler = async (m, { conn, text, usedPrefix, command }) => {
+let handler = async (m, { conn, text, usedPrefix, command }) => {
+    if (!text) return conn.reply(m.chat, `*¡Te falta el texto!* ✍️\n\nUso: _${usedPrefix + command} Hola Mundo_`, m)
+
     try {
-        if (!text) return conn.reply(m.chat, `❀ *Formato en inglés:*\n${usedPrefix + command} texto | color | fondo | tipo\n\n*Ejemplo:*\n${usedPrefix + command} Hello | white | black | Jose`, m)
-        
-        await m.react('🕒')
+        // Mostramos reacción de espera
+        m.react('⌛')
 
-        let [txt, color, fondo, tipo] = text.split('|').map(v => v.trim())
+        // Construimos la URL con los parámetros que pasaste
+        // type=Anim es lo que genera el movimiento
+        const apiUrl = `https://sylphy.xyz/tools/brat?text=${encodeURIComponent(text)}&color=Negro&fondo=Blanco&type=Anim&api_key=sylphy-6f150d`
 
-        let textoFinal = txt
-        let letraFinal = color || 'white'
-        let fondoFinal = fondo || 'black'
-        let tipoFinal = tipo || 'Jose'
-        let apiKey = 'sylphy-6f150d'
+        // Obtenemos el buffer del video/gif generado
+        const response = await axios.get(apiUrl, { responseType: 'arraybuffer' })
+        const buffer = Buffer.from(response.data)
 
-        let apiUrl = `https://sylphy.xyz/tools/brat?text=${encodeURIComponent(textoFinal)}&color=${encodeURIComponent(letraFinal)}&fondo=${encodeURIComponent(fondoFinal)}&type=${encodeURIComponent(tipoFinal)}&api_key=${apiKey}`
-
-        const res = await fetch(apiUrl)
-        
-        if (!res.ok) throw 'Error'
-        
-        const buffer = await res.buffer()
-        const stiker = await sticker(buffer, false, 'Brat Bot', 'S-Bot')
+        // Generamos el sticker a partir del buffer
+        // El parámetro 'false' es para que no sea estático si detecta animación
+        let stiker = await sticker(buffer, false, global.packname, global.author)
 
         if (stiker) {
             await conn.sendFile(m.chat, stiker, 'brat.webp', '', m)
-            await m.react('✅')
+            m.react('✅')
+        } else {
+            throw new Error("No se pudo procesar la animación del sticker.")
         }
 
     } catch (e) {
-        await m.react('✖️')
-        conn.reply(m.chat, `⚠︎ Error. Ejemplo: ${usedPrefix + command} Hello | white | black | Jose`, m)
+        console.error(e)
+        m.react('❌')
+        conn.reply(m.chat, `*Ocurrió un error:* ${e.message}`, m)
     }
 }
 
-handler.command = /^(brat|sbrat)$/i
+handler.help = ['brat <texto>']
+handler.tags = ['sticker']
+handler.command = ['bratv', 'bratanim']
+
 export default handler
