@@ -35,7 +35,7 @@ const handler = async (m, { conn, text, command }) => {
     }
 }
 
-handler.command = ['play2', 'mp4']
+handler.command = ['play99', 'mp4']
 handler.help = ['play2 <texto>', 'mp4 <texto>']
 handler.tags = ['media']
 handler.group = false
