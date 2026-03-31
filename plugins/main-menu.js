@@ -3,7 +3,7 @@ import { join } from 'path';
 import { xpRange } from '../lib/levelling.js';
 import axios from 'axios';
 
-// Configuración de utilidades
+// --- UTILIDADES ---
 const clockString = ms => {
   const h = Math.floor(ms / 3600000);
   const m = Math.floor(ms / 60000) % 60;
@@ -18,7 +18,7 @@ const saludarSegunHora = () => {
   return '🌙 ¡Buenas noches!';
 };
 
-// Variables de diseño
+// --- CONFIGURACIÓN VISUAL ---
 const imgDefault = 'https://files.catbox.moe/t7uytz.png';
 const sectionDivider = '╰━━━━━━━━━━━━━━━━━━━━━⭓';
 
@@ -30,7 +30,7 @@ const menuFooter = `
 ╰❒
 `.trim();
 
-const handler = async (m, { conn, usedPrefix, text: argsText }) => {
+const handler = async (m, { conn, usedPrefix }) => {
   try {
     const saludo = saludarSegunHora();
     const user = global.db.data.users[m.sender] || { level: 1, exp: 0, limit: 5 };
@@ -44,13 +44,32 @@ const handler = async (m, { conn, usedPrefix, text: argsText }) => {
     const textTitle = ["SASUKE-BOT INTERFACE", "SYSTEM CORE", "DASHBOARD V2"].getRandom();
     const imgRandom = ["https://iili.io/FKVDVAN.jpg", "https://iili.io/FKVbUrJ.jpg"].getRandom();
 
-    // Generar thumbnail para el mensaje citado
+    // --- LÓGICA DE SELECCIÓN AUTOMÁTICA ---
+    const botSettings = global.db.data.settings?.[conn.user.jid] || {};
+    let finalImage;
+
+    // Aquí detecta lo que guardaste con setbanner 1 o 2
+    if (botSettings.banner1) {
+      finalImage = { url: botSettings.banner1 };
+    } else if (botSettings.banner2) {
+      finalImage = { url: botSettings.banner2 };
+    } else {
+      // Si no usaste setbanner, usa la de Sasuke (GitHub/Local)
+      const pathLocal = join(process.cwd(), 'storage', 'img', 'miniurl.jpg');
+      if (existsSync(pathLocal)) {
+        finalImage = readFileSync(pathLocal);
+      } else {
+        finalImage = { url: imgDefault };
+      }
+    }
+
+    // --- GENERAR THUMBNAIL PARA EL MENSAJE CITADO ---
     let thumbnailBuffer;
     try {
       const response = await axios.get(imgRandom, { responseType: 'arraybuffer' });
       thumbnailBuffer = Buffer.from(response.data);
     } catch {
-      thumbnailBuffer = readFileSync(join(process.cwd(), 'storage', 'img', 'miniurl.jpg'));
+      thumbnailBuffer = null;
     }
 
     const izumi = {
@@ -65,26 +84,7 @@ const handler = async (m, { conn, usedPrefix, text: argsText }) => {
       participant: "0@s.whatsapp.net"
     };
 
-    // --- LÓGICA DE SELECCIÓN DE IMAGEN ---
-    const choice = argsText.trim(); // Captura el "1" o "2" de ".menu 1"
-    const botSettings = global.db.data.settings?.[conn.user.jid] || {};
-    let finalImage;
-
-    if (choice === '1' && botSettings.banner1) {
-      finalImage = { url: botSettings.banner1 };
-    } else if (choice === '2' && botSettings.banner2) {
-      finalImage = { url: botSettings.banner2 };
-    } else {
-      // Imagen por defecto de GitHub/Local
-      const pathLocal = join(process.cwd(), 'storage', 'img', 'miniurl.jpg');
-      if (existsSync(pathLocal)) {
-        finalImage = readFileSync(pathLocal);
-      } else {
-        finalImage = { url: imgDefault };
-      }
-    }
-
-    // --- CONSTRUCCIÓN DEL CUERPO DEL MENÚ ---
+    // --- CUERPO DEL MENÚ ---
     let categorizedCommands = {};
     Object.values(global.plugins).filter(p => p?.help && !p.disabled).forEach(p => {
       const tag = Array.isArray(p.tags) ? p.tags[0] : p.tags || 'Otros';
@@ -121,6 +121,7 @@ ${saludo} ${tagUsuario} 👋
 
     const fullMenu = `${header}\n\n${menuBody}\n\n${menuFooter}`;
 
+    // --- ENVIAR MENSAJE ---
     await conn.sendMessage(m.chat, {
       image: finalImage,
       caption: fullMenu,
