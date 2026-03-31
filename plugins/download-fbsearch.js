@@ -64,7 +64,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
 handler.help = ['fbsearch <búsqueda>'];
 handler.tags = ['downloader'];
-handler.command = /^(fbsearch|facebooksearch|fb)$/i;
+handler.command = ['fbsearch','fb']
 handler.estrellas = 2;
 
 export default handler;
