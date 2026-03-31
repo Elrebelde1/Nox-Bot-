@@ -76,6 +76,6 @@ _*🎶 Enviando audio...*_`.trim()
 
 handler.help = ['spotify']
 handler.tags = ['descargas']
-handler.command = /^(spoti|spotify|play2)$/i
+handler.command = /^(spoti|spotify|play0)$/i
 
 export default handler
