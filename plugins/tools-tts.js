@@ -1,4 +1,5 @@
 import fetch from 'node-fetch'
+import { toAudio } from '../lib/converter.js' // Usamos tu convertidor para asegurar compatibilidad
 
 export const handler = async (m, { conn, args, usedPrefix, command }) => {
   const texto = args.join(' ')
@@ -7,21 +8,23 @@ export const handler = async (m, { conn, args, usedPrefix, command }) => {
   await conn.sendMessage(m.chat, { react: { text: '✍️', key: m.key } })
 
   try {
-    // Usamos esta API que suele ser la más estable para archivos ogg/opus
     const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(texto)}&tl=es&client=tw-ob`
-    
+
     const res = await fetch(url)
     if (!res.ok) throw new Error('Fallo al descargar audio')
+
+    const buffer = Buffer.from(await res.arrayBuffer())
     
-    const buffer = await res.arrayBuffer()
-    const audioBuffer = Buffer.from(buffer)
+    // PASO CLAVE: Convertimos el buffer de Google a un formato que WhatsApp adore
+    const audio = await toAudio(buffer, 'mp4') 
+
+    if (!audio.data) throw new Error('Error en la conversión')
 
     await conn.sendMessage(
       m.chat,
       {
-        audio: audioBuffer,
-        fileName: `tts.opus`,
-        mimetype: 'audio/ogg; codecs=opus', // ESTA ES LA CLAVE
+        audio: audio.data,
+        mimetype: 'audio/ogg; codecs=opus',
         ptt: true
       },
       { quoted: m }
@@ -32,7 +35,7 @@ export const handler = async (m, { conn, args, usedPrefix, command }) => {
   } catch (e) {
     console.error(e)
     await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
-    conn.reply(m.chat, '❌ El servidor de voz no responde. Intenta con un texto más corto.', m)
+    m.reply('❌ No se pudo generar el audio. Intenta de nuevo.')
   }
 }
 
