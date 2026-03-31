@@ -41,6 +41,6 @@ ${info}
 handler.help = ['ping']
 handler.tags = ['info']
 handler.command = ['ping', 'speed'] // Agregué speed como alias
-handler.register = true
+handler.register = false
 
 export default handler
