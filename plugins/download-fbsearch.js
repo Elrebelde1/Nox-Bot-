@@ -2,74 +2,69 @@ import fetch from 'node-fetch';
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
   if (!text) {
-    return conn.reply(m.chat, `*¿Qué deseas buscar?* 🔍\n\nUso:\n1. *Descargar:* ${usedPrefix + command} <enlace>\n2. *Buscar videos:* ${usedPrefix + command} <nombre del video>`, m);
+    return conn.reply(m.chat, `*¿Qué video buscas?* 🎥\n\nEscribe el nombre del video que quieres encontrar.`, m);
   }
 
   await m.react('🕒');
 
-  // CASO 1: DESCARGA (Si el texto contiene un enlace de Facebook)
-  if (text.match(/facebook\.com|fb\.watch/g)) {
-    try {
-      const apiDl = await fetch(`https://api.delirius.store/download/facebook?url=${encodeURIComponent(text)}`);
-      const resDl = await apiDl.json();
-
-      if (!resDl.status || !resDl.data) {
-        await m.react('❌');
-        return conn.reply(m.chat, '*`❌ Error: No se pudo obtener el video.`*', m);
-      }
-
-      // Intentar obtener HD, si no, SD
-      const videoUrl = resDl.data.urls.find(v => v.hd)?.hd || resDl.data.urls[0].sd;
-      
-      await m.react('✅');
-      return await conn.sendMessage(m.chat, { 
-        video: { url: videoUrl }, 
-        caption: `*🎬 VIDEO DESCARGADO*\n\n✅ *Calidad:* ${resDl.data.urls[0].hd ? 'Alta Definición (HD)' : 'Estándar (SD)'}`,
-        fileName: 'video_fb.mp4' 
-      }, { quoted: m });
-
-    } catch (e) {
-      await m.react('❌');
-      return conn.reply(m.chat, '*`⚠️ Error al procesar la descarga del video.`*', m);
-    }
-  }
-
-  // CASO 2: BÚSQUEDA DE 6 VIDEOS (Si el texto es una consulta)
   try {
-    const apiSearch = await fetch(`https://api.delirius.store/search/facebooksearch?query=${encodeURIComponent(text)}`);
+    // Añadimos "video español" a la búsqueda para forzar mejores resultados
+    const query = encodeURIComponent(text + " video español");
+    const apiSearch = await fetch(`https://api.delirius.store/search/facebooksearch?query=${query}`);
     const resSearch = await apiSearch.json();
 
     if (!resSearch.status || !resSearch.data || resSearch.data.length === 0) {
       await m.react('❌');
-      return conn.reply(m.chat, '*`🚫 No encontré videos relacionados con tu búsqueda.`*', m);
+      return conn.reply(m.chat, '*`🚫 No encontré videos con ese nombre.`*', m);
     }
 
-    let searchMsg = `*🎬 RESULTADOS DE BÚSQUEDA: ${text.toUpperCase()}*\n`;
-    searchMsg += `_Mostrando los mejores 6 videos encontrados._\n\n---\n\n`;
+    // Filtrar para ignorar perfiles/grupos y priorizar links de video
+    const soloVideos = resSearch.data.filter(item => 
+      item.url.includes('video') || 
+      item.url.includes('watch') || 
+      item.url.includes('reel') ||
+      item.url.includes('posts')
+    );
 
-    // Limitamos a 6 resultados
-    const resultados = resSearch.data.slice(0, 6);
+    let searchMsg = `*🎬 VIDEOS ENCONTRADOS: ${text.toUpperCase()}*\n`;
+    searchMsg += `_Resultados en español (Top 6)_\n\n---\n\n`;
 
-    resultados.forEach((item, index) => {
-      searchMsg += `*${index + 1}. 📌 Título:* ${item.title || 'Video de Facebook'}\n`;
+    // Tomamos los primeros 6 resultados del filtro
+    const seleccion = soloVideos.slice(0, 6);
+
+    seleccion.forEach((item, index) => {
+      // Limpiamos palabras en inglés comunes en los títulos de Facebook
+      let titulo = item.title
+        .replace(/\| Facebook/gi, '')
+        .replace(/Log into Facebook/gi, 'Video de Facebook')
+        .replace(/others named/gi, 'otros llamados')
+        .trim();
+
+      // Traducimos términos comunes de la descripción
+      let desc = item.description || ''
+        .replace(/likes/gi, 'me gusta')
+        .replace(/talking about this/gi, 'personas hablando de esto')
+        .replace(/views/gi, 'reproducciones');
+
+      searchMsg += `*${index + 1}. 🎥 Título:* ${titulo}\n`;
       searchMsg += `*🔗 Enlace:* ${item.url}\n`;
-      searchMsg += `*📝 Descripción:* ${item.description ? item.description.substring(0, 100) + '...' : 'Sin descripción'}\n\n`;
+      searchMsg += `*📝 Info:* ${desc.substring(0, 100)}...\n\n`;
     });
 
-    searchMsg += `---\n💡 *Para descargar:* Copia el enlace de arriba y pégalo de nuevo en este chat.`;
+    searchMsg += `---\n💡 *Para descargar:* Copia el link y pégalo aquí.`;
 
     await m.react('✅');
     await conn.reply(m.chat, searchMsg, m);
 
   } catch (e) {
     await m.react('❌');
-    conn.reply(m.chat, '*`⚠️ Hubo un error al realizar la búsqueda en los servidores.`*', m);
+    conn.reply(m.chat, '*`⚠️ Error en la búsqueda de videos.`*', m);
   }
 };
 
-handler.help = ['fbsearch <enlace/búsqueda>'];
+handler.help = ['fbsearch <búsqueda>'];
 handler.tags = ['downloader'];
-handler.command = /^(fb|fbsearch|facebook)$/i; // Añadí alias comunes
+handler.command = /^(fbsearch|facebooksearch|fb)$/i;
 handler.estrellas = 2;
 
 export default handler;
