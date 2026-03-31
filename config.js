@@ -26,19 +26,20 @@ global.prems = []
 
 //*─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*
 
-global.packname = `[ sᥲsᥙkᥱ ᑲ᥆𝗍 🌀`
-global.author = 'sᥲsᥙkᥱ ᑲ᥆𝗍 mძ 🌀]'
-global.stickpack = '©sᥲsᥙkᥱ ᑲ᥆𝗍 mძ 🌀'
-global.stickauth = 'ᑲᥡ sᥲsᥙkᥱ ᑲ᥆𝗍'
-global.wm = 'sᥲsᥙkᥱ 🌀'
-global.dev = '© 𝖯᥆𝗐ᥱ𝗋ᥱძ ᑲᥡ 𝖲ᥙᥒ𝖿ᥣᥲ𝗋ᥱ  ☂︎  𝖳ᥱᥲ𝗆'
-global.wait = '🌪️ *Aɢᴜᴀʀᴅᴇ ᴜɴ ᴍᴏᴍᴇɴᴛᴏ, sᴏʏ ʟᴇɴᴛ𝙾... ฅ^•ﻌ•^ฅ\n\n> sᥲsᥙkᥱ ᑲ᥆𝗍 mძ 🌀 🌪️*'
-global.botname = '[ sᥲsᥙkᥱ ᑲ᥆𝗍 mძ 🌀 ]'
-global.textbot = `⍴᥆ᥕᥱrᥱძ ᑲᥡ sᥲsᥙkᥱ 🌀`
-global.dev = '• ⍴᥆ᥕᥱrᥱძ ᑲᥡ ᥴ᥆mᥙᥒі𝗍ᥡ sᥲsᥙkᥱ ᑲ᥆𝗍 mძ 🌀'
-global.listo = '*Aqui tiene ฅ^•ﻌ•^ฅ*'
-global.namechannel = 'sᥲsᥙkᥱ ᑲ᥆𝗍 mძ 🌀'
+global.packname = `[ 𝙎𝙖𝙨𝙪𝙠𝙚 𝘽𝙤𝙩 🌀`
+global.author = '𝙎𝙖𝙨𝙪𝙠𝙚 𝘽𝙤𝙩 𝙈𝘿 🌀]'
+global.stickpack = '© 𝙎𝙖𝙨𝙪𝙠𝙚 𝘽𝙤𝙩 𝙈𝘿 🌀'
+global.stickauth = '𝘽𝙮 𝙎𝙖𝙨𝙪𝙠𝙚 𝘽𝙤𝙩'
+global.wm = '𝙎𝙖𝙨𝙪𝙠𝙚 🌀'
+global.dev = '© 𝙋𝙤𝙬𝙚𝙧𝙚𝙙 𝙗𝙮 𝙎𝙪𝙣𝙛𝙡𝙖𝙧𝙚  ☂︎  𝙏𝙚𝙖𝙢'
+global.wait = '🌪️ *𝘼𝙜𝙪𝙖𝙧𝙙𝙚 𝙪𝙣 𝙢𝙤𝙢𝙚𝙣𝙩𝙤, 𝙨𝙤𝙮 𝙡𝙚𝙣𝙩𝙤... ฅ^•ﻌ•^ฅ\n\n> 𝙎𝙖𝙨𝙪𝙠𝙚 𝘽𝙤𝙩 𝙈𝘿 🌀 🌪️*'
+global.botname = '[ 𝙎𝙖𝙨𝙪𝙠𝙚 𝘽𝙤𝙩 𝙈𝘿 🌀 ]'
+global.textbot = `𝙋𝙤𝙬𝙚𝙧𝙚𝙙 𝙗𝙮 𝙎𝙖𝙨𝙪𝙠𝙚 🌀`
+global.dev = '• 𝙋𝙤𝙬𝙚𝙧𝙚𝙙 𝙗𝙮 𝘾𝙤𝙢𝙢𝙪𝙣𝙞𝙩𝙮 𝙎𝙖𝙨𝙪𝙠𝙚 𝘽𝙤𝙩 𝙈𝘿 🌀'
+global.listo = '*𝘼𝙦𝙪𝙞 𝙩𝙞𝙚𝙣𝙚 ฅ^•ﻌ•^ฅ*'
+global.namechannel = '𝙎𝙖𝙨𝙪𝙠𝙚 𝘽𝙤𝙩 𝙈𝘿 🌀'
 global.channel = 'https://whatsapp.com/channel/0029Vaua0ZD3gvWjQaIpSy18'
+
 
 //*─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─⭒─ׄ─ׅ─ׄ─*
 
