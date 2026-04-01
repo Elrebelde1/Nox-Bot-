@@ -1,41 +1,35 @@
-import { sticker } from '../lib/sticker.js'
-import axios from 'axios'
+import { sticker } from '../lib/sticker.js';
+import axios from 'axios';
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) return conn.reply(m.chat, `*¡Te falta el texto!* ✍️\n\nUso: _${usedPrefix + command} Hola Mundo_`, m)
+    if (!text) return conn.reply(m.chat, `*${usedPrefix + command}* <texto>`, m)
 
     try {
-        // Mostramos reacción de espera
-        m.react('⌛')
+        if (m.react) m.react('⌛')
 
-        // Construimos la URL con los parámetros que pasaste
-        // type=Anim es lo que genera el movimiento
         const apiUrl = `https://sylphy.xyz/tools/brat?text=${encodeURIComponent(text)}&color=Negro&fondo=Blanco&type=Anim&api_key=sylphy-6f150d`
 
-        // Obtenemos el buffer del video/gif generado
         const response = await axios.get(apiUrl, { responseType: 'arraybuffer' })
         const buffer = Buffer.from(response.data)
 
-        // Generamos el sticker a partir del buffer
-        // El parámetro 'false' es para que no sea estático si detecta animación
-        let stiker = await sticker(buffer, false, global.packname, global.author)
+        let stiker = await sticker(buffer, false, global.botname || 'BratBot', global.nombre || 'Sebastián')
 
         if (stiker) {
-            await conn.sendFile(m.chat, stiker, 'brat.webp', '', m)
-            m.react('✅')
+            await conn.sendFile(m.chat, stiker, 'sticker.webp', '', m)
+            if (m.react) m.react('✅')
         } else {
-            throw new Error("No se pudo procesar la animación del sticker.")
+            throw new Error()
         }
 
-    } catch (e) {
-        console.error(e)
-        m.react('❌')
-        conn.reply(m.chat, `*Ocurrió un error:* ${e.message}`, m)
+    } catch (error) {
+        console.error(error)
+        if (m.react) m.react('❌')
+        return conn.reply(m.chat, `*Error:* ${error.message}`, m)
     }
 }
 
-handler.help = ['bratv <texto>']
+handler.command = ['bratv']
 handler.tags = ['sticker']
-handler.command = ['bratv', 'bratanim']
+handler.help = ['bratv']
 
 export default handler
