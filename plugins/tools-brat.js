@@ -1,43 +1,45 @@
 import { sticker } from '../lib/sticker.js';
 import axios from 'axios';
 
-let handler = async (m, { conn, text, usedPrefix, command }) => {
-    // Si no hay texto, enviamos el error sin usar la variable 'emoji' que no existe
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+const fetchSticker = async (text, attempt = 1) => {
+    try {
+        const response = await axios.get(`https://kepolu-brat.hf.space/brat`, {
+            params: { q: text },
+            responseType: 'arraybuffer',
+        });
+        return response.data;
+    } catch (error) {
+        if (error.response?.status === 429 && attempt <= 3) {
+            const retryAfter = error.response.headers['retry-after'] || 5;
+            await delay(retryAfter * 1000);
+            return fetchSticker(text, attempt + 1);
+        }
+        throw error;
+    }
+};
+
+let handler = async (m, { conn, text }) => {
     if (!text) {
         return conn.sendMessage(m.chat, {
-            text: `*⚠️ Por favor ingresa el texto para crear tu sticker animado.*\n\nEjemplo: _${usedPrefix + command} Hola_`,
+            text: `${emoji} Por favor ingresa el texto para hacer un sticker.`,
         }, { quoted: m });
     }
 
     try {
-        // Reacción de espera
-        if (m.react) m.react('⌛');
-
-        // URL de la API que pediste (Animada)
-        const apiUrl = `https://sylphy.xyz/tools/brat?text=${encodeURIComponent(text)}&color=Negro&fondo=Blanco&type=Anim&api_key=sylphy-6f150d`;
-
-        // Descargamos el contenido (video/gif)
-        const response = await axios.get(apiUrl, { responseType: 'arraybuffer' });
-        const buffer = Buffer.from(response.data);
-
-        // Generamos el sticker. 
-        // Usamos global.botname o 'Brat' como respaldo para evitar más ReferenceErrors
-        let stiker = await sticker(buffer, false, global.botname || 'BratBot', global.nombre || 'Sebastián');
+        const buffer = await fetchSticker(text);
+        let stiker = await sticker(buffer, false, global.botname, global.nombre);
 
         if (stiker) {
-            await conn.sendFile(m.chat, stiker, 'sticker.webp', '', m);
-            if (m.react) m.react('✅');
+            return conn.sendFile(m.chat, stiker, 'sticker.webp', '', m);
         } else {
-            throw new Error("No se pudo convertir el video a sticker.");
+            throw new Error("No se pudo generar el sticker.");
         }
-
     } catch (error) {
         console.error(error);
-        if (m.react) m.react('❌');
-        
-        // Reemplacé '${msm}' por un texto fijo para evitar el ReferenceError
         return conn.sendMessage(m.chat, {
-            text: `❌ *Ocurrió un error:* ${error.message}`,
+            text: `${msm} Ocurrió un error: ${error.message}`,
         }, { quoted: m });
     }
 };
