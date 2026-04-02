@@ -1,6 +1,6 @@
 import fs from 'fs';
 
-const archivoRegistro = './chats_ya_notificados.json';
+const archivoRegistro = './grupos_ya_notificados.json';
 let yaNotificados = new Set(
   fs.existsSync(archivoRegistro)
     ? JSON.parse(fs.readFileSync(archivoRegistro))
@@ -8,7 +8,7 @@ let yaNotificados = new Set(
 );
 
 const enviarAvisoCanal = async (conn, notifyChat = null) => {
-  // Mensaje ultra-corto para evitar el "Leer más"
+  // Mensaje ultra-corto optimizado
   const mensaje = `✨ *NUEVAS MEJORAS - BARBOZA* 🐐
 
 🚀 *¡SÍGUENOS!*
@@ -24,36 +24,36 @@ const enviarAvisoCanal = async (conn, notifyChat = null) => {
 
 🛡️ *Powered By Barboza-Team*`;
 
-  const chats = Object.entries(conn.chats).filter(([jid, chat]) => jid && chat.isChats);
-  let usuarios = [];
+  // Filtramos SOLO grupos (@g.us)
+  const chats = Object.entries(conn.chats).filter(([jid, chat]) => jid && jid.endsWith('@g.us') && chat.isChats);
   let grupos = [];
 
-  if (notifyChat) await conn.sendMessage(notifyChat, { text: '📢 *Difundiendo...*' });
+  if (notifyChat) await conn.sendMessage(notifyChat, { text: '📢 *Difundiendo en grupos...*' });
 
   for (let [jid] of chats) {
     if (yaNotificados.has(jid)) continue;
-    const isGroup = jid.endsWith('@g.us');
+
     try {
       await conn.sendMessage(jid, { text: mensaje });
-      if (isGroup) grupos.push(jid);
-      else usuarios.push(jid);
+      grupos.push(jid);
       yaNotificados.add(jid);
     } catch (e) {
-      console.log(`❌ Error en ${jid}`);
+      console.log(`❌ Error en grupo: ${jid}`);
     }
+    // Delay de medio segundo entre grupos para evitar saturación
     await new Promise(resolve => setTimeout(resolve, 500));
   }
 
   fs.writeFileSync(archivoRegistro, JSON.stringify([...yaNotificados], null, 2));
 
-  let resumen = `✅ *Enviado a:* ${usuarios.length + grupos.length} chats`;
+  let resumen = `✅ *Difusión terminada*\n👥 Grupos nuevos: ${grupos.length}`;
   if (notifyChat) await conn.sendMessage(notifyChat, { text: resumen });
 
-  return { usuarios, grupos };
+  return { grupos };
 };
 
 const handler = async (m, { conn, isOwner }) => {
-  if (!isOwner) throw '❌ Solo el *Propietario* puede usar esto.';
+  if (!isOwner) throw '❌ Solo el *Owner* puede usar este comando.';
   await enviarAvisoCanal(conn, m.chat);
 };
 
