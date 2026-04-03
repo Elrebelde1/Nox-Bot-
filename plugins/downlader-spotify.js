@@ -1,84 +1,43 @@
-import axios from 'axios'
+import fetch from 'node-fetch';
 
-const handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) throw `_*[ ⚠️ ] Ingresa el nombre de la canción o un link de Spotify*_\n\n_Ejemplo:_\n${usedPrefix + command} Lupita`
+let handler = async (m, { conn, text, usedPrefix, command }) => {
+    if (!text) return m.reply(`🌙 INGRESE EL NOMBRE DE UNA CANCIÓN\n> *Ejemplo:* ${usedPrefix + command} Twice Strategy`);
 
     try {
-        await m.react('⏳')
-        const apiKey = '799343a24b120a1a5798fe780b823230'
-        
-        // 1. Iniciar la solicitud
-        const initialRes = await axios.get(`https://optishield.uk/api/`, {
-            params: {
-                type: 'spotifySearch',
-                apikey: apiKey,
-                query: text
-            }
-        })
+        let searchRes = await fetch(`https://api.delirius.store/search/spotify?q=${encodeURIComponent(text)}&limit=1`);
+        let searchJson = await searchRes.json();
 
-        let data = initialRes.data
-        
-        // 2. Si está procesando, entrar en bucle de espera (Polling)
-        if (data.status === 'processing') {
-            const checkUrl = data.check_result
-            let isReady = false
-            let attempts = 0
+        if (!searchJson.status || !searchJson.data.length) return m.reply("❌ Sin resultados.");
 
-            // Reintentar cada 3 segundos, máximo 10 veces
-            while (!isReady && attempts < 10) {
-                attempts++
-                await new Promise(resolve => setTimeout(resolve, 3000)) 
-                
-                const checkRes = await axios.get(checkUrl)
-                if (checkRes.data.status !== 'processing') {
-                    data = checkRes.data
-                    isReady = true
-                }
-            }
-        }
+        let trackUrl = searchJson.data[0].url;
 
-        // 3. Validar si obtuvimos resultados finales
-        if (!data.result || (Array.isArray(data.result) && data.result.length === 0)) {
-            throw 'No se pudo obtener el resultado después de esperar.'
-        }
+        let downloadRes = await fetch(`https://api.delirius.store/download/spotify?url=${trackUrl}`);
+        let downloadJson = await downloadRes.json();
 
-        // Extraer la información (ajustado a la estructura típica de resultados)
-        const track = Array.isArray(data.result) ? data.result[0] : data.result
-        const { title, name, artists, artist, album, thumbnail, image, download, url } = track
+        if (!downloadJson.status) return m.reply("❌ Error en la descarga.");
 
-        const info = `
-┏━━━━━━ ⚡ 𝙎𝙋𝙊𝙏𝙄𝙙𝙔 ⚡ ━━━━━━┓
-┃ 
-┃ ⧁ 𝙏𝙄𝙏𝙐𝙇𝙊: ${title || name}
-┃ ⧁ 𝘼𝙍𝙏𝙄𝙎𝙏𝘼: ${artists || artist}
-┃ ⧁ 𝘼𝙇𝘽𝙐𝙈: ${album || 'Single'}
-┃ 
-┗━━━━━━━━━━━━━━━━━━━━━━┛
-_*🎶 Enviando audio...*_`.trim()
+        let { title, author, duration, image, download } = downloadJson.data;
 
-        // Enviar imagen informativa
-        await conn.sendFile(m.chat, thumbnail || image || '', 'cover.jpg', info, m)
+        let mins = Math.floor(duration / 60000);
+        let secs = ((duration % 60000) / 1000).toFixed(0);
+        let time = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
 
-        // 4. Enviar el Audio
-        const audioUrl = download || url
-        if (audioUrl) {
-            await conn.sendMessage(m.chat, { 
-                audio: { url: audioUrl }, 
-                fileName: `${title || name}.mp3`, 
-                mimetype: 'audio/mpeg'
-            }, { quoted: m })
-            await m.react('✅')
-        }
+        let caption = `\`𝚂𝙿𝙾𝚃𝙸𝙵𝚈 𝙿𝙻𝙰𝚈\`\n\n`
+            + `☪︎ *Título:* ${title}\n`
+            + `☪︎ *Artista:* ${author}\n`
+            + `☪︎ *Duración:* ${time} min\n`
+            + `───── ･ ｡ﾟ☆: *.☽ .* :☆ﾟ. ─────`;
+
+        await conn.sendFile(m.chat, image, 'lp.jpg', caption, m);
+        await conn.sendMessage(m.chat, { audio: { url: download }, mimetype: 'audio/mpeg', fileName: `${title}.mp3` }, { quoted: m });
 
     } catch (e) {
-        console.error(e)
-        await m.react('❌')
-        m.reply(`❌ *Error:* El servidor está ocupado o la API Key es inválida.`)
+        m.reply("⚠️ Servicio no disponible.");
     }
 }
 
-handler.help = ['spotify']
-handler.tags = ['descargas']
-handler.command = /^(spoti|spotify|play0)$/i
+handler.help = ['play', 'spotify'];
+handler.tags = ['descargas'];
+handler.command = ['play', 'spotify', 'spdl'];
 
-export default handler
+export default handler;
