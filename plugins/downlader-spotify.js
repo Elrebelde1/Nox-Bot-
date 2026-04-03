@@ -43,8 +43,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 }
 
-handler.help = ['play', 'spotify']
+handler.help = ['spotify']
 handler.tags = ['descargas']
-handler.command = ['play', 'spotify', 'spdl']
+handler.command = ['spotify', 'spdl']
 
 export default handler
