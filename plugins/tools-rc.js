@@ -1,46 +1,39 @@
 import fetch from 'node-fetch'
 
 let handler = async (m, { args, usedPrefix, command }) => {
-  // Validación de argumentos
   if (!args[0] || !args[1]) {
-    return m.reply(`👻 *Uso correcto:* ${usedPrefix + command} <link_canal> <emojis>
-
-*Ejemplo:* ${usedPrefix + command} https://whatsapp.com/channel/0029VbArz9fAO7RGy2915k3O/779 😨,🤣,🔥`)
+    return m.reply(`👻 *Uso correcto:* ${usedPrefix + command} <link_canal> <emojis>\n\n*Ejemplo:* ${usedPrefix + command} https://whatsapp.com/channel/0029VbArz9fAO7RGy2915k3O/779 🔥,😂,❤️`)
   }
 
   await m.react('🕒')
 
   try {
     const postLink = args[0]
-    // Unimos el resto de argumentos y limpiamos espacios
-    const reacts = args.slice(1).join('').split(',').filter(e => e.trim())
+    const emojis = args.slice(1).join('').split(',').map(e => e.trim()).filter(e => e)
 
-    if (!postLink.includes('whatsapp.com/channel/')) {
-      return m.reply('🍄 El link debe ser de un canal de WhatsApp válido.')
-    }
+    // Usaremos un servidor espejo que suele estar más tiempo activo
+    // Si este falla, es que el método global de reacciones por API está caído
+    const api = `https://api.agungdev.my.id/api/whatsapp/channel-react?url=${encodeURIComponent(postLink)}&text=${encodeURIComponent(emojis.join(','))}`
 
-    if (reacts.length > 10) return m.reply('👻 Máximo 10 emojis permitidos.')
+    const response = await fetch(api)
+    
+    // Si el servidor no responde (404, 500, etc)
+    if (!response.ok) throw new Error('Servidor fuera de línea')
 
-    // Endpoint actualizado y API Key (Si esta falla, el servicio es el que está caído)
-    const url = `https://asitha.top/api/helper/channel-react`
-    const apiKey = '7h7FjNZGZ54KJzUtvx2eS9u61HbPX8XZS8WjyQtrpump' 
-
-    const response = await fetch(`${url}?url=${postLink}&react=${reacts.join(',')}&apikey=${apiKey}`)
     const result = await response.json()
 
-    // Manejo de respuestas según la estructura común de estas APIs
-    if (result.status === true || result.success === true) {
+    if (result.status === true || result.result === 'Success') {
       await m.react('✅')
-      await m.reply(`✅ *Reacciones enviadas:* ${reacts.join(' ')}`)
+      await m.reply(`✅ *Reacciones enviadas correctamente.*`)
     } else {
       await m.react('❌')
-      await m.reply(`❌ *Error:* ${result.message || 'La API no pudo procesar las reacciones. Verifica el link.'}`)
+      await m.reply(`❌ *La API respondió:* ${result.message || 'No se pudo reaccionar. Verifica que el canal sea público.'}`)
     }
 
   } catch (e) {
     console.error(e)
     await m.react('❌')
-    await m.reply('❌ *Error fatal:* No se pudo conectar con el servidor de reacciones.')
+    await m.reply('⚠️ *Error de conexión:* El servidor de reacciones está caído actualmente. Intenta de nuevo más tarde o busca un nuevo endpoint.')
   }
 }
 
