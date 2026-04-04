@@ -1,4 +1,4 @@
-import { unlinkSync, readFileSync } from 'fs'
+import { unlinkSync, readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 import { exec } from 'child_process'
 
@@ -8,7 +8,7 @@ let handler = async (m, { conn, args, __dirname, usedPrefix, command }) => {
         let mime = (m.quoted ? m.quoted : m.msg).mimetype || ''
         let set
 
-        if (/bass/.test(command)) set = '-af equalizer=f=94:width_type=o:width=2:g=30'
+        if (/bass/.test(command)) set = '-af equalizer=f=40:width_type=h:width=50:g=15'
         if (/blown/.test(command)) set = '-af acrusher=.1:1:64:0:log'
         if (/deep/.test(command)) set = '-af atempo=4/4,asetrate=44500*2/3'
         if (/earrape/.test(command)) set = '-af volume=12'
@@ -29,32 +29,44 @@ let handler = async (m, { conn, args, __dirname, usedPrefix, command }) => {
         if (/lowpass/.test(command)) set = '-filter:a "lowpass=f=500"'
         if (/underwater/.test(command)) set = '-af "asetrate=44100*0.5,atempo=2,lowpass=f=300"'
 
-
         if (/audio/.test(mime)) {
-        await m.react('🕓')
-            let ran = getRandom('.mp3')
+            await m.react('🕓')
+            let ran = getRandom('.opus')
             let filename = join(__dirname, '../tmp/' + ran)
             let media = await q.download(true)
-            exec(`ffmpeg -i ${media} ${set} ${filename}`, async (err, stderr, stdout) => {
-                await unlinkSync(media)
-                if (err) return m.react('✖️')
-                let buff = await readFileSync(filename)
+
+            exec(`ffmpeg -i ${media} ${set} -c:a libopus -b:a 128k -vbr on ${filename}`, async (err) => {
+                if (existsSync(media)) unlinkSync(media)
+                if (err) {
+                    await m.react('✖️')
+                    console.error(err)
+                    return
+                }
+
+                let buff = readFileSync(filename)
                 await conn.sendFile(m.chat, buff, ran, null, m, true, {
                     type: 'audioMessage',
                     ptt: true
                 })
+                
                 await m.react('✅')
+                if (existsSync(filename)) unlinkSync(filename)
             })
-        } else return conn.reply(m.chat, `🧑‍💻 RESPONDA AL AUDIO O NOTA DE VOZ 🎵*`, m, rcanal)
-    } catch {
+        } else {
+            return conn.reply(m.chat, `*🧑‍💻 RESPONDA AL AUDIO O NOTA DE VOZ 🎵*`, m)
+        }
+    } catch (e) {
+        console.error(e)
         await m.react('✖️')
     }
 }
-handler.help = ['bass', 'blown', 'deep', 'earrape', 'fast', 'fat', 'nightcore', 'reverse', 'robot', 'slow', 'smooth', 'tupai', 'reverb', 'chorus', 'flanger', 'distortion', 'pitch', 'highpass', 'lowpass', 'underwater'].map(v => v + ' *<mp3/vn>*')
+
+handler.help = ['bass', 'blown', 'deep', 'earrape', 'fast', 'fat', 'nightcore', 'reverse', 'robot', 'slow', 'smooth', 'tupai', 'reverb', 'chorus', 'flanger', 'distortion', 'pitch', 'highpass', 'lowpass', 'underwater'].map(v => v + ' *<audio>*')
 handler.tags = ['audio']
 handler.command = /^(bass|blown|deep|earrape|fas?t|nightcore|reverse|robot|slow|smooth|tupai|squirrel|chipmunk|reverb|chorus|flanger|distortion|pitch|highpass|lowpass|underwater)$/i
+
 export default handler
 
-const getRandom = (ext) => {
+function getRandom(ext) {
     return `${Math.floor(Math.random() * 10000)}${ext}`
 }
