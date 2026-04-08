@@ -5,6 +5,7 @@ import axios from 'axios';
 
 // --- FUNCIÓN PARA EL ESTILO DE LETRA ---
 const toStyle = (text) => {
+  if (!text) return '';
   const normal = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.<>!¡-';
   const styled = '𝙖𝙗𝙘𝙙𝙚𝙛𝙜𝙝𝙞𝙟𝙠𝙡𝙢𝙣𝙤𝙥𝙦𝙧𝙨𝙩𝙪𝙫𝙬𝙭𝙮𝙯𝘼𝘽𝘾𝘿𝙀𝙁𝙂𝙃𝙄𝙅𝙆𝙇𝙈𝙉𝙊𝙋𝙌𝙍𝙎𝙏𝙐𝙑𝙒𝙓𝙔𝙕𝟬𝟭𝟮𝟯𝟰𝟱𝟲𝟳𝟴𝟵.＜＞!¡-';
   return text.split('').map(char => {
@@ -46,15 +47,16 @@ const handler = async (m, { conn, usedPrefix }) => {
   try {
     const saludo = saludarSegunHora();
     const user = global.db.data.users[m.sender] || { level: 1, exp: 0, limit: 5 };
-    const { exp, level, limit } = user;
+    const { level, limit } = user;
     const totalUsers = Object.keys(global.db.data.users).length;
     const mode = global.opts?.self ? toStyle('Privado 🔒') : toStyle('Público 🌍');
     const uptime = clockString(process.uptime() * 1000);
+    
+    // Mención normal para que funcione el enlace azul
     const tagUsuario = `@${m.sender.split('@')[0]}`;
     const userName = (await conn.getName?.(m.sender)) || tagUsuario;
 
-    // --- CAMBIO AQUÍ: TEXTO QUE SALE ARRIBA DE LA IMAGEN ---
-    const fakeText = toStyle("𝙗𝙮 𝘽𝙖𝙧𝙗𝙤𝙯𝙖 - 𝙎𝙖𝙨𝙪𝙠𝙚");
+    const fakeText = toStyle("by Barboza - Sasuke");
     const imgRandom = ["https://iili.io/FKVDVAN.jpg", "https://iili.io/FKVbUrJ.jpg"].getRandom();
 
     let thumbnailBuffer;
@@ -66,12 +68,11 @@ const handler = async (m, { conn, usedPrefix }) => {
       thumbnailBuffer = Buffer.from(fallback.data);
     }
 
-    // Interfaz del mensaje citado (Fake Reply)
     const izumi = {
       key: { participants: "0@s.whatsapp.net", fromMe: false, id: "Interface" },
       message: {
         locationMessage: {
-          name: fakeText, // Aquí se aplicó el cambio
+          name: fakeText,
           jpegThumbnail: thumbnailBuffer,
           vcard: "BEGIN:VCARD\nVERSION:3.0\nN:;User;;;\nFN:User\nEND:VCARD"
         }
@@ -103,8 +104,9 @@ const handler = async (m, { conn, usedPrefix }) => {
       return `╭━━〔 ${emoji} ${styledTitle} 〕━━⊷\n${list}\n${sectionDivider}`;
     }).join('\n\n');
 
+    // Aquí mantenemos ${tagUsuario} SIN toStyle para que sea una mención válida
     const header = `
-${saludo} ${toStyle(tagUsuario)} 👋
+${saludo} ${tagUsuario} 👋
 
 ╭━━〔 ⚡ ${toStyle('SASUKE BOT MD')} ⚡ 〕━━⊷
 ┃ 👤 ${toStyle('Usuario')}: ${toStyle(userName)}
