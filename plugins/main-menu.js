@@ -3,7 +3,18 @@ import { join } from 'path';
 import { xpRange } from '../lib/levelling.js';
 import axios from 'axios';
 
-// Configuración de utilidades
+// --- CONFIGURACIÓN DE ESTILO DE LETRA ---
+// Esta función convierte texto normal a estilo Bold Italic Unicode (𝙀𝙨𝙩𝙚 𝙩𝙞𝙥𝙤)
+const toStyle = (text) => {
+  const normal = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.<>';
+  const styled = '𝙖𝙗𝙘𝙙𝙚𝙛𝙜𝙝𝙞𝙟𝙠𝙡𝙢𝙣𝙤𝙥𝙦𝙧𝙨𝙩𝙪𝙫𝙬𝙭𝙮𝙯𝘼𝘽𝘾𝘿𝙀𝙁𝙂𝙃𝙄𝙅𝙆𝙇𝙈𝙉𝙊𝙋𝙌𝙍𝙎𝙏𝙐𝙑𝙒𝙓𝙔𝙕𝟬𝟭𝟮𝟯𝟰𝟱𝟲𝟳𝟴𝟵.＜＞';
+  return text.split('').map(char => {
+    const index = normal.indexOf(char);
+    return index !== -1 ? styled.substring(index * 2, (index + 1) * 2) : char; // Unicode characters are 2 bytes
+  }).join('');
+};
+
+// --- CONFIGURACIÓN DE UTILIDADES ---
 const clockString = ms => {
   const h = Math.floor(ms / 3600000);
   const m = Math.floor(ms / 60000) % 60;
@@ -13,20 +24,22 @@ const clockString = ms => {
 
 const saludarSegunHora = () => {
   const hora = new Date().getHours();
-  if (hora >= 5 && hora < 12) return '🌅 𝘽𝙪𝙚𝙣𝙤𝙨 𝙙í𝙖𝙨';
-  if (hora >= 12 && hora < 19) return '☀️ 𝘽𝙪𝙚𝙣𝙖𝙨 𝙩𝙖𝙧𝙙𝙚𝙨';
-  return '🌙 𝘽𝙪𝙚𝙣𝙖s 𝙣𝙤𝙘𝙝𝙚𝙨';
+  // Aplicamos el estilo al saludo
+  if (hora >= 5 && hora < 12) return toStyle('🌅 ¡Buenos días!');
+  if (hora >= 12 && hora < 19) return toStyle('☀️ ¡Buenas tardes!');
+  return toStyle('🌙 ¡Buenas noches!');
 };
 
 // Variables de diseño
 const imgDefault = 'https://files.catbox.moe/t7uytz.png';
 const sectionDivider = '╰━━━━━━━━━━━━━━━⬣';
 
+// Aplicamos el estilo a los textos fijos del footer
 const menuFooter = `
-╭━━〔 💻 𝙄𝙉𝙁𝙊 𝙎𝙄𝙎𝙏𝙀𝙈𝘼 〕━━⊷
-┃ 🛠️ 𝙐𝙨𝙤: ${String.fromCharCode(8203)}.𝙘𝙤𝙢𝙖𝙣𝙙𝙤
-┃ ⚡ 𝙀𝙨𝙩𝙖𝙙𝙤: 𝙎𝙩𝙖𝙗𝙡𝙚
-┃ 🦾 𝘿𝙚𝙫: 𝘽𝙖𝙧𝙗𝙤𝙯𝙖-𝙏𝙚𝙖𝙢
+╭━━〔 💻 ${toStyle('INFO SISTEMA')} 〕━━⊷
+┃ 🛠️ ${toStyle('Uso')}: ${String.fromCharCode(8203)}.comando
+┃ ⚡ ${toStyle('Estado')}: ${toStyle('Stable')}
+┃ 🦾 ${toStyle('Dev')}: ${toStyle('Barboza-Team')}
 ╰━━━━━━━━━━━━━━━⬣
 `.trim();
 
@@ -41,14 +54,22 @@ const handler = async (m, { conn, usedPrefix }) => {
     const { exp, level, limit } = user;
     const { min, xp } = xpRange(level, global.multiplier || 1);
     const totalUsers = Object.keys(global.db.data.users).length;
-    const mode = global.opts?.self ? '𝙋𝙧𝙞𝙫𝙖𝙙𝙤 🔒' : '𝙋ú𝙗𝙡𝙞𝙘𝙤 🌍';
+    // Aplicamos el estilo a los modos y nombres
+    const mode = global.opts?.self ? toStyle('Privado 🔒') : toStyle('Público 🌍');
     const uptime = clockString(process.uptime() * 1000);
     const tagUsuario = `@${m.sender.split('@')[0]}`;
     const userName = (await conn.getName?.(m.sender)) || tagUsuario;
 
-    const text = ["𝙎𝘼𝙎𝙐𝙆𝙀-𝘽𝙊𝙏 𝙄𝙉𝙏𝙀𝙍𝙁𝘼𝘾𝙀", "𝙎𝙔𝙎𝙏𝙀𝙈 𝘾𝙊𝙍𝙀", "𝘿𝘼𝙎𝙃𝘽𝙊𝘼𝙍𝘿 𝙑2"].getRandom();
+    // Aplicamos el estilo a los textos de la interfaz
+    const textOptions = [
+      toStyle("SASUKE-BOT INTERFACE"), 
+      toStyle("SYSTEM CORE"), 
+      toStyle("DASHBOARD V2")
+    ];
+    const text = textOptions.getRandom();
     const imgRandom = ["https://iili.io/FKVDVAN.jpg", "https://iili.io/FKVbUrJ.jpg"].getRandom();
 
+    // Intentar obtener el thumbnail para el mensaje citado (izumi)
     let thumbnailBuffer;
     try {
       const response = await axios.get(imgRandom, { responseType: 'arraybuffer' });
@@ -78,7 +99,8 @@ const handler = async (m, { conn, usedPrefix }) => {
         const tag = Array.isArray(p.tags) ? p.tags[0] : p.tags || 'Otros';
         const cmds = Array.isArray(p.help) ? p.help : [p.help];
         categorizedCommands[tag] = categorizedCommands[tag] || new Set();
-        cmds.forEach(cmd => categorizedCommands[tag].add(usedPrefix + cmd));
+        // Convertimos el comando completo (prefix + comando) al estilo
+        cmds.forEach(cmd => categorizedCommands[tag].add(toStyle(usedPrefix + cmd)));
       });
 
     const categoryEmojis = {
@@ -90,39 +112,35 @@ const handler = async (m, { conn, usedPrefix }) => {
 
     const menuBody = Object.entries(categorizedCommands).map(([title, cmds]) => {
       const emoji = categoryEmojis[title.toLowerCase()] || '📂';
-      // Convertir título a diseño de letra
-      const stylishTitle = title.toUpperCase()
-        .replace(/A/g, '𝘼').replace(/B/g, '𝘽').replace(/C/g, '𝘾').replace(/D/g, '𝘿')
-        .replace(/E/g, '𝙀').replace(/F/g, '𝙁').replace(/G/g, '𝙂').replace(/H/g, '𝙃')
-        .replace(/I/g, '𝙄').replace(/J/g, '𝙅').replace(/K/g, '𝙆').replace(/L/g, '𝙇')
-        .replace(/M/g, '𝙈').replace(/N/g, '𝙉').replace(/O/g, '𝙊').replace(/P/g, '𝙋')
-        .replace(/Q/g, '𝙌').replace(/R/g, '𝙍').replace(/S/g, '𝙎').replace(/T/g, '𝙏')
-        .replace(/U/g, '𝙐').replace(/V/g, '𝙑').replace(/W/g, '𝙒').replace(/X/g, '𝙓')
-        .replace(/Y/g, '𝙔').replace(/Z/g, '𝙕');
-        
+      // Aplicamos el estilo al título de la categoría
+      const styledTitle = toStyle(title.toUpperCase());
       const list = [...cmds].map(cmd => `┃  » ⚡ ${cmd}`).join('\n');
-      return `╭━━〔 ${emoji} ${stylishTitle} 〕━━⊷\n${list}\n${sectionDivider}`;
+      return `╭━━〔 ${emoji} ${styledTitle} 〕━━⊷\n${list}\n${sectionDivider}`;
     }).join('\n\n');
 
+    // Aplicamos el estilo a las cabeceras de información del usuario
     const header = `
-${saludo} ${tagUsuario} 👋
+${saludo} ${toStyle(tagUsuario)} 👋
 
-╭━━〔 ⚡ 𝙎𝘼𝙎𝙐𝙆𝙀 𝘽𝙊𝙏 𝙈𝘿 ⚡ 〕━━⊷
-┃ 👤 𝙐𝙨𝙪𝙖𝙧𝙞𝙤: ${userName}
-┃ 📊 𝙉𝙞𝙫𝙚𝙡: ${level}
-┃ 💎 𝘿𝙞𝙖𝙢𝙖𝙣𝙩𝙚𝙨: ${limit}
-┃ ⏲️ 𝙐𝙥𝙩𝙞𝙢𝙚: ${uptime}
-┃ 👥 𝙐𝙨𝙪𝙖𝙧𝙞𝙤𝙨: ${totalUsers}
-┃ 🔐 𝙈𝙤𝙙𝙤: ${mode}
+╭━━〔 ⚡ ${toStyle('SASUKE BOT MD')} ⚡ 〕━━⊷
+┃ 👤 ${toStyle('Usuario')}: ${toStyle(userName)}
+┃ 📊 ${toStyle('Nivel')}: ${level}
+┃ 💎 ${toStyle('Diamantes')}: ${limit}
+┃ ⏲️ ${toStyle('Uptime')}: ${uptime}
+┃ 👥 ${toStyle('Usuarios')}: ${totalUsers}
+┃ 🔐 ${toStyle('Modo')}: ${mode}
 ╰━━━━━━━━━━━━━━━⬣
 `.trim();
 
     const fullMenu = `${header}\n\n${menuBody}\n\n${menuFooter}`;
 
+    // Lógica para decidir si usar imagen local o URL
     let finalImage;
     try {
+        // Intenta leer la imagen local del catálogo
         finalImage = readFileSync(join(process.cwd(), 'storage', 'img', 'miniurl.jpg'));
     } catch {
+        // Si no existe el archivo local, usa la URL default
         finalImage = { url: imgDefault };
     }
 
@@ -134,7 +152,8 @@ ${saludo} ${tagUsuario} 👋
 
   } catch (e) {
     console.error(e);
-    await conn.reply(m.chat, `⚠️ 𝙀𝙧𝙧𝙤𝙧 𝙚𝙣 𝙡𝙖 𝙞𝙣𝙩𝙚𝙧𝙛𝙖𝙟 𝙙𝙚𝙡 𝙨𝙞𝙨𝙩𝙚𝙢𝙖.\n> ${e.message}`, m);
+    // Aplicamos el estilo al mensaje de error
+    await conn.reply(m.chat, `⚠️ ${toStyle('Error en la interfaz del sistema')}.\n> ${toStyle(e.message)}`, m);
   }
 };
 
