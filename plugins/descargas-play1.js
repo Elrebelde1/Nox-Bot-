@@ -1,8 +1,9 @@
+
 import fetch from "node-fetch"
 import yts from 'yt-search'
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text.trim()) return conn.reply(m.chat, `⚠️ Ingrese el nombre o link de YouTube.`, m)
+    if (!text.trim()) return conn.reply(m.chat, `⚠️ ɪɴɢʀᴇsᴇ ᴇʟ ɴᴏᴍʙʀᴇ ᴏ ʟɪɴᴋ ᴅᴇ ʏᴏᴜᴛᴜʙᴇ.`, m)
 
     try {
         if (m.react) await m.react('⏳')
@@ -13,7 +14,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
         if (!search || !search.all || search.all.length === 0) {
             if (m.react) await m.react('❌')
-            return conn.reply(m.chat, '❌ No se encontraron resultados.', m)
+            return conn.reply(m.chat, '❌ ɴᴏ sᴇ ᴇɴᴄᴏɴᴛʀᴀʀᴏɴ ʀᴇsᴜʟᴛᴀᴅᴏs.', m)
         }
 
         const result = videoMatch ? search.videos.find(v => v.videoId === videoMatch[1]) || search.all[0] : search.all[0]
@@ -23,18 +24,18 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         let downloadUrl = null
         let selectedApi = ""
 
-        // Intento 1: Delirius
+        // ϟ ɪɴᴛᴇɴᴛᴏ 1: ᴅᴇʟɪʀɪᴜs
         try {
             const apiLink = isAudio ? `ytmp3?url=${encodeURIComponent(url)}` : `ytmp4?url=${encodeURIComponent(url)}`
             const res = await fetch(`https://api.delirius.store/download/${apiLink}`)
             const json = await res.json()
             if (json.status) {
-                downloadUrl = isAudio ? json.data.download : json.data.download
-                selectedApi = "Delirius"
+                downloadUrl = json.data.download
+                selectedApi = "ᴅᴇʟɪʀɪᴜs"
             }
         } catch {}
 
-        // Intento 2: Sylphy (Fallback)
+        // ϟ ɪɴᴛᴇɴᴛᴏ 2: sʏʟᴘʜʏ (ғᴀʟʟʙᴀᴄᴋ)
         if (!downloadUrl) {
             try {
                 const format = isAudio ? 'ytmp3' : 'ytmp4'
@@ -42,21 +43,28 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                 const json = await res.json()
                 if (json.status) {
                     downloadUrl = json.result.dl_url
-                    selectedApi = "Sylphy"
+                    selectedApi = "sʏʟᴘʜʏ"
                 }
             } catch {}
         }
 
         if (!downloadUrl) {
             if (m.react) await m.react('❌')
-            return conn.reply(m.chat, '🛑 Error: No se pudo obtener el enlace.', m)
+            return conn.reply(m.chat, '🛑 ᴇʀʀᴏʀ: ɴᴏ sᴇ ᴘᴜᴅᴏ ᴏʙᴛᴇɴᴇʀ ᴇʟ ᴇɴʟᴀᴄᴇ.', m)
         }
 
-        const info = `🎬 *YOUTUBE*\n\n⭐ *${title}*\n⏱️ *${timestamp}*\n📡 *Servidor:* ${selectedApi}`
+        let info = `╭─〔 ♆ *ᴜᴄʜɪʜᴀ ʏᴏᴜᴛᴜʙᴇ* ♆ 〕─╮\n`
+        info += `│\n`
+        info += `│ 🎬 *ᴛɪᴛᴜʟᴏ:* ${title}\n`
+        info += `│ ⏱️ *ᴅᴜʀᴀᴄɪᴏɴ:* ${timestamp}\n`
+        info += `│ 📡 *sᴇʀᴠɪᴅᴏʀ:* ${selectedApi}\n`
+        info += `│\n`
+        info += `│ 🌑 "ʟᴀ ᴏsᴄᴜʀɪᴅᴀᴅ ᴇs ᴍɪ ɢᴜɪᴀ"\n`
+        info += `╰────────────────────────────╯`
+
         await conn.sendMessage(m.chat, { image: { url: thumbnail }, caption: info }, { quoted: m })
 
         if (isAudio) {
-            // Configuración para que se escuche en Android y iPhone como nota de voz/audio reproducible
             await conn.sendMessage(m.chat, { 
                 audio: { url: downloadUrl }, 
                 mimetype: 'audio/mp4', 
@@ -64,11 +72,10 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                 fileName: `${title}.mp3` 
             }, { quoted: m })
         } else {
-            // Configuración para que el video abra el reproductor nativo en ambos sistemas
             await conn.sendMessage(m.chat, { 
                 video: { url: downloadUrl }, 
                 mimetype: 'video/mp4', 
-                caption: `✅ Reproducción lista`,
+                caption: `✅ *ʀᴇᴘʀᴏᴅᴜᴄᴄɪᴏɴ ʟɪsᴛᴀ*`,
                 asDocument: false
             }, { quoted: m })
         }
