@@ -79,28 +79,39 @@ const handler = async (m, { conn, usedPrefix }) => {
       participant: "0@s.whatsapp.net"
     };
 
-    // --- SECCIÓN MAIN PERSONALIZADA (ESTILO IMAGEN) ---
+    // --- SECCIÓN MAIN (CON ESPACIADO MEJORADO) ---
     const mainSection = `╭━━〔 👑 ${toStyle('MAIN')} 〕━━⊷
+┃
 ┃  » ⚡ ${toStyle('.menu')}
-┃  ${toStyle('Muestra este menú de ayuda.')}
+┃  ➥ ${toStyle('Muestra este menú de ayuda.')}
+┃
 ┃  » ⚡ ${toStyle('.code')}
-┃  ${toStyle('Conviértete en subbot.')}
+┃  ➥ ${toStyle('Conviértete en subbot.')}
+┃
 ┃  » ⚡ ${toStyle('.stop')}
-┃  ${toStyle('Detener y eliminar la sección como subbot.')}
+┃  ➥ ${toStyle('Detener y eliminar la sección como subbot.')}
+┃
 ┃  » ⚡ ${toStyle('.bots')}
-┃  ${toStyle('Ver la lista de subbots.')}
+┃  ➥ ${toStyle('Ver la lista de subbots.')}
+┃
 ┃  » ⚡ ${toStyle('.reporte/.report/.bug')}
-┃  ${toStyle('Reporta un error en el sistema.')}
+┃  ➥ ${toStyle('Reporta un error en el sistema.')}
+┃
 ┃  » ⚡ ${toStyle('.idea/.sugerencia')}
-┃  ${toStyle('Sugiere un nuevo comando o comparte una idea.')}
+┃  ➥ ${toStyle('Sugiere un nuevo comando o comparte una idea.')}
+┃
 ┃  » ⚡ ${toStyle('.creador')}
-┃  ${toStyle('Información sobre el creador.')}
+┃  ➥ ${toStyle('Información sobre el creador.')}
+┃
 ┃  » ⚡ ${toStyle('.uso/.topcmd')}
-┃  ${toStyle('Lista de comandos más usados.')}
+┃  ➥ ${toStyle('Lista de comandos más usados.')}
+┃
 ┃  » ⚡ ${toStyle('.novedades/.news')}
-┃  ${toStyle('Información sobre nuevas funciones y novedades.')}
+┃  ➥ ${toStyle('Información sobre nuevas funciones y novedades.')}
+┃
 ┃  » ⚡ ${toStyle('.devs')}
-┃  ${toStyle('Contactos de los desarrolladores.')}
+┃  ➥ ${toStyle('Contactos de los desarrolladores.')}
+┃
 ${sectionDivider}`;
 
     // --- GENERACIÓN DINÁMICA DE OTRAS CATEGORÍAS ---
@@ -112,13 +123,13 @@ ${sectionDivider}`;
         if (tag.toLowerCase() === 'main' || tag.toLowerCase() === 'info') return;
 
         const help = Array.isArray(p.help) ? p.help : [p.help];
-        const desc = p.desc || 'Sin descripción disponible'; // Asume que tienes una propiedad .desc en tus plugins
+        const desc = p.desc || 'Sin descripción';
 
         categorizedCommands[tag] = categorizedCommands[tag] || [];
         help.forEach(cmd => {
           categorizedCommands[tag].push({
             cmd: toStyle(usedPrefix + cmd),
-            desc: typeof desc === 'string' ? toStyle(desc) : toStyle('Ejecuta el comando ' + cmd)
+            desc: toStyle(desc)
           });
         });
       });
@@ -134,10 +145,10 @@ ${sectionDivider}`;
       const emoji = categoryEmojis[title.toLowerCase()] || '📂';
       const styledTitle = toStyle(title.toUpperCase());
       
-      // Aquí se genera: Comando arriba, Descripción abajo
-      const list = items.map(item => `┃  » ⚡ ${item.cmd}\n┃  ${item.desc}`).join('\n');
+      // Mapeo con espacio vacío entre cada bloque de comando/función
+      const list = items.map(item => `┃\n┃  » ⚡ ${item.cmd}\n┃  ➥ ${item.desc}`).join('\n');
       
-      return `╭━━〔 ${emoji} ${styledTitle} 〕━━⊷\n${list}\n${sectionDivider}`;
+      return `╭━━〔 ${emoji} ${styledTitle} 〕━━⊷\n${list}\n┃\n${sectionDivider}`;
     }).join('\n\n');
 
     const header = `
