@@ -7,7 +7,7 @@ import axios from 'axios';
 const toStyle = (text) => {
   if (!text) return '';
   const normal = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.<>!¡-';
-  const styled = '𝙖𝙗𝙘𝙙𝙚𝙛𝙜𝙝𝙞𝙟𝙠𝙡𝙢𝙣𝙤𝙥𝙦𝙧𝙨𝙩𝙪𝙫𝙬𝙭𝙮𝙯𝘼𝘽𝘾𝘿𝙀𝙁𝙂𝙃𝙄𝙅𝙆𝙇𝙈𝙉𝙊𝙋𝙌𝙍𝙎𝙏𝙐𝙑𝙒𝙓𝙔𝙕𝟬𝟭𝟮𝟯𝟰𝟱𝟲𝟳𝟴𝟵.＜＞!¡-';
+  const styled = '𝙖𝙗𝙘𝙙𝙚𝙛𝗴𝙝𝙞𝙟𝙠𝙡𝙢𝙣𝙤𝙥𝙦𝙧𝙨𝙩𝙪𝙫𝙬𝙭𝙮𝙯𝘼𝘽𝘾𝘿𝙀𝙁𝙂𝙃𝙄𝙅𝙆𝙇𝙈𝙉𝙊𝙋𝙌𝙍𝙎𝙏𝙐𝙑𝙒𝙓𝙔𝙕𝟬𝟭𝟮𝟯𝟰𝟱𝟲𝟳𝟴𝟵.＜＞!¡-';
   return text.split('').map(char => {
     const index = normal.indexOf(char);
     return index !== -1 ? styled.substring(index * 2, (index + 1) * 2) : char;
@@ -78,7 +78,7 @@ const handler = async (m, { conn, usedPrefix }) => {
       participant: "0@s.whatsapp.net"
     };
 
-    // --- SECCIÓN MAIN MANUAL ---
+    // --- SECCIÓN MAIN MANUAL (IDÉNTICA A TU IMAGEN) ---
     const mainSection = `╭━━〔 👑 ${toStyle('MAIN')} 〕━━⊷
 ┃  » ⚡ ${toStyle('.menu')}
 ┃  ➥ ${toStyle('Muestra este menú de ayuda.')}
@@ -111,22 +111,23 @@ const handler = async (m, { conn, usedPrefix }) => {
 ┃  ➥ ${toStyle('Contactos de los desarrolladores.')}
 ${sectionDivider}`;
 
-    // --- GENERACIÓN DINÁMICA IGUAL A LA PRIMERA PARTE ---
+    // --- GENERACIÓN DE CATEGORÍAS DINÁMICAS ---
     let categorizedCommands = {};
     Object.values(global.plugins)
       .filter(p => p?.help && !p.disabled)
       .forEach(p => {
         const tag = Array.isArray(p.tags) ? p.tags[0] : p.tags || 'Otros';
-        if (tag.toLowerCase() === 'main' || tag.toLowerCase() === 'info') return;
+        if (['main', 'info'].includes(tag.toLowerCase())) return;
 
         const help = Array.isArray(p.help) ? p.help : [p.help];
-        const desc = p.desc || 'Sin descripción';
+        // Si el plugin no tiene .desc, usamos un texto genérico "Sin descripción"
+        const rawDesc = p.desc || 'Sin descripción';
 
         categorizedCommands[tag] = categorizedCommands[tag] || [];
         help.forEach(cmd => {
           categorizedCommands[tag].push({
             cmd: toStyle(usedPrefix + cmd),
-            desc: toStyle(desc)
+            desc: toStyle(rawDesc)
           });
         });
       });
@@ -135,14 +136,14 @@ ${sectionDivider}`;
       anime: '🎎', search: '🔍', diversión: '🎮', subbots: '🤖',
       rpg: '⚔️', registro: '📝', sticker: '🎭', imagen: '🖼️', logo: '🎨',
       premium: '💎', configuración: '⚙️', descargas: '📥', herramientas: '🔧',
-      nsfw: '🔞', 'base de datos': '🗂️', audios: '🎧', freefire: '🔫', buscador: '📂', otros: '🧩'
+      nsfw: '🔞', 'base de datos': '🗂️', audios: '🎧', freefire: '🔫', buscador: '📂'
     };
 
     const menuBody = Object.entries(categorizedCommands).map(([title, items]) => {
       const emoji = categoryEmojis[title.toLowerCase()] || '📂';
       const styledTitle = toStyle(title.toUpperCase());
       
-      // Aquí aplicamos el mismo diseño de la primera imagen a todas las categorías
+      // Armamos cada comando con su descripción debajo y el espacio separador
       const list = items.map(item => `┃  » ⚡ ${item.cmd}\n┃  ➥ ${item.desc}`).join('\n┃\n');
       
       return `╭━━〔 ${emoji} ${styledTitle} 〕━━⊷\n${list}\n${sectionDivider}`;
