@@ -54,7 +54,6 @@ const handler = async (m, { conn, usedPrefix }) => {
 
     const tagUsuario = `@${m.sender.split('@')[0]}`;
     const userName = (await conn.getName?.(m.sender)) || tagUsuario;
-
     const fakeText = toStyle("by Barboza - Sasuke");
     const imgRandom = ["https://iili.io/FKVDVAN.jpg", "https://iili.io/FKVbUrJ.jpg"].getRandom();
 
@@ -79,9 +78,8 @@ const handler = async (m, { conn, usedPrefix }) => {
       participant: "0@s.whatsapp.net"
     };
 
-    // --- SECCIÓN MAIN (CON ESPACIADO MEJORADO) ---
+    // --- SECCIÓN MAIN MANUAL ---
     const mainSection = `╭━━〔 👑 ${toStyle('MAIN')} 〕━━⊷
-┃
 ┃  » ⚡ ${toStyle('.menu')}
 ┃  ➥ ${toStyle('Muestra este menú de ayuda.')}
 ┃
@@ -111,10 +109,9 @@ const handler = async (m, { conn, usedPrefix }) => {
 ┃
 ┃  » ⚡ ${toStyle('.devs')}
 ┃  ➥ ${toStyle('Contactos de los desarrolladores.')}
-┃
 ${sectionDivider}`;
 
-    // --- GENERACIÓN DINÁMICA DE OTRAS CATEGORÍAS ---
+    // --- GENERACIÓN DINÁMICA IGUAL A LA PRIMERA PARTE ---
     let categorizedCommands = {};
     Object.values(global.plugins)
       .filter(p => p?.help && !p.disabled)
@@ -138,17 +135,17 @@ ${sectionDivider}`;
       anime: '🎎', search: '🔍', diversión: '🎮', subbots: '🤖',
       rpg: '⚔️', registro: '📝', sticker: '🎭', imagen: '🖼️', logo: '🎨',
       premium: '💎', configuración: '⚙️', descargas: '📥', herramientas: '🔧',
-      nsfw: '🔞', 'base de datos': '🗂️', audios: '🎧', freefire: '🔫', otros: '🧩'
+      nsfw: '🔞', 'base de datos': '🗂️', audios: '🎧', freefire: '🔫', buscador: '📂', otros: '🧩'
     };
 
     const menuBody = Object.entries(categorizedCommands).map(([title, items]) => {
       const emoji = categoryEmojis[title.toLowerCase()] || '📂';
       const styledTitle = toStyle(title.toUpperCase());
       
-      // Mapeo con espacio vacío entre cada bloque de comando/función
-      const list = items.map(item => `┃\n┃  » ⚡ ${item.cmd}\n┃  ➥ ${item.desc}`).join('\n');
+      // Aquí aplicamos el mismo diseño de la primera imagen a todas las categorías
+      const list = items.map(item => `┃  » ⚡ ${item.cmd}\n┃  ➥ ${item.desc}`).join('\n┃\n');
       
-      return `╭━━〔 ${emoji} ${styledTitle} 〕━━⊷\n${list}\n┃\n${sectionDivider}`;
+      return `╭━━〔 ${emoji} ${styledTitle} 〕━━⊷\n${list}\n${sectionDivider}`;
     }).join('\n\n');
 
     const header = `
