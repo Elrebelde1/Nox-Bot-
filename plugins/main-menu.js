@@ -51,8 +51,7 @@ const handler = async (m, { conn, usedPrefix }) => {
     const totalUsers = Object.keys(global.db.data.users).length;
     const mode = global.opts?.self ? toStyle('Privado 🔒') : toStyle('Público 🌍');
     const uptime = clockString(process.uptime() * 1000);
-    
-    // Mención normal para que funcione el enlace azul
+
     const tagUsuario = `@${m.sender.split('@')[0]}`;
     const userName = (await conn.getName?.(m.sender)) || tagUsuario;
 
@@ -80,18 +79,45 @@ const handler = async (m, { conn, usedPrefix }) => {
       participant: "0@s.whatsapp.net"
     };
 
+    // --- SECCIÓN MAIN (DE TU IMAGEN) ---
+    const mainSection = `╭━━〔 👑 ${toStyle('MAIN')} 〕━━⊷
+┃  » ⚡ ${toStyle('.menu')}
+┃  ${toStyle('Muestra este menú de ayuda.')}
+┃  » ⚡ ${toStyle('.code')}
+┃  ${toStyle('Conviértete en subbot.')}
+┃  » ⚡ ${toStyle('.stop')}
+┃  ${toStyle('Detener y eliminar la sección como subbot.')}
+┃  » ⚡ ${toStyle('.bots')}
+┃  ${toStyle('Ver la lista de subbots.')}
+┃  » ⚡ ${toStyle('.reporte/.report/.bug')}
+┃  ${toStyle('Reporta un error en el sistema.')}
+┃  » ⚡ ${toStyle('.idea/.sugerencia')}
+┃  ${toStyle('Sugiere un nuevo comando o comparte una idea.')}
+┃  » ⚡ ${toStyle('.creador')}
+┃  ${toStyle('Información sobre el creador.')}
+┃  » ⚡ ${toStyle('.uso/.topcmd')}
+┃  ${toStyle('Lista de comandos más usados.')}
+┃  » ⚡ ${toStyle('.novedades/.news')}
+┃  ${toStyle('Información sobre nuevas funciones y novedades.')}
+┃  » ⚡ ${toStyle('.devs')}
+┃  ${toStyle('Contactos de los desarrolladores.')}
+${sectionDivider}`;
+
     let categorizedCommands = {};
     Object.values(global.plugins)
       .filter(p => p?.help && !p.disabled)
       .forEach(p => {
         const tag = Array.isArray(p.tags) ? p.tags[0] : p.tags || 'Otros';
+        // Evitamos duplicar la sección info o main si ya la pusimos manualmente
+        if (tag.toLowerCase() === 'main' || tag.toLowerCase() === 'info') return;
+        
         const cmds = Array.isArray(p.help) ? p.help : [p.help];
         categorizedCommands[tag] = categorizedCommands[tag] || new Set();
         cmds.forEach(cmd => categorizedCommands[tag].add(toStyle(usedPrefix + cmd)));
       });
 
     const categoryEmojis = {
-      anime: '🎎', info: '🆔', search: '🔍', diversión: '🎮', subbots: '🤖',
+      anime: '🎎', search: '🔍', diversión: '🎮', subbots: '🤖',
       rpg: '⚔️', registro: '📝', sticker: '🎭', imagen: '🖼️', logo: '🎨',
       premium: '💎', configuración: '⚙️', descargas: '📥', herramientas: '🔧',
       nsfw: '🔞', 'base de datos': '🗂️', audios: '🎧', freefire: '🔫', otros: '🧩'
@@ -104,7 +130,6 @@ const handler = async (m, { conn, usedPrefix }) => {
       return `╭━━〔 ${emoji} ${styledTitle} 〕━━⊷\n${list}\n${sectionDivider}`;
     }).join('\n\n');
 
-    // Aquí mantenemos ${tagUsuario} SIN toStyle para que sea una mención válida
     const header = `
 ${saludo} ${tagUsuario} 👋
 
@@ -118,7 +143,8 @@ ${saludo} ${tagUsuario} 👋
 ╰━━━━━━━━━━━━━━━⬣
 `.trim();
 
-    const fullMenu = `${header}\n\n${menuBody}\n\n${menuFooter}`;
+    // Unimos el Header, la sección Main manual y el resto de comandos
+    const fullMenu = `${header}\n\n${mainSection}\n\n${menuBody}\n\n${menuFooter}`;
 
     let finalImage;
     try {
