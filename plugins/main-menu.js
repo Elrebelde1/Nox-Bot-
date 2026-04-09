@@ -7,7 +7,7 @@ import axios from 'axios';
 const toStyle = (text) => {
   if (!text) return '';
   const normal = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.<>!¡-';
-  const styled = '𝙖𝙗𝙘𝙙𝙚𝙛𝗴𝙝𝙞𝙟𝙠𝙡𝙢𝙣𝙤𝙥𝙦𝙧𝙨𝙩𝙪𝙫𝙬𝙭𝙮𝙯𝘼𝘽𝘾𝘿𝙀𝙁𝙂𝙃𝙄𝙅𝙆𝙇𝙈𝙉𝙊𝙋𝙌𝙍𝙎𝙏𝙐𝙑𝙒𝙓𝙔𝙕𝟬𝟭𝟮𝟯𝟰𝟱𝟲𝟳𝟴𝟵.＜＞!¡-';
+  const styled = '𝙖𝙗𝙘𝙙𝙚𝙛𝙜𝙝𝙞𝙟𝙠𝙡𝙢𝙣𝙤𝙥𝙦𝙧𝙨𝙩𝙪𝙫𝙬𝙭𝙮𝙯𝘼𝘽𝘾𝘿𝙀𝙁𝙂𝙃𝙄𝙅𝙆𝙇𝙈𝙉𝙊𝙋𝙌𝙍𝙎𝙏𝙐𝙑𝙒𝙓𝙔𝙕𝟬𝟭𝟮𝟯𝟰𝟱𝟲𝟳𝟴𝟵.＜＞!¡-';
   return text.split('').map(char => {
     const index = normal.indexOf(char);
     return index !== -1 ? styled.substring(index * 2, (index + 1) * 2) : char;
@@ -54,6 +54,7 @@ const handler = async (m, { conn, usedPrefix }) => {
 
     const tagUsuario = `@${m.sender.split('@')[0]}`;
     const userName = (await conn.getName?.(m.sender)) || tagUsuario;
+
     const fakeText = toStyle("by Barboza - Sasuke");
     const imgRandom = ["https://iili.io/FKVDVAN.jpg", "https://iili.io/FKVbUrJ.jpg"].getRandom();
 
@@ -78,74 +79,28 @@ const handler = async (m, { conn, usedPrefix }) => {
       participant: "0@s.whatsapp.net"
     };
 
-    // --- SECCIÓN MAIN MANUAL (IDÉNTICA A TU IMAGEN) ---
-    const mainSection = `╭━━〔 👑 ${toStyle('MAIN')} 〕━━⊷
-┃  » ⚡ ${toStyle('.menu')}
-┃  ➥ ${toStyle('Muestra este menú de ayuda.')}
-┃
-┃  » ⚡ ${toStyle('.code')}
-┃  ➥ ${toStyle('Conviértete en subbot.')}
-┃
-┃  » ⚡ ${toStyle('.stop')}
-┃  ➥ ${toStyle('Detener y eliminar la sección como subbot.')}
-┃
-┃  » ⚡ ${toStyle('.bots')}
-┃  ➥ ${toStyle('Ver la lista de subbots.')}
-┃
-┃  » ⚡ ${toStyle('.reporte/.report/.bug')}
-┃  ➥ ${toStyle('Reporta un error en el sistema.')}
-┃
-┃  » ⚡ ${toStyle('.idea/.sugerencia')}
-┃  ➥ ${toStyle('Sugiere un nuevo comando o comparte una idea.')}
-┃
-┃  » ⚡ ${toStyle('.creador')}
-┃  ➥ ${toStyle('Información sobre el creador.')}
-┃
-┃  » ⚡ ${toStyle('.uso/.topcmd')}
-┃  ➥ ${toStyle('Lista de comandos más usados.')}
-┃
-┃  » ⚡ ${toStyle('.novedades/.news')}
-┃  ➥ ${toStyle('Información sobre nuevas funciones y novedades.')}
-┃
-┃  » ⚡ ${toStyle('.devs')}
-┃  ➥ ${toStyle('Contactos de los desarrolladores.')}
-${sectionDivider}`;
-
-    // --- GENERACIÓN DE CATEGORÍAS DINÁMICAS ---
     let categorizedCommands = {};
     Object.values(global.plugins)
       .filter(p => p?.help && !p.disabled)
       .forEach(p => {
         const tag = Array.isArray(p.tags) ? p.tags[0] : p.tags || 'Otros';
-        if (['main', 'info'].includes(tag.toLowerCase())) return;
-
-        const help = Array.isArray(p.help) ? p.help : [p.help];
-        // Si el plugin no tiene .desc, usamos un texto genérico "Sin descripción"
-        const rawDesc = p.desc || 'Sin descripción';
-
-        categorizedCommands[tag] = categorizedCommands[tag] || [];
-        help.forEach(cmd => {
-          categorizedCommands[tag].push({
-            cmd: toStyle(usedPrefix + cmd),
-            desc: toStyle(rawDesc)
-          });
-        });
+        const cmds = Array.isArray(p.help) ? p.help : [p.help];
+        categorizedCommands[tag] = categorizedCommands[tag] || new Set();
+        cmds.forEach(cmd => categorizedCommands[tag].add(toStyle(usedPrefix + cmd)));
       });
 
     const categoryEmojis = {
-      anime: '🎎', search: '🔍', diversión: '🎮', subbots: '🤖',
+      anime: '🎎', info: '🆔', search: '🔍', diversión: '🎮', subbots: '🤖',
       rpg: '⚔️', registro: '📝', sticker: '🎭', imagen: '🖼️', logo: '🎨',
       premium: '💎', configuración: '⚙️', descargas: '📥', herramientas: '🔧',
-      nsfw: '🔞', 'base de datos': '🗂️', audios: '🎧', freefire: '🔫', buscador: '📂'
+      nsfw: '🔞', 'base de datos': '🗂️', audios: '🎧', freefire: '🔫', otros: '🧩'
     };
 
-    const menuBody = Object.entries(categorizedCommands).map(([title, items]) => {
+    const menuBody = Object.entries(categorizedCommands).map(([title, cmds]) => {
       const emoji = categoryEmojis[title.toLowerCase()] || '📂';
       const styledTitle = toStyle(title.toUpperCase());
-      
-      // Armamos cada comando con su descripción debajo y el espacio separador
-      const list = items.map(item => `┃  » ⚡ ${item.cmd}\n┃  ➥ ${item.desc}`).join('\n┃\n');
-      
+      // Aquí quitamos la descripción y dejamos solo el comando con el rayo
+      const list = [...cmds].map(cmd => `┃  » ⚡ ${cmd}`).join('\n');
       return `╭━━〔 ${emoji} ${styledTitle} 〕━━⊷\n${list}\n${sectionDivider}`;
     }).join('\n\n');
 
@@ -162,7 +117,7 @@ ${saludo} ${tagUsuario} 👋
 ╰━━━━━━━━━━━━━━━⬣
 `.trim();
 
-    const fullMenu = `${header}\n\n${mainSection}\n\n${menuBody}\n\n${menuFooter}`;
+    const fullMenu = `${header}\n\n${menuBody}\n\n${menuFooter}`;
 
     let finalImage;
     try {
