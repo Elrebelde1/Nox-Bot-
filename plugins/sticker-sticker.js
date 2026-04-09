@@ -7,8 +7,8 @@ import { join } from 'path'
 
 let handler = async (m, { conn, args, usedPrefix, command }) => {
   let stiker = false
-  
-  // Ruta de la imagen del catálogo
+
+  // ϟ ʀᴜᴛᴀ ᴅᴇ ʟᴀ ɪᴍᴀɢᴇɴ ᴅᴇʟ ᴄᴀᴛᴀʟᴏɢᴏ
   const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
   let catalogoImg
   if (existsSync(pathImg)) {
@@ -23,11 +23,11 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 
     if (/webp|image|video/g.test(mime)) {
       if (/video/g.test(mime) && (q.msg || q).seconds > 15) {
-        return m.reply(`⚡ *Lɪᴍɪᴛᴇ Exᴄᴇᴅɪᴅᴏ...*\n\nNᴏ ᴛᴇɴɢᴏ ᴛɪᴇᴍᴘᴏ ᴘᴀʀᴀ ᴠɪᴅᴇᴏs ʟᴀʀɢᴏs. Mᴀxɪᴍᴏ 15 sᴇɢᴜɴᴅᴏs.`)
+        return m.reply(`⚡ *ʟɪᴍɪᴛᴇ ᴇxᴄᴇᴅɪᴅᴏ...*\n\nɴᴏ ᴛᴇɴɢᴏ ᴛɪᴇᴍᴘᴏ ᴘᴀʀᴀ ᴠɪᴅᴇᴏs ʟᴀʀɢᴏs. ᴍᴀxɪᴍᴏ 15 sᴇɢᴜɴᴅᴏs.`)
       }
 
       let img = await q.download?.()
-      if (!img) throw 'Error al descargar media'
+      if (!img) throw 'ᴇʀʀᴏʀ ᴀʟ ᴅᴇsᴄᴀʀɢᴀʀ ᴍᴇᴅɪᴀ'
 
       let userId = m.sender
       let packstickers = global.db.data.users[userId] || {}
@@ -35,7 +35,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
       let texto2 = packstickers.text2 || global.packsticker2
 
       stiker = await sticker(img, false, texto1, texto2)
-      
+
       if (!stiker) {
         let out
         if (/webp/g.test(mime)) out = await webp2png(img)
@@ -53,18 +53,18 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     if (stiker) {
       conn.sendFile(m.chat, stiker, 'sticker.webp', '', m)
     } else {
-      // Mensaje con la imagen del catálogo e información
-      let txt = `╭─〔 ♆ *Uᴄʜɪʜᴀ Sᴛɪᴄᴋᴇʀ* ♆ 〕─╮\n`
+      // ϟ ᴍᴇɴsᴀᴊᴇ ᴄᴏɴ ᴇsᴛɪʟᴏ ᴜᴄʜɪʜᴀ sᴍᴀʟʟ ᴄᴀᴘs
+      let txt = `╭─〔 ♆ *ᴜᴄʜɪʜᴀ sᴛɪᴄᴋᴇʀ* ♆ 〕─╮\n`
       txt += `│\n`
-      txt += `│ 👁️ *Eɴᴠɪᴀ ᴜɴᴀ ɪᴍᴀɢᴇɴ ᴏ ᴠɪᴅᴇᴏ* \n`
+      txt += `│ 👁️ *ᴇɴᴠɪᴀ ᴜɴᴀ ɪᴍᴀɢᴇɴ ᴏ ᴠɪᴅᴇᴏ* \n`
       txt += `│      ᴘᴀʀᴀ ᴍᴏsᴛʀᴀʀ ᴛᴜ ᴘᴏᴅᴇʀ.\n`
       txt += `│\n`
-      txt += `│ ⏳ *Tɪᴇᴍᴘᴏ ʟɪᴍɪᴛᴇ:* 15s\n`
+      txt += `│ ⏳ *ᴛɪᴇᴍᴘᴏ ʟɪᴍɪᴛᴇ:* 15s\n`
       txt += `│\n`
-      txt += `│ 🔗 *O ᴜsᴀ ᴜɴ ᴇɴʟᴀᴄᴇ:*\n`
+      txt += `│ 🔗 *ᴏ ᴜsᴀ ᴜɴ ᴇɴʟᴀᴄᴇ:*\n`
       txt += `│     ${usedPrefix + command} ᴜʀʟ\n`
       txt += `│\n`
-      txt += `│ 🌑 "Lᴀ ᴏsᴄᴜʀɪᴅᴀᴅ ᴇs ᴍɪ ɢᴜɪᴀ"\n`
+      txt += `│ 🌑 "ʟᴀ ᴏsᴄᴜʀɪᴅᴀᴅ ᴇs ᴍɪ ɢᴜɪᴀ"\n`
       txt += `╰────────────────────────────╯`
 
       await conn.sendMessage(m.chat, {
