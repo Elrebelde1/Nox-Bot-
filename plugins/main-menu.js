@@ -79,7 +79,7 @@ const handler = async (m, { conn, usedPrefix }) => {
       participant: "0@s.whatsapp.net"
     };
 
-    // --- SECCIÓN MAIN (DE TU IMAGEN) ---
+    // --- SECCIÓN MAIN PERSONALIZADA (ESTILO IMAGEN) ---
     const mainSection = `╭━━〔 👑 ${toStyle('MAIN')} 〕━━⊷
 ┃  » ⚡ ${toStyle('.menu')}
 ┃  ${toStyle('Muestra este menú de ayuda.')}
@@ -103,17 +103,24 @@ const handler = async (m, { conn, usedPrefix }) => {
 ┃  ${toStyle('Contactos de los desarrolladores.')}
 ${sectionDivider}`;
 
+    // --- GENERACIÓN DINÁMICA DE OTRAS CATEGORÍAS ---
     let categorizedCommands = {};
     Object.values(global.plugins)
       .filter(p => p?.help && !p.disabled)
       .forEach(p => {
         const tag = Array.isArray(p.tags) ? p.tags[0] : p.tags || 'Otros';
-        // Evitamos duplicar la sección info o main si ya la pusimos manualmente
         if (tag.toLowerCase() === 'main' || tag.toLowerCase() === 'info') return;
-        
-        const cmds = Array.isArray(p.help) ? p.help : [p.help];
-        categorizedCommands[tag] = categorizedCommands[tag] || new Set();
-        cmds.forEach(cmd => categorizedCommands[tag].add(toStyle(usedPrefix + cmd)));
+
+        const help = Array.isArray(p.help) ? p.help : [p.help];
+        const desc = p.desc || 'Sin descripción disponible'; // Asume que tienes una propiedad .desc en tus plugins
+
+        categorizedCommands[tag] = categorizedCommands[tag] || [];
+        help.forEach(cmd => {
+          categorizedCommands[tag].push({
+            cmd: toStyle(usedPrefix + cmd),
+            desc: typeof desc === 'string' ? toStyle(desc) : toStyle('Ejecuta el comando ' + cmd)
+          });
+        });
       });
 
     const categoryEmojis = {
@@ -123,10 +130,13 @@ ${sectionDivider}`;
       nsfw: '🔞', 'base de datos': '🗂️', audios: '🎧', freefire: '🔫', otros: '🧩'
     };
 
-    const menuBody = Object.entries(categorizedCommands).map(([title, cmds]) => {
+    const menuBody = Object.entries(categorizedCommands).map(([title, items]) => {
       const emoji = categoryEmojis[title.toLowerCase()] || '📂';
       const styledTitle = toStyle(title.toUpperCase());
-      const list = [...cmds].map(cmd => `┃  » ⚡ ${cmd}`).join('\n');
+      
+      // Aquí se genera: Comando arriba, Descripción abajo
+      const list = items.map(item => `┃  » ⚡ ${item.cmd}\n┃  ${item.desc}`).join('\n');
+      
       return `╭━━〔 ${emoji} ${styledTitle} 〕━━⊷\n${list}\n${sectionDivider}`;
     }).join('\n\n');
 
@@ -143,7 +153,6 @@ ${saludo} ${tagUsuario} 👋
 ╰━━━━━━━━━━━━━━━⬣
 `.trim();
 
-    // Unimos el Header, la sección Main manual y el resto de comandos
     const fullMenu = `${header}\n\n${mainSection}\n\n${menuBody}\n\n${menuFooter}`;
 
     let finalImage;
