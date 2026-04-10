@@ -21,21 +21,32 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
         const isAudio = /play$|yta|ytmp3|playaudio/.test(command)
         let downloadUrl = null
-        let selectedApi = "sʏʟᴘʜʏ"
+        let selectedApi = ""
 
-        try {
-            // Configuración según las URLs proporcionadas
-            const endpoint = isAudio ? 'v2/ytmp3' : 'ytmp4'
-            const apiUrl = `https://sylphy.xyz/download/${endpoint}?url=${encodeURIComponent(url)}&api_key=sylphy-6f150d`
-            
-            const res = await fetch(apiUrl)
-            const json = await res.json()
-            
-            if (json.status && json.result) {
-                downloadUrl = json.result.dl_url
+        if (isAudio) {
+            // ϟ ᴀᴜᴅɪᴏ: ᴅᴇʟɪʀɪᴜs ᴀᴘɪ
+            try {
+                const res = await fetch(`https://api.delirius.store/download/ytmp3?url=${encodeURIComponent(url)}`)
+                const json = await res.json()
+                if (json.status && json.data) {
+                    downloadUrl = json.data.download
+                    selectedApi = "ᴅᴇʟɪʀɪᴜs"
+                }
+            } catch (e) {
+                console.error("Error en Delirius Audio:", e)
             }
-        } catch (err) {
-            console.error("Error en Sylphy API:", err)
+        } else {
+            // ϟ ᴠɪᴅᴇᴏ: sʏʟᴘʜʏ ᴀᴘɪ
+            try {
+                const res = await fetch(`https://sylphy.xyz/download/ytmp4?url=${encodeURIComponent(url)}&api_key=sylphy-6f150d`)
+                const json = await res.json()
+                if (json.status && json.result) {
+                    downloadUrl = json.result.dl_url
+                    selectedApi = "sʏʟᴘʜʏ"
+                }
+            } catch (e) {
+                console.error("Error en Sylphy Video:", e)
+            }
         }
 
         if (!downloadUrl) {
