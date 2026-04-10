@@ -7,7 +7,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     try {
         if (m.react) await m.react('⏳')
 
-        // Buscador para obtener detalles y asegurar URL limpia
+        // 🔍 Buscador para obtener detalles y Video ID
         const search = await yts(text)
         if (!search || !search.all || search.all.length === 0) {
             if (m.react) await m.react('❌')
@@ -15,53 +15,39 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         }
 
         const result = search.videos[0]
-        const { title, thumbnail, timestamp, url, videoId } = result
+        const { title, thumbnail, timestamp, videoId } = result
         const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
 
+        // 🛠️ Configuración de Sylphy V2
         const isAudio = /play$|yta|ytmp3|playaudio/.test(command)
+        const format = isAudio ? 'ytmp3' : 'ytmp4'
+        const apiKey = 'sylphy-6f150d'
+        
         let downloadUrl = null
-        let selectedApi = ""
 
-        if (isAudio) {
-            // ϟ ᴀᴜᴅɪᴏ: ᴅᴇʟɪʀɪᴜs ᴀᴘɪ
-            try {
-                const res = await fetch(`https://api.delirius.store/download/ytmp3?url=${encodeURIComponent(videoUrl)}`)
-                const json = await res.json()
-                if (json.status && json.data) {
-                    downloadUrl = json.data.download
-                    selectedApi = "ᴅᴇʟɪʀɪᴜs"
-                }
-            } catch (e) {
-                console.error("Error en Delirius Audio:", e)
+        // ϟ Petición a Sylphy v2 (MP3 primero, luego MP4 según el comando)
+        try {
+            const apiUrl = `https://sylphyy.xyz/download/v2/${format}?url=${encodeURIComponent(videoUrl)}&api_key=${apiKey}`
+            const res = await fetch(apiUrl)
+            const json = await res.json()
+            
+            if (json.status && json.result && json.result.dl_url) {
+                downloadUrl = json.result.dl_url
             }
-        } else {
-            // ϟ ᴠɪᴅᴇᴏ: sʏʟᴘʜʏ ᴀᴘɪ (Uso exacto de tu ejemplo)
-            try {
-                const apiKey = 'sylphy-6f150d'
-                const apiUrl = `https://sylphyy.xyz/download/ytmp4?url=${encodeURIComponent(videoUrl)}&q=360p&api_key=${apiKey}`
-                
-                const res = await fetch(apiUrl)
-                const json = await res.json()
-                
-                if (json.status && json.result && json.result.dl_url) {
-                    downloadUrl = json.result.dl_url
-                    selectedApi = "sʏʟᴘʜʏ"
-                }
-            } catch (e) {
-                console.error("Error en Sylphy Video:", e)
-            }
+        } catch (e) {
+            console.error("Error en Sylphy v2:", e)
         }
 
         if (!downloadUrl) {
             if (m.react) await m.react('❌')
-            return conn.reply(m.chat, `🛑 ᴇʀʀᴏʀ: ɴᴏ sᴇ ᴘᴜᴅᴏ ᴏʙᴛᴇɴᴇʀ ᴇʟ ᴇɴʟᴀᴄᴇ.`, m)
+            return conn.reply(m.chat, `🛑 ᴇʀʀᴏʀ: ɴᴏ sᴇ ᴘᴜᴅᴏ ᴏʙᴛᴇɴᴇʀ ᴇʟ ᴇɴʟᴀᴄᴇ ᴅᴇ sʏʟᴘʜʏ ᴠ2.`, m)
         }
 
         let info = `╭─〔 ♆ *ᴜᴄʜɪʜᴀ ʏᴏᴜᴛᴜʙᴇ* ♆ 〕─╮\n`
         info += `│\n`
         info += `│ 🎬 *ᴛɪᴛᴜʟᴏ:* ${title}\n`
         info += `│ ⏱️ *ᴅᴜʀᴀᴄɪᴏɴ:* ${timestamp}\n`
-        info += `│ 📡 *sᴇʀᴠɪᴅᴏʀ:* ${selectedApi}\n`
+        info += `│ 📡 *sᴇʀᴠɪᴅᴏʀ:* sʏʟᴘʜʏ ᴠ2\n`
         info += `│\n`
         info += `│ 🌑 "ʟᴀ ᴏsᴄᴜʀɪᴅᴀᴅ ᴇs ᴍɪ ɢᴜɪᴀ"\n`
         info += `╰────────────────────────────╯`
@@ -69,6 +55,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         await conn.sendMessage(m.chat, { image: { url: thumbnail }, caption: info }, { quoted: m })
 
         if (isAudio) {
+            // Envío de Audio MP3
             await conn.sendMessage(m.chat, { 
                 audio: { url: downloadUrl }, 
                 mimetype: 'audio/mp4', 
@@ -76,6 +63,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                 fileName: `${title}.mp3` 
             }, { quoted: m })
         } else {
+            // Envío de Video MP4
             await conn.sendMessage(m.chat, { 
                 video: { url: downloadUrl }, 
                 mimetype: 'video/mp4', 
