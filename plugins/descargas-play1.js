@@ -7,7 +7,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     try {
         if (m.react) await m.react('⏳')
 
-        // 🔍 Búsqueda del video
+        // Buscador para obtener detalles y asegurar URL limpia
         const search = await yts(text)
         if (!search || !search.all || search.all.length === 0) {
             if (m.react) await m.react('❌')
@@ -16,6 +16,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
         const result = search.videos[0]
         const { title, thumbnail, timestamp, url, videoId } = result
+        const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
 
         const isAudio = /play$|yta|ytmp3|playaudio/.test(command)
         let downloadUrl = null
@@ -24,7 +25,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         if (isAudio) {
             // ϟ ᴀᴜᴅɪᴏ: ᴅᴇʟɪʀɪᴜs ᴀᴘɪ
             try {
-                const res = await fetch(`https://api.delirius.store/download/ytmp3?url=${encodeURIComponent(url)}`)
+                const res = await fetch(`https://api.delirius.store/download/ytmp3?url=${encodeURIComponent(videoUrl)}`)
                 const json = await res.json()
                 if (json.status && json.data) {
                     downloadUrl = json.data.download
@@ -34,11 +35,12 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                 console.error("Error en Delirius Audio:", e)
             }
         } else {
-            // ϟ ᴠɪᴅᴇᴏ: sʏʟᴘʜʏ ᴀᴘɪ
+            // ϟ ᴠɪᴅᴇᴏ: sʏʟᴘʜʏ ᴀᴘɪ (Uso exacto de tu ejemplo)
             try {
-                // Forzamos el formato de URL estándar para evitar errores en Sylphy
-                const cleanUrl = `https://www.youtube.com/watch?v=${videoId}`
-                const res = await fetch(`https://sylphy.xyz/download/ytmp4?url=${encodeURIComponent(cleanUrl)}&api_key=sylphy-6f150d`)
+                const apiKey = 'sylphy-6f150d'
+                const apiUrl = `https://sylphyy.xyz/download/ytmp4?url=${encodeURIComponent(videoUrl)}&q=360p&api_key=${apiKey}`
+                
+                const res = await fetch(apiUrl)
                 const json = await res.json()
                 
                 if (json.status && json.result && json.result.dl_url) {
@@ -77,7 +79,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             await conn.sendMessage(m.chat, { 
                 video: { url: downloadUrl }, 
                 mimetype: 'video/mp4', 
-                caption: `✅ *ʀᴇᴘʀᴏᴅᴜᴄᴄɪᴏɴ ʟɪsᴛᴀ*`,
+                caption: `✅ *ʀᴇᴘʀᴏᴅᴜᴄᴄɪᴏ́ɴ ʟɪsᴛᴀ*`,
                 asDocument: false
             }, { quoted: m })
         }
@@ -90,5 +92,5 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 }
 
-handler.command = /^(play|yta|ytmp3|play2|ytv|playaudio|mp4)$/i
+handler.command = /^(play|yta|ytmp3|play2|ytv|playaudio|mp4|ytmp4)$/i
 export default handler
