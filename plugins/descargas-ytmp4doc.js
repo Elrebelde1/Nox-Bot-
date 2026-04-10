@@ -26,24 +26,23 @@ const handler = async (m, { conn, text }) => {
         const downloadUrl = json.data.download
         const { title, thumbnail, timestamp } = result
 
-        let info = `╭─〔 ♆ *ᴜᴄʜɪʜᴀ ᴠɪᴅᴇᴏ* ♆ 〕─╮\n`
+        let info = `╭─〔 ♆ *ᴜᴄʜɪʜᴀ ᴀʀᴄʜɪᴠᴏ* ♆ 〕─╮\n`
         info += `│\n`
         info += `│ 🎬 *ᴛɪᴛᴜʟᴏ:* ${title}\n`
         info += `│ ⏱️ *ᴅᴜʀᴀᴄɪᴏɴ:* ${timestamp}\n`
-        info += `│ 📡 *sᴇʀᴠɪᴅᴏʀ:* ᴅᴇʟɪʀɪᴜs\n`
+        info += `│ 📁 *ᴇsᴛᴀᴅᴏ:* ᴇɴᴠɪᴀɴᴅᴏ ᴄᴏᴍᴏ ᴀʀᴄʜɪᴠᴏ\n`
         info += `│\n`
         info += `╰────────────────────────────╯`
 
         // Enviar miniatura con información
         await conn.sendMessage(m.chat, { image: { url: thumbnail }, caption: info }, { quoted: m })
 
-        // Enviar el video con parámetros de compatibilidad
+        // Enviar el video como ARCHIVO (Documento)
         await conn.sendMessage(m.chat, { 
-            video: { url: downloadUrl }, 
-            fileName: `${title}.mp4`,
-            mimetype: 'video/mp4', 
-            caption: `✅ *ᴀϙᴜɪ́ ᴛɪᴇɴᴇs ᴛᴜ ᴠɪᴅᴇᴏ*`,
-            headerType: 4
+            document: { url: downloadUrl }, 
+            fileName: `${title}.mp4`, 
+            mimetype: 'video/mp4',
+            caption: `✅ *ᴀϙᴜɪ́ ᴛɪᴇɴᴇs ᴛᴜ ᴀʀᴄʜɪᴠᴏ*`
         }, { quoted: m })
 
         if (m.react) await m.react('✅')
