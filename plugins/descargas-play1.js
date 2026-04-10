@@ -7,17 +7,15 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     try {
         if (m.react) await m.react('⏳')
 
-        const videoMatch = text.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/|v\/))([a-zA-Z0-9_-]{11})/)
-        const query = videoMatch ? 'https://youtu.be/' + videoMatch[1] : text
-        const search = await yts(query)
-
+        // 🔍 Búsqueda del video
+        const search = await yts(text)
         if (!search || !search.all || search.all.length === 0) {
             if (m.react) await m.react('❌')
             return conn.reply(m.chat, '❌ ɴᴏ sᴇ ᴇɴᴄᴏɴᴛʀᴀʀᴏɴ ʀᴇsᴜʟᴛᴀᴅᴏs.', m)
         }
 
-        const result = videoMatch ? search.videos.find(v => v.videoId === videoMatch[1]) || search.all[0] : search.all[0]
-        const { title, thumbnail, timestamp, url } = result
+        const result = search.videos[0]
+        const { title, thumbnail, timestamp, url, videoId } = result
 
         const isAudio = /play$|yta|ytmp3|playaudio/.test(command)
         let downloadUrl = null
@@ -38,9 +36,12 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         } else {
             // ϟ ᴠɪᴅᴇᴏ: sʏʟᴘʜʏ ᴀᴘɪ
             try {
-                const res = await fetch(`https://sylphy.xyz/download/ytmp4?url=${encodeURIComponent(url)}&api_key=sylphy-6f150d`)
+                // Forzamos el formato de URL estándar para evitar errores en Sylphy
+                const cleanUrl = `https://www.youtube.com/watch?v=${videoId}`
+                const res = await fetch(`https://sylphy.xyz/download/ytmp4?url=${encodeURIComponent(cleanUrl)}&api_key=sylphy-6f150d`)
                 const json = await res.json()
-                if (json.status && json.result) {
+                
+                if (json.status && json.result && json.result.dl_url) {
                     downloadUrl = json.result.dl_url
                     selectedApi = "sʏʟᴘʜʏ"
                 }
@@ -51,7 +52,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
         if (!downloadUrl) {
             if (m.react) await m.react('❌')
-            return conn.reply(m.chat, '🛑 ᴇʀʀᴏʀ: ɴᴏ sᴇ ᴘᴜᴅᴏ ᴏʙᴛᴇɴᴇʀ ᴇʟ ᴇɴʟᴀᴄᴇ ᴅᴇ ᴅᴇsᴄᴀʀɢᴀ.', m)
+            return conn.reply(m.chat, `🛑 ᴇʀʀᴏʀ: ɴᴏ sᴇ ᴘᴜᴅᴏ ᴏʙᴛᴇɴᴇʀ ᴇʟ ᴇɴʟᴀᴄᴇ.`, m)
         }
 
         let info = `╭─〔 ♆ *ᴜᴄʜɪʜᴀ ʏᴏᴜᴛᴜʙᴇ* ♆ 〕─╮\n`
