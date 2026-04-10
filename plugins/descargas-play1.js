@@ -21,34 +21,21 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
         const isAudio = /play$|yta|ytmp3|playaudio/.test(command)
         let downloadUrl = null
-        let selectedApi = ""
+        let selectedApi = "sʏʟᴘʜʏ"
 
-        // ϟ ɪɴᴛᴇɴᴛᴏ 1: sʏʟᴘʜʏ (ᴀᴘɪ ᴘʀɪɴᴄɪᴘᴀʟ)
         try {
-            // Se ajusta la ruta v2 para MP3 según tu ejemplo
+            // Configuración según las URLs proporcionadas
             const endpoint = isAudio ? 'v2/ytmp3' : 'ytmp4'
-            const res = await fetch(`https://sylphy.xyz/download/${endpoint}?url=${encodeURIComponent(url)}&api_key=sylphy-6f150d`)
+            const apiUrl = `https://sylphy.xyz/download/${endpoint}?url=${encodeURIComponent(url)}&api_key=sylphy-6f150d`
+            
+            const res = await fetch(apiUrl)
             const json = await res.json()
             
             if (json.status && json.result) {
                 downloadUrl = json.result.dl_url
-                selectedApi = "sʏʟᴘʜʏ"
             }
         } catch (err) {
             console.error("Error en Sylphy API:", err)
-        }
-
-        // ϟ ɪɴᴛᴇɴᴛᴏ 2: ᴅᴇʟɪʀɪᴜs (ғᴀʟʟʙᴀᴄᴋ)
-        if (!downloadUrl) {
-            try {
-                const apiLink = isAudio ? `ytmp3?url=${encodeURIComponent(url)}` : `ytmp4?url=${encodeURIComponent(url)}`
-                const res = await fetch(`https://api.delirius.store/download/${apiLink}`)
-                const json = await res.json()
-                if (json.status) {
-                    downloadUrl = json.data.download
-                    selectedApi = "ᴅᴇʟɪʀɪᴜs"
-                }
-            } catch {}
         }
 
         if (!downloadUrl) {
