@@ -1,4 +1,3 @@
-
 import fetch from "node-fetch"
 import yts from 'yt-search'
 
@@ -24,33 +23,37 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         let downloadUrl = null
         let selectedApi = ""
 
-        // ϟ ɪɴᴛᴇɴᴛᴏ 1: ᴅᴇʟɪʀɪᴜs
+        // ϟ ɪɴᴛᴇɴᴛᴏ 1: sʏʟᴘʜʏ (ᴀᴘɪ ᴘʀɪɴᴄɪᴘᴀʟ)
         try {
-            const apiLink = isAudio ? `ytmp3?url=${encodeURIComponent(url)}` : `ytmp4?url=${encodeURIComponent(url)}`
-            const res = await fetch(`https://api.delirius.store/download/${apiLink}`)
+            // Se ajusta la ruta v2 para MP3 según tu ejemplo
+            const endpoint = isAudio ? 'v2/ytmp3' : 'ytmp4'
+            const res = await fetch(`https://sylphy.xyz/download/${endpoint}?url=${encodeURIComponent(url)}&api_key=sylphy-6f150d`)
             const json = await res.json()
-            if (json.status) {
-                downloadUrl = json.data.download
-                selectedApi = "ᴅᴇʟɪʀɪᴜs"
+            
+            if (json.status && json.result) {
+                downloadUrl = json.result.dl_url
+                selectedApi = "sʏʟᴘʜʏ"
             }
-        } catch {}
+        } catch (err) {
+            console.error("Error en Sylphy API:", err)
+        }
 
-        // ϟ ɪɴᴛᴇɴᴛᴏ 2: sʏʟᴘʜʏ (ғᴀʟʟʙᴀᴄᴋ)
+        // ϟ ɪɴᴛᴇɴᴛᴏ 2: ᴅᴇʟɪʀɪᴜs (ғᴀʟʟʙᴀᴄᴋ)
         if (!downloadUrl) {
             try {
-                const format = isAudio ? 'ytmp3' : 'ytmp4'
-                const res = await fetch(`https://sylphy.xyz/download/${format}?url=${encodeURIComponent(url)}&api_key=sylphy-6f150d`)
+                const apiLink = isAudio ? `ytmp3?url=${encodeURIComponent(url)}` : `ytmp4?url=${encodeURIComponent(url)}`
+                const res = await fetch(`https://api.delirius.store/download/${apiLink}`)
                 const json = await res.json()
                 if (json.status) {
-                    downloadUrl = json.result.dl_url
-                    selectedApi = "sʏʟᴘʜʏ"
+                    downloadUrl = json.data.download
+                    selectedApi = "ᴅᴇʟɪʀɪᴜs"
                 }
             } catch {}
         }
 
         if (!downloadUrl) {
             if (m.react) await m.react('❌')
-            return conn.reply(m.chat, '🛑 ᴇʀʀᴏʀ: ɴᴏ sᴇ ᴘᴜᴅᴏ ᴏʙᴛᴇɴᴇʀ ᴇʟ ᴇɴʟᴀᴄᴇ.', m)
+            return conn.reply(m.chat, '🛑 ᴇʀʀᴏʀ: ɴᴏ sᴇ ᴘᴜᴅᴏ ᴏʙᴛᴇɴᴇʀ ᴇʟ ᴇɴʟᴀᴄᴇ ᴅᴇ ᴅᴇsᴄᴀʀɢᴀ.', m)
         }
 
         let info = `╭─〔 ♆ *ᴜᴄʜɪʜᴀ ʏᴏᴜᴛᴜʙᴇ* ♆ 〕─╮\n`
