@@ -1,72 +1,61 @@
-import fetch from 'node-fetch';
+import fetch from "node-fetch"
+import yts from 'yt-search'
 
-let HS = async (m, { conn, text }) => {
-  if (!text) {
-    return conn.reply(
-      m.chat,
-      '*❌ Error:* Por favor, proporciona un enlace válido de YouTube para descargar el video.',
-      m
-    );
-  }
+const handler = async (m, { conn, text, command }) => {
+    if (!text.trim()) return conn.reply(m.chat, `⚠️ ɪɴɢʀᴇsᴇ ᴇʟ ᴇɴʟᴀᴄᴇ ᴅᴇ ʏᴏᴜᴛᴜʙᴇ ᴘᴀʀᴀ ᴅᴇsᴄᴀʀɢᴀʀ ᴠɪᴅᴇᴏ.`, m)
 
-  const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
-  if (!youtubeRegex.test(text)) {
-    return conn.reply(
-      m.chat,
-      '*❌ Error:* El enlace proporcionado no parece ser válido. Asegúrate de que sea un enlace de YouTube.',
-      m
-    );
-  }
+    try {
+        if (m.react) await m.react('⏳')
 
-  try {
-    let downloadMessage = await conn.reply(
-      m.chat,
-      '⏳ *Descargando video...*\nPor favor, espera mientras procesamos tu solicitud.',
-      m
-    );
+        // Validación de link y búsqueda
+        const videoMatch = text.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/|v\/))([a-zA-Z0-9_-]{11})/)
+        const url = videoMatch ? 'https://www.youtube.com/watch?v=' + videoMatch[1] : text
+        
+        const search = await yts(url)
+        const result = search.videos[0]
+        if (!result) throw 'No se encontró el video.'
 
-    let api = await fetch(`https://restapi.apibotwa.biz.id/api/ytmp4?url=${text}&quality=360`);
-    if (!api.ok) throw new Error('No se pudo obtener una respuesta de la API.');
+        // Llamada a la API de Delirius para ytmp4
+        const res = await fetch(`https://api.delirius.store/download/ytmp4?url=${encodeURIComponent(url)}&format=360`)
+        const json = await res.json()
 
-    let json = await api.json();
-    if (!json.data || !json.data.download) {
-      throw new Error('No se pudo obtener los datos del video. Verifica el enlace.');
+        if (!json.status || !json.data) {
+            if (m.react) await m.react('❌')
+            return conn.reply(m.chat, '🛑 ᴇʀʀᴏʀ: ɴᴏ sᴇ ᴘᴜᴅᴏ ᴏʙᴛᴇɴᴇʀ ᴇʟ ᴠɪᴅᴇᴏ ᴅᴇ ʟᴀ ᴀᴘɪ.', m)
+        }
+
+        const downloadUrl = json.data.download
+        const { title, thumbnail, timestamp } = result
+
+        let info = `╭─〔 ♆ *ᴜᴄʜɪʜᴀ ᴠɪᴅᴇᴏ* ♆ 〕─╮\n`
+        info += `│\n`
+        info += `│ 🎬 *ᴛɪᴛᴜʟᴏ:* ${title}\n`
+        info += `│ ⏱️ *ᴅᴜʀᴀᴄɪᴏɴ:* ${timestamp}\n`
+        info += `│ 📦 *ғᴏʀᴍᴀᴛᴏ:* 360p\n`
+        info += `│ 📡 *sᴇʀᴠɪᴅᴏʀ:* ᴅᴇʟɪʀɪᴜs\n`
+        info += `│\n`
+        info += `│ 🌑 "ʟᴀ ᴏsᴄᴜʀɪᴅᴀᴅ ᴇs ᴍɪ ɢᴜɪᴀ"\n`
+        info += `╰────────────────────────────╯`
+
+        // Enviar imagen con info
+        await conn.sendMessage(m.chat, { image: { url: thumbnail }, caption: info }, { quoted: m })
+
+        // Enviar el video
+        await conn.sendMessage(m.chat, { 
+            video: { url: downloadUrl }, 
+            mimetype: 'video/mp4', 
+            caption: `✅ *${title}*`,
+            asDocument: false
+        }, { quoted: m })
+
+        if (m.react) await m.react('✅')
+
+    } catch (e) {
+        console.error(e)
+        if (m.react) await m.react('❌')
+        conn.reply(m.chat, `❌ Ocurrió un error inesperado.`, m)
     }
+}
 
-    let title = json.data.metadata.title;
-    let dl_url = json.data.download.url;
-
-    await conn.reply(
-      m.chat,
-      '📤 *Enviando video...*\nEsto puede tardar unos momentos dependiendo del tamaño del archivo.',
-      m
-    );
-
-    await conn.sendMessage(
-      m.chat,
-      {
-        document: { url: dl_url },
-        fileName: `${title}.mp4`,
-        mimetype: 'video/mp4',
-      },
-      { quoted: m }
-    );
-
-    conn.reply(
-      m.chat,
-      `✅ *Video enviado con éxito:*\n*Título:* ${title}\nGracias por usar el servicio.`,
-      m
-    );
-  } catch (error) {
-    console.error(error);
-    conn.reply(
-      m.chat,
-      `❌ *Error al procesar tu solicitud:*\n${error.message}\nPor favor, intenta de nuevo más tarde.`,
-      m
-    );
-  }
-};
-
-HS.command = ['ytmp4doc'];
-
-export default HS;
+handler.command = /^(ytmp4|ytv|video)$/i
+export default handler
