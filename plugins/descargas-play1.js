@@ -18,36 +18,49 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const { title, thumbnail, timestamp, videoId } = result
         const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
 
-        // 🛠️ Configuración de Sylphy V2
+        // 🛠️ Configuración de comandos
         const isAudio = /play$|yta|ytmp3|playaudio/.test(command)
-        const format = isAudio ? 'ytmp3' : 'ytmp4'
-        const apiKey = 'sylphy-6f150d'
-        
         let downloadUrl = null
+        let selectedServer = ""
 
-        // ϟ Petición a Sylphy v2 (MP3 primero, luego MP4 según el comando)
-        try {
-            const apiUrl = `https://sylphyy.xyz/download/v2/${format}?url=${encodeURIComponent(videoUrl)}&api_key=${apiKey}`
-            const res = await fetch(apiUrl)
-            const json = await res.json()
-            
-            if (json.status && json.result && json.result.dl_url) {
-                downloadUrl = json.result.dl_url
+        if (isAudio) {
+            // 🎵 Petición a la API de Delirius para Audio
+            try {
+                const res = await fetch(`https://api.delirius.store/download/ytmp3?url=${encodeURIComponent(videoUrl)}`)
+                const json = await res.json()
+                if (json.status && json.data && json.data.download) {
+                    downloadUrl = json.data.download
+                    selectedServer = "Delirius API"
+                }
+            } catch (e) {
+                console.error("Error en Delirius API:", e)
             }
-        } catch (e) {
-            console.error("Error en Sylphy v2:", e)
+        } else {
+            // 📺 Petición a Sylphy v2 para Video (MP4)
+            try {
+                const apiKey = 'sylphy-6f150d'
+                const apiUrl = `https://sylphyy.xyz/download/v2/ytmp4?url=${encodeURIComponent(videoUrl)}&api_key=${apiKey}`
+                const res = await fetch(apiUrl)
+                const json = await res.json()
+                if (json.status && json.result && json.result.dl_url) {
+                    downloadUrl = json.result.dl_url
+                    selectedServer = "Sylphy V2"
+                }
+            } catch (e) {
+                console.error("Error en Sylphy v2:", e)
+            }
         }
 
         if (!downloadUrl) {
             if (m.react) await m.react('❌')
-            return conn.reply(m.chat, `🛑 ᴇʀʀᴏʀ: ɴᴏ sᴇ ᴘᴜᴅᴏ ᴏʙᴛᴇɴᴇʀ ᴇʟ ᴇɴʟᴀᴄᴇ ᴅᴇ sʏʟᴘʜʏ ᴠ2.`, m)
+            return conn.reply(m.chat, `🛑 ᴇʀʀᴏʀ: ɴᴏ sᴇ ᴘᴜᴅᴏ ᴏʙᴛᴇɴᴇʀ ᴇʟ ᴇɴʟᴀᴄᴇ ᴅᴇ ᴅᴇsᴄᴀʀɢᴀ.`, m)
         }
 
         let info = `╭─〔 ♆ *ᴜᴄʜɪʜᴀ ʏᴏᴜᴛᴜʙᴇ* ♆ 〕─╮\n`
         info += `│\n`
         info += `│ 🎬 *ᴛɪᴛᴜʟᴏ:* ${title}\n`
         info += `│ ⏱️ *ᴅᴜʀᴀᴄɪᴏɴ:* ${timestamp}\n`
-        info += `│ 📡 *sᴇʀᴠɪᴅᴏʀ:* sʏʟᴘʜʏ ᴠ2\n`
+        info += `│ 📡 *sᴇʀᴠɪᴅᴏʀ:* ${selectedServer}\n`
         info += `│\n`
         info += `│ 🌑 "ʟᴀ ᴏsᴄᴜʀɪᴅᴀᴅ ᴇs ᴍɪ ɢᴜɪᴀ"\n`
         info += `╰────────────────────────────╯`
@@ -58,7 +71,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             // Envío de Audio MP3
             await conn.sendMessage(m.chat, { 
                 audio: { url: downloadUrl }, 
-                mimetype: 'audio/mp4', 
+                mimetype: 'audio/mpeg', 
                 ptt: false, 
                 fileName: `${title}.mp3` 
             }, { quoted: m })
