@@ -2,48 +2,56 @@ import fetch from "node-fetch";
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   if (!text || !text.trim()) {
-    return m.reply(`📌 *Uso correcto:*\n${usedPrefix + command} <término de búsqueda>\n📍 *Ejemplo:* ${usedPrefix + command} Messi goles`);
+    return m.reply(`📌 *Uso correcto:*\n${usedPrefix + command} <término de búsqueda>\n📍 *Ejemplo:* ${usedPrefix + command} Twice`);
   }
 
   const query = text.trim();
-  const url = `https://api.dorratz.com/v3/yt-search?query=${encodeURIComponent(query)}`;
-  
+  // Nueva URL de la API de Delirius
+  const url = `https://api.delirius.store/search/ytsearch?q=${encodeURIComponent(query)}`;
+
   try {
     const res = await fetch(url);
     const json = await res.json();
 
+    // Verificación basada en la estructura de la API de Delirius (status y data)
     if (!json.status || !json.data || json.data.length === 0) {
       return m.reply("❌ No se encontraron resultados.");
     }
 
+    // Tomamos los primeros 5 resultados
     const videos = json.data.slice(0, 5);
 
     for (const video of videos) {
+      // Ajuste de variables según el JSON de Delirius
       const caption = `
-╭─🎶 *Sasuke Bot - Audio YouTube* 🎶─╮
+╭─🎶 *Sasuke Bot - YouTube Search* 🎶─╮
 │ 🎵 *Título:* ${video.title}
-│ 👤 *Autor:* ${video.author.name}
+│ 👤 *Canal:* ${video.author.name}
 │ ⏱️ *Duración:* ${video.duration}
 │ 📅 *Publicado:* ${video.publishedAt}
-│ 👁️ *Vistas:* ${video.views}
+│ 👁️ *Vistas:* ${video.views.toLocaleString()}
 │ 🔗 *Enlace:* ${video.url}
 │
 │ 🎧 *Para descargar:*
-│ .ytmp3 ${video.url}
-│ .ytmp4 ${video.url}
+│ ${usedPrefix}ytmp3 ${video.url}
+│ ${usedPrefix}ytmp4 ${video.url}
 ╰──────────────────────────────────╯
 
-> © Código Oficial de Barboza MD™
+> © Código Adaptado de Delirius API
 `;
 
       await conn.sendMessage(
         m.chat,
-        { image: { url: video.thumbnail }, caption },
+        { 
+          image: { url: video.image || video.thumbnail }, 
+          caption 
+        },
         { quoted: m }
       );
     }
   } catch (e) {
-    m.reply("❌ Ocurrió un error.");
+    console.error(e);
+    m.reply("❌ Ocurrió un error al conectar con la API de Delirius.");
   }
 };
 
