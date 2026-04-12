@@ -9,12 +9,16 @@ export default function(conn) {
             const chatJid = m.key.remoteJid;
             const sender = m.key.participant || m.key.remoteJid;
 
-            // Uso directo de tu base de datos global
             const chat = global.db.data.chats[chatJid];
             if (!chat || !chat.antiEstados) return;
 
-            // Detección simplificada de mención de estado
-            const isStatusMention = !!m.message?.groupStatusMentionMessage;
+            const isStatusMention = !!(
+                m.message?.groupStatusMentionMessage || 
+                m.message?.protocolMessage?.type === 'STATUS_MENTION_MESSAGE' ||
+                m.message?.protocolMessage?.type === 31 ||
+                m.message?.extendedTextMessage?.contextInfo?.externalAdReply?.renderLargerThumbnail === false && 
+                m.message?.extendedTextMessage?.contextInfo?.externalAdReply?.showAdAttribution === false
+            );
 
             if (isStatusMention) {
                 const groupMetadata = await conn.groupMetadata(chatJid).catch(() => null);
@@ -22,7 +26,6 @@ export default function(conn) {
 
                 const participants = groupMetadata.participants || [];
 
-                // Verificación de Admin/BotAdmin
                 const getAdminStatus = (targetJid) => {
                     const p = participants.find(p => jidNormalizedUser(p.id) === jidNormalizedUser(targetJid));
                     return !!(p?.admin || p?.isCommunityAdmin);
@@ -36,14 +39,15 @@ export default function(conn) {
 
                 if (isBotAdmin) {
                     await conn.sendMessage(chatJid, { delete: m.key });
+                    await conn.groupParticipantsUpdate(chatJid, [sender], 'remove');
                     await conn.sendMessage(chatJid, { 
-                        text: `*「 ANTI ESTADOS 」*\n\n> @${sender.split('@')[0]}, no se permiten los estados en este grupo.`, 
+                        text: `*「 ANTI ESTADOS 」*\n\n> @${sender.split('@')[0]} fue eliminado por etiquetar un estado.`, 
                         mentions: [sender] 
                     });
                 }
             }
         } catch (e) {
-            console.error('Error en antiEstados:', e);
+            console.error(e);
         }
     });
 }
