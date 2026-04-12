@@ -24,7 +24,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
     case 'antiestados': // <--- Nuevo Case para antiEstados
     case 'antiestado':
       if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn)
-      chat.antiEstados = isEnable;
+      chat.antiestados = isEnable;
       break;
 
     case 'antiprivado2':
