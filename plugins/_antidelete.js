@@ -3,23 +3,20 @@ import { proto } from '@whiskeysockets/baileys'
 let antidelete = global.db.data.chats
 
 const handler = async (m, { conn, args, isAdmin, isOwner }) => {
-  if (!isAdmin && !isOwner) throw "⚠️ Solo los admins pueden usar este comando."
+  if (!isAdmin && !isOwner) throw "⚠️  Solo los admins pueden usar este comando."
 
   if (!antidelete[m.chat]) antidelete[m.chat] = {}
   let chat = antidelete[m.chat]
 
-  // Lógica invertida: 'on' ahora pone el estado en false (apaga)
   if (/on/i.test(args[0])) {
-    chat.antidelete = false
-    await conn.sendMessage(m.chat, { text: "❌ Antidelete desactivado (Estado: ON)." })
-  } 
-  // Lógica invertida: 'off' ahora pone el estado en true (enciende)
-  else if (/off/i.test(args[0])) {
     chat.antidelete = true
     chat.buffer = []
-    await conn.sendMessage(m.chat, { text: "✅ Antidelete activado (Estado: OFF)." })
+    await conn.sendMessage(m.chat, { text: "✅ Antidelete activado en este grupo." })
+  } else if (/off/i.test(args[0])) {
+    chat.antidelete = false
+    await conn.sendMessage(m.chat, { text: "❌ Antidelete desactivado en este grupo." })
   } else {
-    await conn.sendMessage(m.chat, { text: "📌 Usa: .antidelete on / off\n*(Recuerda que funciona al revés)*" })
+    await conn.sendMessage(m.chat, { text: "📌 Usa: .antidelete on / off" })
   }
 }
 
@@ -29,14 +26,13 @@ handler.command = /^antidelete$/i
 
 handler.before = async (m, { conn }) => {
   let chat = antidelete[m.chat]
-  
-  // Solo se ejecuta si chat.antidelete es true
   if (!chat?.antidelete) return
+
 
   if (m.message && !m.message.protocolMessage) {
     chat.buffer = chat.buffer || []
-    chat.buffer.push(JSON.parse(JSON.stringify(m))) // Clonamos para evitar errores de referencia
-    if (chat.buffer.length > 20) chat.buffer.shift()
+    chat.buffer.push(m)
+    if (chat.buffer.length > 10) chat.buffer.shift()
   }
 
   // Detecta borrado
@@ -49,13 +45,17 @@ handler.before = async (m, { conn }) => {
       await conn.sendMessage(
         m.chat,
         { 
-          text: `🚫 Mensaje eliminado por @${(deletedKey.participant || deletedKey.remoteJid).split('@')[0]}`, 
-          mentions: [deletedKey.participant || deletedKey.remoteJid] 
+          text: `🚫 Mensaje eliminado por @${deletedKey.participant.split('@')[0]}`, 
+          mentions: [deletedKey.participant] 
         }
       )
 
-      await conn.copyNForward(m.chat, msg, false) // Método más estable para reenviar borrados
-      
+      await conn.sendMessage(m.chat, { 
+        forward: { 
+          key: msg.key, 
+          message: msg.message 
+        } 
+      })
     } catch (e) {
       console.error("Error en antidelete:", e)
     }
