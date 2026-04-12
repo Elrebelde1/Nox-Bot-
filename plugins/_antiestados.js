@@ -1,5 +1,4 @@
 import { jidNormalizedUser } from '@whiskeysockets/baileys';
-import { getRealJid } from '../identifier.js';
 
 export default function(conn) {
     conn.ev.on('messages.upsert', async (chatUpdate) => {
@@ -8,13 +7,14 @@ export default function(conn) {
             if (!m || !m.key.remoteJid.endsWith('@g.us')) return;
 
             const chatJid = m.key.remoteJid;
-            const sender = await getRealJid(conn, m.key.participant || m.author || m.key.remoteJid, m);
+            const sender = m.key.participant || m.key.remoteJid;
 
-            const chat = await global.Chat.findOne({ id: chatJid });
-            if (!chat || !chat.antiStatus) return;
+            // Uso directo de tu base de datos global
+            const chat = global.db.data.chats[chatJid];
+            if (!chat || !chat.antiEstados) return;
 
-            const isStatusMention = !!m.message?.groupStatusMentionMessage || 
-                                   m.message?.groupStatusMentionMessage?.message?.protocolMessage?.type === 'STATUS_MENTION_MESSAGE';
+            // Detección simplificada de mención de estado
+            const isStatusMention = !!m.message?.groupStatusMentionMessage;
 
             if (isStatusMention) {
                 const groupMetadata = await conn.groupMetadata(chatJid).catch(() => null);
@@ -22,17 +22,13 @@ export default function(conn) {
 
                 const participants = groupMetadata.participants || [];
 
-                const getAdminStatus = (targetJid, targetLid) => {
-                    const p = participants.find(p => 
-                        jidNormalizedUser(p.id) === jidNormalizedUser(targetJid) || 
-                        (p.lid && jidNormalizedUser(p.lid) === jidNormalizedUser(targetJid)) ||
-                        (targetLid && jidNormalizedUser(p.id) === jidNormalizedUser(targetLid)) ||
-                        (p.lid && targetLid && jidNormalizedUser(p.lid) === jidNormalizedUser(targetLid))
-                    );
+                // Verificación de Admin/BotAdmin
+                const getAdminStatus = (targetJid) => {
+                    const p = participants.find(p => jidNormalizedUser(p.id) === jidNormalizedUser(targetJid));
                     return !!(p?.admin || p?.isCommunityAdmin);
                 };
 
-                const isBotAdmin = getAdminStatus(conn.user.id, conn.user.lid);
+                const isBotAdmin = getAdminStatus(conn.user.id);
                 const isAdmin = getAdminStatus(sender);
                 const isOwner = global.owner.some(([num]) => num.replace(/\D/g, '') === sender.split('@')[0]);
 
@@ -41,13 +37,13 @@ export default function(conn) {
                 if (isBotAdmin) {
                     await conn.sendMessage(chatJid, { delete: m.key });
                     await conn.sendMessage(chatJid, { 
-                        text: `*「 ANTI ESTADOS 」*\n\n> @${sender.split('@')[0]}, no se permiten los estados en este grupo. La opción anti estado está activa por lo tanto este mensaje fue eliminado.`, 
+                        text: `*「 ANTI ESTADOS 」*\n\n> @${sender.split('@')[0]}, no se permiten los estados en este grupo.`, 
                         mentions: [sender] 
                     });
                 }
             }
         } catch (e) {
-            console.error(e);
+            console.error('Error en antiEstados:', e);
         }
     });
 }
