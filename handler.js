@@ -82,7 +82,7 @@ export async function handler(chatUpdate) {
                     bank: 0,
                     level: 0,
                 }
-            let chat = global.db.data.chats[m.chat]
+                        let chat = global.db.data.chats[m.chat]
             if (typeof chat !== 'object')
                 global.db.data.chats[m.chat] = {}
             if (chat) {
@@ -94,6 +94,8 @@ export async function handler(chatUpdate) {
                     chat.antiLink = false
                 if (!('antilinkxxx' in chat))
                     chat.antiLinkxxx = false
+                if (!('antiEstados' in chat)) // <--- Nueva línea
+                    chat.antiEstados = false
                 if (!('detect' in chat)) 
                     chat.detect = true
                 if (!('onlyLatinos' in chat))
@@ -116,6 +118,7 @@ export async function handler(chatUpdate) {
                     bienvenida: false,
                     antiLink: false,
                     antilinkxxx: false,
+                    antiEstados: false, // <--- Nueva línea
                     detect: true,
                     onlyLatinos: false,
                     nsfw: false,
