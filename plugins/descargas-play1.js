@@ -7,7 +7,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     try {
         if (m.react) await m.react('⏳')
 
-        // 🔍 Buscador para obtener detalles y Video ID
+        // 🔍 Buscador de YouTube
         const search = await yts(text)
         if (!search || !search.all || search.all.length === 0) {
             if (m.react) await m.react('❌')
@@ -18,31 +18,44 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const { title, thumbnail, timestamp, videoId } = result
         const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
 
-        // 🛠️ Configuración de comandos
         const isAudio = /play$|yta|ytmp3|playaudio/.test(command)
         let downloadUrl = null
         let selectedServer = ""
 
         if (isAudio) {
-            // 🎵 Petición a la API de Delirius para Audio
+            // 🎵 Intento 1: Delirius API v1
             try {
                 const res = await fetch(`https://api.delirius.store/download/ytmp3?url=${encodeURIComponent(videoUrl)}`)
                 const json = await res.json()
-                if (json.status && json.data && json.data.download) {
+                if (json.status && json.data?.download) {
                     downloadUrl = json.data.download
-                    selectedServer = "Delirius API"
+                    selectedServer = "Delirius V1"
                 }
-            } catch (e) {
-                console.error("Error en Delirius API:", e)
+            } catch {
+                console.log("Fallo Delirius v1, intentando v2...")
+            }
+
+            // 🎵 Intento 2: Delirius API v2 (Si el primero falló)
+            if (!downloadUrl) {
+                try {
+                    const res = await fetch(`https://api.delirius.store/download/ytmp3v2?url=${encodeURIComponent(videoUrl)}`)
+                    const json = await res.json()
+                    if (json.success && json.data?.download) {
+                        downloadUrl = json.data.download
+                        selectedServer = "Delirius V2"
+                    }
+                } catch (e) {
+                    console.error("Error en Delirius v2:", e)
+                }
             }
         } else {
-            // 📺 Petición a Sylphy v2 para Video (MP4)
+            // 📺 Petición a Sylphy v2 para Video
             try {
                 const apiKey = 'sylphy-6f150d'
                 const apiUrl = `https://sylphyy.xyz/download/v2/ytmp4?url=${encodeURIComponent(videoUrl)}&api_key=${apiKey}`
                 const res = await fetch(apiUrl)
                 const json = await res.json()
-                if (json.status && json.result && json.result.dl_url) {
+                if (json.status && json.result?.dl_url) {
                     downloadUrl = json.result.dl_url
                     selectedServer = "Sylphy V2"
                 }
@@ -68,7 +81,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         await conn.sendMessage(m.chat, { image: { url: thumbnail }, caption: info }, { quoted: m })
 
         if (isAudio) {
-            // Envío de Audio MP3
             await conn.sendMessage(m.chat, { 
                 audio: { url: downloadUrl }, 
                 mimetype: 'audio/mpeg', 
@@ -76,7 +88,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                 fileName: `${title}.mp3` 
             }, { quoted: m })
         } else {
-            // Envío de Video MP4
             await conn.sendMessage(m.chat, { 
                 video: { url: downloadUrl }, 
                 mimetype: 'video/mp4', 
