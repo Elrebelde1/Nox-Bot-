@@ -1,9 +1,47 @@
-import { readFileSync, existsSync } from 'fs'; // Añadimos existsSync
+import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { xpRange } from '../lib/levelling.js';
 import axios from 'axios';
 
-// ... (tus funciones toStyle, clockString, saludarSegunHora se mantienen igual)
+// --- FUNCIÓN PARA EL ESTILO DE LETRA (CRÍTICA PARA EL ERROR) ---
+const toStyle = (text) => {
+  if (!text) return '';
+  const normal = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.<>!¡-';
+  const styled = '𝙖𝙗𝙘𝙙𝙚𝙛𝙜𝙝𝙞𝙟𝙠𝙡𝙢𝙣𝙤𝙥𝙦𝙧𝙨𝙩𝙪𝙫𝙬𝙭𝙮𝙯𝘼𝘽𝘾𝘿𝙀𝙁𝙂𝙃𝙄𝙅𝙆𝙇𝙈𝙉𝙊𝙋𝙌𝙍𝙎𝙏𝙐𝙑𝙒𝙓𝙔𝙕𝟬𝟭𝟮𝟯𝟰𝟱𝟲𝟳𝟴𝟵.＜＞!¡-';
+  return text.split('').map(char => {
+    const index = normal.indexOf(char);
+    return index !== -1 ? styled.substring(index * 2, (index + 1) * 2) : char;
+  }).join('');
+};
+
+const clockString = ms => {
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor(ms / 60000) % 60;
+  const s = Math.floor(ms / 1000) % 60;
+  return [h, m, s].map(v => v.toString().padStart(2, '0')).join(':');
+};
+
+const saludarSegunHora = () => {
+  const hora = new Date().getHours();
+  if (hora >= 5 && hora < 12) return `🌅 ${toStyle('¡Buenos días!')}`;
+  if (hora >= 12 && hora < 19) return `☀️ ${toStyle('¡Buenas tardes!')}`;
+  return `🌙 ${toStyle('¡Buenas noches!')}`;
+};
+
+const imgDefault = 'https://files.catbox.moe/t7uytz.png';
+const sectionDivider = '╰━━━━━━━━━━━━━━━⬣';
+
+const menuFooter = `
+╭━━〔 💻 ${toStyle('INFO SISTEMA')} 〕━━⊷
+┃ 🛠️ ${toStyle('Uso')}: ${String.fromCharCode(8203)}.comando
+┃ ⚡ ${toStyle('Estado')}: ${toStyle('Stable')}
+┃ 🦾 ${toStyle('Dev')}: ${toStyle('Barboza-Team')}
+╰━━━━━━━━━━━━━━━⬣
+`.trim();
+
+Array.prototype.getRandom = function () {
+  return this[Math.floor(Math.random() * this.length)];
+};
 
 const handler = async (m, { conn, usedPrefix }) => {
   try {
@@ -20,22 +58,37 @@ const handler = async (m, { conn, usedPrefix }) => {
     const fakeText = toStyle("by Barboza - Sasuke");
     const imgRandom = ["https://iili.io/FKVDVAN.jpg", "https://iili.io/FKVbUrJ.jpg"].getRandom();
 
-    // --- LÓGICA PARA FILTRAR COMANDOS ELIMINADOS ---
-    let categorizedCommands = {};
-    
-    // Obtenemos la ruta de la carpeta plugins
-    const pluginsDir = join(process.cwd(), 'plugins');
+    let thumbnailBuffer;
+    try {
+      const response = await axios.get(imgRandom, { responseType: 'arraybuffer' });
+      thumbnailBuffer = Buffer.from(response.data);
+    } catch (e) {
+      const fallback = await axios.get(imgDefault, { responseType: 'arraybuffer' });
+      thumbnailBuffer = Buffer.from(fallback.data);
+    }
 
+    const izumi = {
+      key: { participants: "0@s.whatsapp.net", fromMe: false, id: "Interface" },
+      message: {
+        locationMessage: {
+          name: fakeText,
+          jpegThumbnail: thumbnailBuffer,
+          vcard: "BEGIN:VCARD\nVERSION:3.0\nN:;User;;;\nFN:User\nEND:VCARD"
+        }
+      },
+      participant: "0@s.whatsapp.net"
+    };
+
+    // --- DETECTAR SI EL ARCHIVO FUE ELIMINADO ---
+    let categorizedCommands = {};
     Object.entries(global.plugins)
       .filter(([path, p]) => {
-        // 1. Verificamos que tenga ayuda y no esté desactivado
         if (!p?.help || p.disabled) return false;
         
-        // 2. VERIFICACIÓN CRÍTICA: ¿El archivo existe físicamente?
-        // La llave 'path' en global.plugins suele ser la ruta completa del archivo
-        if (!existsSync(path)) {
-            delete global.plugins[path]; // Lo eliminamos del caché si ya no existe
-            return false;
+        // Si el archivo no existe en la carpeta, lo borramos de la memoria
+        if (path && !existsSync(path)) {
+          delete global.plugins[path];
+          return false;
         }
         return true;
       })
@@ -45,8 +98,6 @@ const handler = async (m, { conn, usedPrefix }) => {
         categorizedCommands[tag] = categorizedCommands[tag] || new Set();
         cmds.forEach(cmd => categorizedCommands[tag].add(toStyle(usedPrefix + cmd)));
       });
-
-    // ... (el resto del código de emojis y cuerpo del menú se mantiene igual)
 
     const categoryEmojis = {
       anime: '🎎', info: '🆔', search: '🔍', diversión: '🎮', subbots: '🤖',
@@ -72,14 +123,6 @@ ${saludo} ${tagUsuario} 👋
 ┃ ⏲️ ${toStyle('Uptime')}: ${uptime}
 ┃ 👥 ${toStyle('Usuarios')}: ${totalUsers}
 ┃ 🔐 ${toStyle('Modo')}: ${mode}
-╰━━━━━━━━━━━━━━━⬣
-`.trim();
-
-    const menuFooter = `
-╭━━〔 💻 ${toStyle('INFO SISTEMA')} 〕━━⊷
-┃ 🛠️ ${toStyle('Uso')}: ${String.fromCharCode(8203)}.comando
-┃ ⚡ ${toStyle('Estado')}: ${toStyle('Stable')}
-┃ 🦾 ${toStyle('Dev')}: ${toStyle('Barboza-Team')}
 ╰━━━━━━━━━━━━━━━⬣
 `.trim();
 
