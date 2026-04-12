@@ -94,8 +94,8 @@ export async function handler(chatUpdate) {
                     chat.antiLink = false
                 if (!('antilinkxxx' in chat))
                     chat.antiLinkxxx = false
-                if (!('antiEstados' in chat)) // <--- Nueva línea
-                    chat.antiEstados = false
+                if (!('antiestados' in chat)) // <--- Nueva línea
+                    chat.antiestados = false
                 if (!('detect' in chat)) 
                     chat.detect = true
                 if (!('onlyLatinos' in chat))
