@@ -1,9 +1,10 @@
-import { readFileSync, existsSync } from 'fs';
+
+import { readFileSync } from 'fs';
 import { join } from 'path';
 import { xpRange } from '../lib/levelling.js';
 import axios from 'axios';
 
-// --- FUNCIÓN PARA EL ESTILO DE LETRA (CRÍTICA PARA EL ERROR) ---
+// --- FUNCIÓN PARA EL ESTILO DE LETRA ---
 const toStyle = (text) => {
   if (!text) return '';
   const normal = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.<>!¡-';
@@ -79,20 +80,10 @@ const handler = async (m, { conn, usedPrefix }) => {
       participant: "0@s.whatsapp.net"
     };
 
-    // --- DETECTAR SI EL ARCHIVO FUE ELIMINADO ---
     let categorizedCommands = {};
-    Object.entries(global.plugins)
-      .filter(([path, p]) => {
-        if (!p?.help || p.disabled) return false;
-        
-        // Si el archivo no existe en la carpeta, lo borramos de la memoria
-        if (path && !existsSync(path)) {
-          delete global.plugins[path];
-          return false;
-        }
-        return true;
-      })
-      .forEach(([path, p]) => {
+    Object.values(global.plugins)
+      .filter(p => p?.help && !p.disabled)
+      .forEach(p => {
         const tag = Array.isArray(p.tags) ? p.tags[0] : p.tags || 'Otros';
         const cmds = Array.isArray(p.help) ? p.help : [p.help];
         categorizedCommands[tag] = categorizedCommands[tag] || new Set();
@@ -109,6 +100,7 @@ const handler = async (m, { conn, usedPrefix }) => {
     const menuBody = Object.entries(categorizedCommands).map(([title, cmds]) => {
       const emoji = categoryEmojis[title.toLowerCase()] || '📂';
       const styledTitle = toStyle(title.toUpperCase());
+      // Aquí quitamos la descripción y dejamos solo el comando con el rayo
       const list = [...cmds].map(cmd => `┃  » ⚡ ${cmd}`).join('\n');
       return `╭━━〔 ${emoji} ${styledTitle} 〕━━⊷\n${list}\n${sectionDivider}`;
     }).join('\n\n');
