@@ -9,7 +9,6 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
   let type = (args[0] || '').toLowerCase();
   let isAll = false, isUser = false;
 
-  // Lógica para cargar la imagen del catálogo
   const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
   let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
 
@@ -20,6 +19,12 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
       if (m.isGroup && !isAdmin) return global.dfail('admin', m, conn)
       if (!m.isGroup && !isOwner) return global.dfail('owner', m, conn)
       chat.bienvenida = isEnable;
+      break;
+
+    case 'antiestados': // <--- Nuevo Case para antiEstados
+    case 'antiestado':
+      if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn)
+      chat.antiEstados = isEnable;
       break;
 
     case 'antiprivado2':
@@ -114,8 +119,8 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
 
     default:
       if (!/[01]/.test(command)) {
-        let txt = `┏━━━━━━━━━━━━━━━━━━━━━┓\n┃ ⚙️ *INTERFACE DE AJUSTES* ⚙️\n┗━━━━━━━━━━━━━━━━━━━━━┃\n┃ 🟢 *Usar:* ${usedPrefix + command} <opción>\n┃━━━━━━━━━━━━━━━━━━━━━┃\n┃ 💻 *SISTEMA*\n┃ ◦ _autoread_\n┃ ◦ _subbots_\n┃ ◦ _restrict_\n┃ ◦ _antispam_\n┃ ◦ _antiprivado_\n┃\n┃ 🛡️ *SEGURIDAD GRUPOS*\n┃ ◦ _welcome_\n┃ ◦ _antilink_\n┃ ◦ _antibot_\n┃ ◦ _detect_\n┃ ◦ _antiarabes_\n┃ ◦ _antilag_\n┃\n┃ 🔞 *CONTENIDO & MÁS*\n┃ ◦ _nsfw_\n┃ ◦ _antinopor_\n┃ ◦ _audios_\n┃ ◦ _modoadmin_\n┃ ◦ _document_\n┗━━━━━━━━━━━━━━━━━━━━━┛`
-        
+        let txt = `┏━━━━━━━━━━━━━━━━━━━━━┓\n┃ ⚙️ *INTERFACE DE AJUSTES* ⚙️\n┗━━━━━━━━━━━━━━━━━━━━━┃\n┃ 🟢 *Usar:* ${usedPrefix + command} <opción>\n┃━━━━━━━━━━━━━━━━━━━━━┃\n┃ 💻 *SISTEMA*\n┃ ◦ _autoread_\n┃ ◦ _subbots_\n┃ ◦ _restrict_\n┃ ◦ _antispam_\n┃ ◦ _antiprivado_\n┃\n┃ 🛡️ *SEGURIDAD GRUPOS*\n┃ ◦ _welcome_\n┃ ◦ _antilink_\n┃ ◦ _antibot_\n┃ ◦ _antiestados_ 👈\n┃ ◦ _detect_\n┃ ◦ _antiarabes_\n┃ ◦ _antilag_\n┃\n┃ 🔞 *CONTENIDO & MÁS*\n┃ ◦ _nsfw_\n┃ ◦ _antinopor_\n┃ ◦ _audios_\n┃ ◦ _modoadmin_\n┃ ◦ _document_\n┗━━━━━━━━━━━━━━━━━━━━━┛`
+
         return conn.sendMessage(m.chat, {
           text: txt,
           contextInfo: {
