@@ -2,7 +2,6 @@ import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 
 let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isROwner }) => {
-  // Determinamos si la intención es activar o desactivar basándonos en el comando usado
   let isEnable = /true|enable|(turn)?on|1/i.test(command)
   let chat = global.db.data.chats[m.chat]
   let user = global.db.data.users[m.sender]
@@ -10,16 +9,38 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
   let type = (args[0] || '').toLowerCase()
   let isAll = false, isUser = false
 
-  // Imagen de catálogo para el diseño visual
   const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
   let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
 
   switch (type) {
     case 'welcome':
-    case 'bv':
     case 'bienvenida':
       if (m.isGroup && !isAdmin) return global.dfail('admin', m, conn)
       chat.bienvenida = isEnable
+      break
+
+    case 'antilag': // <--- Agregado
+      if (m.isGroup && !isAdmin) return global.dfail('admin', m, conn)
+      chat.antiLag = isEnable
+      break
+
+    case 'subbots': // <--- Agregado
+    case 'serbot':
+      isAll = true
+      if (!isROwner) return global.dfail('rowner', m, conn)
+      bot.jadibotmd = isEnable
+      break
+
+    case 'antispam': // <--- Agregado
+      isAll = true
+      if (!isOwner) return global.dfail('owner', m, conn)
+      bot.antiSpam = isEnable
+      break
+
+    case 'antinopor': // <--- Agregado
+    case 'antinonopor':
+      if (m.isGroup && !isAdmin) return global.dfail('admin', m, conn)
+      chat.antiLinkxxx = isEnable
       break
 
     case 'detect':
@@ -83,16 +104,15 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
       break
 
     default:
-      // Si no se especifica una opción válida, muestra el menú de ayuda
       if (!/[01]/.test(command)) {
-        let txt = `┏━━━━━━━━━━━━━━━━━━━━━┓\n┃ ⚙️ *INTERFACE DE AJUSTES* ⚙️\n┗━━━━━━━━━━━━━━━━━━━━━┃\n┃ 🟢 *Usar:* ${usedPrefix + command} <opción>\n┃ 💡 *Ejemplo:* ${usedPrefix}on welcome\n┃━━━━━━━━━━━━━━━━━━━━━┃\n┃ 🛡️ *SEGURIDAD*\n┃ ◦ _welcome_ (Bienvenida)\n┃ ◦ _antilink_ (Enlaces)\n┃ ◦ _antibot_ (Anti-Bot)\n┃ ◦ _detect_ (Avisos Grupo)\n┃ ◦ _antiestados_ (Estados)\n┃ ◦ _antiarabes_ (Fakes)\n┃\n┃ 🔞 *CONTENIDO*\n┃ ◦ _nsfw_ (+18)\n┃ ◦ _audios_ (Audios Bot)\n┃ ◦ _modoadmin_ (Solo Admins)\n┃\n┃ 💻 *SISTEMA (Owner)*\n┃ ◦ _autoread_\n┃ ◦ _antiprivado_\n┃ ◦ _restrict_\n┗━━━━━━━━━━━━━━━━━━━━━┛`
+        let txt = `┏━━━━━━━━━━━━━━━━━━━━━┓\n┃ ⚙️ *INTERFACE DE AJUSTES* ⚙️\n┗━━━━━━━━━━━━━━━━━━━━━┃\n┃ 🟢 *Usar:* ${usedPrefix + command} <opción>\n┃ 💡 *Ejemplo:* ${usedPrefix}on antilag\n┃━━━━━━━━━━━━━━━━━━━━━┃\n┃ 🛡️ *SEGURIDAD*\n┃ ◦ _welcome_\n┃ ◦ _antilink_\n┃ ◦ _antibot_\n┃ ◦ _antilag_ ⚡\n┃ ◦ _antiestados_\n┃ ◦ _antiarabes_\n┃\n┃ 🔞 *CONTENIDO*\n┃ ◦ _nsfw_\n┃ ◦ _antinopor_\n┃ ◦ _audios_\n┃ ◦ _modoadmin_\n┃\n┃ 💻 *SISTEMA*\n┃ ◦ _subbots_ 🤖\n┃ ◦ _antispam_\n┃ ◦ _autoread_\n┃ ◦ _antiprivado_\n┗━━━━━━━━━━━━━━━━━━━━━┛`
 
         return conn.sendMessage(m.chat, {
           text: txt,
           contextInfo: {
             externalAdReply: {
               title: 'Sᴀsᴜᴋᴇ Bᴏᴛ ─ Cᴏɴғɪɢ',
-              body: 'Panel de Control',
+              body: 'Panel de Control Actualizado',
               thumbnail: catalogoImg,
               mediaType: 1,
               showAdAttribution: true
@@ -103,8 +123,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
       throw false
   }
 
-  // Mensaje de confirmación de éxito
-  let statusTxt = `┏━━━━━━━━━━━━━━━━━━━━━┓\n┃ ✨ *AJUSTE ACTUALIZADO* ✨\n┃━━━━━━━━━━━━━━━━━━━━━┃\n┃ ⚙️ *Opción:* ${type}\n┃ 📊 *Estado:* ${isEnable ? 'Activado ✅' : 'Desactivado ❌'}\n┃ 📍 *Ámbito:* ${isAll ? 'Global 🌐' : isUser ? 'Usuario 👥' : 'Chat Actual 💬'}\n┗━━━━━━━━━━━━━━━━━━━━━┛`
+  let statusTxt = `┏━━━━━━━━━━━━━━━━━━━━━┓\n┃ ✨ *AJUSTE ACTUALIZADO* ✨\n┃━━━━━━━━━━━━━━━━━━━━━┃\n┃ ⚙️ *Opción:* ${type}\n┃ 📊 *Estado:* ${isEnable ? 'Activado ✅' : 'Desactivado ❌'}\n┃ 📍 *Ámbito:* ${isAll ? 'Global 🌐' : 'Chat Actual 💬'}\n┗━━━━━━━━━━━━━━━━━━━━━┛`
 
   await conn.sendMessage(m.chat, {
     text: statusTxt,
