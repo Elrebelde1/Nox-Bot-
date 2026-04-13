@@ -1,29 +1,49 @@
-let handler = m => m;
-handler.before = async function (m, { conn, isAdmin, isBotAdmin, isOwner, isROwner, isPrems }) {
-  const chat = global.db.data.chats[m.chat];
-  const bot = global.db.data.settings[conn.user.jid] || {};
+const handler = async (m, { conn, args, isAdmin, isOwner }) => {
+    // Validación de permisos para el comando
+    if (!isAdmin && !isOwner) throw "⚠️ Solo los administradores pueden usar este comando."
 
-  const hl = global.prefix;  // Prefijo global
-  const adminMode = chat.modoadmin;  // Modo de administrador
+    let chat = global.db.data.chats[m.chat]
+    if (!chat) global.db.data.chats[m.chat] = {}
 
-  // Comprobamos si el mensaje está en un grupo y si el modo administrador está activado
-  if (m.isGroup) {
-    // Si el modo admin está activado y el usuario no tiene privilegios, rechazamos el mensaje
-    if (adminMode && !isOwner && !isROwner && !isAdmin) {
-      return false;  // Cancelamos la acción
+    if (/on/i.test(args[0])) {
+        chat.modoadmin = true
+        await conn.reply(m.chat, "✅ *Modo Administrador activado.*\nAhora solo los admins pueden usar el bot en este grupo.", m)
+    } else if (/off/i.test(args[0])) {
+        chat.modoadmin = false
+        await conn.reply(m.chat, "❌ *Modo Administrador desactivado.*", m)
+    } else {
+        await conn.reply(m.chat, "📌 Uso: *.modoadmin on* / *.modoadmin off*", m)
     }
-
-    // Si el bot no es administrador en el grupo, rechazamos el mensaje
-    if (!isBotAdmin) {
-      return false;  // Cancelamos la acción
-    }
-  } else {
-    // Si no es un grupo, solo los usuarios con privilegios pueden enviar mensajes
-    if (isOwner || isROwner || isPrems) {
-      return true;  // Permitir acción
-    }
-    return false;  // Cancelamos la acción
-  }
 }
 
-export default handler;
+handler.help = ['modoadmin <on/off>']
+handler.tags = ['group']
+handler.command = /^(modoadmin|adminmode)$/i
+
+handler.before = async function (m, { conn, isAdmin, isOwner, isROwner, isPrems }) {
+    if (m.isBaileys || m.fromMe) return !0
+    
+    let chat = global.db.data.chats[m.chat]
+    if (!chat) return !0
+
+    // Si estamos en un grupo
+    if (m.isGroup) {
+        // Si el modo admin está activo y el que escribe NO es admin/owner/premium
+        if (chat.modoadmin && !isAdmin && !isOwner && !isROwner && !isPrems) {
+            // Si el usuario intenta usar un comando (empieza con prefijo), ignoramos
+            if (m.text.startsWith('.') || m.text.startsWith('/') || m.text.startsWith('#')) {
+                return false // Detiene la ejecución de otros plugins
+            }
+        }
+    } else {
+        // Lógica para chats privados (opcional, según tu código anterior)
+        // Solo permite el uso a dueños o usuarios premium si así lo deseas
+        if (!isOwner && !isROwner && !isPrems) {
+            // return false // Descomenta esto si quieres bloquear el bot en privados para usuarios normales
+        }
+    }
+    
+    return !0
+}
+
+export default handler
