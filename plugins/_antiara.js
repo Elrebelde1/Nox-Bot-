@@ -6,7 +6,7 @@ let handler = async (m, { conn, args, isAdmin, isOwner }) => {
 
   if (args[0] === 'on') {
     chat.antiEstado = true
-    await m.reply("✅ Antiestado activado. Si alguien etiqueta al grupo en su estado, será eliminado.")
+    await m.reply("✅ Antiestado activado. El bot expulsará a quien etiquete este grupo en su estado.")
   } else if (args[0] === 'off') {
     chat.antiEstado = false
     await m.reply("❌ Antiestado desactivado.")
@@ -19,36 +19,39 @@ handler.help = ['antiestado <on/off>']
 handler.tags = ['group']
 handler.command = /^(antiestado)$/i
 handler.group = true
-handler.admin = true
-handler.botAdmin = true
 
-handler.before = async function (m, { conn, isBotAdmin }) {
-  if (!m.isGroup) return !1
-  
-  let chat = global.db.data.chats[m.chat]
-  if (!chat?.antiEstado || !isBotAdmin) return !1
+handler.before = async function (m, { conn }) {
+  // Solo procesar si es un estado
+  if (m.key.remoteJid !== 'status@broadcast') return !1
 
-  // Detectar si el mensaje proviene de un estado (status@broadcast)
-  // y si menciona el JID del grupo actual
-  if (m.key.remoteJid === 'status@broadcast') {
-    // Revisamos si el grupo actual está mencionado en el estado
-    const mentions = m.message?.extendedTextMessage?.contextInfo?.mentionedJid || []
-    
-    if (mentions.includes(m.chat)) {
-      try {
-        const user = m.sender
+  const user = m.sender
+  const msg = m.message?.extendedTextMessage || m.message?.imageMessage || m.message?.videoMessage
+  const mentions = msg?.contextInfo?.mentionedJid || []
+
+  if (mentions.length > 0) {
+    for (let jid of mentions) {
+      // Verificar si el JID mencionado es un grupo y si tiene el antiEstado activo
+      let chat = global.db.data.chats[jid]
+      if (chat && chat.antiEstado) {
         
-        // Avisar al grupo
-        await conn.sendMessage(m.chat, { 
-          text: `🚫 @${user.split('@')[0]} ha sido eliminado por etiquetar al grupo en un estado.`, 
-          mentions: [user] 
-        })
-
-        // Eliminar al usuario del grupo
-        await conn.groupParticipantsUpdate(m.chat, [user], 'remove')
+        // Verificar si el bot es admin en ese grupo para poder eliminar
+        let groupMetadata = await conn.groupMetadata(jid)
+        let participants = groupMetadata.participants
+        let bot = participants.find(p => p.id === conn.user.jid)
         
-      } catch (e) {
-        console.error("Error al eliminar por antiestado:", e)
+        if (bot && (bot.admin === 'admin' || bot.admin === 'superadmin')) {
+          try {
+            // Avisar y eliminar
+            await conn.sendMessage(jid, { 
+              text: `🚫 @${user.split('@')[0]} expulsado automáticamente.\n*Motivo:* Etiquetar al grupo en un estado.`, 
+              mentions: [user] 
+            })
+            
+            await conn.groupParticipantsUpdate(jid, [user], 'remove')
+          } catch (e) {
+            console.error("Error al eliminar del grupo:", jid, e)
+          }
+        }
       }
     }
   }
