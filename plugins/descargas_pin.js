@@ -2,53 +2,54 @@ import axios from "axios";
 import baileys from "@whiskeysockets/baileys";
 
 let handler = async (m, { conn, text }) => {
-  // Validación: Si no hay texto, pide una consulta al usuario
-  if (!text) return m.reply("Por favor, proporciona un texto para buscar en Pinterest.\n\nEjemplo: *.pin paisajes estéticos*");
+  // Validación: Si no hay texto, el bot avisa que falta la consulta
+  if (!text) return m.reply("Por favor, proporciona un texto para buscar en Pinterest.\n\nEjemplo: *.pin Messi*");
 
-  // 1. Reaccionar para indicar que estamos trabajando
+  // Reacción de inicio
   await conn.sendMessage(m.chat, { react: { text: "⏳", key: m.key } });
 
   try {
-    // 2. Petición a la API de Sylphyy
+    // URL de la API de Sylphyy con los parámetros correctos
     const apiUrl = `https://sylphyy.xyz/search/pinterest?q=${encodeURIComponent(text)}&api_key=sylphy-6f150d`;
-    const response = await axios.get(apiUrl, { timeout: 10000 });
-
+    
+    const response = await axios.get(apiUrl, { timeout: 15000 });
     const res = response.data;
 
-    // 3. Validar si hay resultados
-    if (!res.status || !res.result || res.result.length === 0) {
+    // Validación de la respuesta de la API
+    if (!res.status || !res.result || !Array.isArray(res.result) || res.result.length === 0) {
       await conn.sendMessage(m.chat, { react: { text: "❌", key: m.key } });
-      return m.reply("No encontré resultados para esa búsqueda.");
+      return m.reply(`No encontré imágenes para: "${text}"`);
     }
 
-    // 4. Limitar a las primeras 8 imágenes
-    const limitedResults = res.result.slice(0, 8); 
+    // Filtramos y tomamos exactamente 8 imágenes
+    const limitedResults = res.result.slice(0, 8);
 
     const medias = limitedResults.map((item) => ({
       type: "image",
       data: { url: item.image } 
     }));
 
-    // 5. Enviar el álbum
-    const albumCaption = `✅ *Pinterest:* ${text}`;
+    // Título del álbum
+    const albumCaption = `✅ *Pinterest:* ${text}\n📸 *Imágenes encontradas:* ${medias.length}`;
 
+    // Envío usando la función de álbum optimizada
     await sendAlbumMessage(conn, m.chat, medias, { 
       caption: albumCaption, 
       quoted: m,
-      delay: 800 
+      delay: 1000 // Delay de 1 segundo entre imágenes para evitar spam filters
     });
 
-    // 6. Confirmación final
+    // Reacción de éxito
     await conn.sendMessage(m.chat, { react: { text: "✅", key: m.key } });
 
   } catch (error) {
-    console.error("Error en Pinterest:", error);
+    console.error("Error en Pinterest Sylphyy:", error);
     await conn.sendMessage(m.chat, { react: { text: "⚠️", key: m.key } });
-    m.reply("Hubo un fallo al obtener las imágenes.");
+    m.reply("Hubo un fallo al conectar con el servidor de imágenes. Intenta de nuevo.");
   }
 };
 
-// --- Función de álbum optimizada ---
+// --- Función de envío de álbumes ---
 async function sendAlbumMessage(conn, jid, medias, options = {}) {
   const { delay = 500, caption = "", quoted = null } = options;
 
@@ -73,7 +74,7 @@ async function sendAlbumMessage(conn, jid, medias, options = {}) {
     const { type, data } = medias[i];
     const msg = await baileys.generateWAMessage(jid, {
       [type]: data,
-      ...(i === 0 ? { caption } : {})
+      ...(i === 0 ? { caption } : {}) // Solo la primera imagen lleva el texto
     }, { upload: conn.waUploadToServer });
 
     msg.message.messageContextInfo = {
