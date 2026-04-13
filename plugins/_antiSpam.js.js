@@ -1,5 +1,24 @@
 const userSpamData = {}
 
+let handler = async (m, { conn, args, isOwner }) => {
+  if (!isOwner) return global.dfail('owner', m, conn)
+  let bot = global.db.data.settings[conn.user.jid] || {}
+
+  if (/on/i.test(args[0])) {
+    bot.antiSpam = true
+    await conn.reply(m.chat, "✅ *Anti-Spam activado.*\n_(Solo filtra Stickers y Emojis)_", m)
+  } else if (/off/i.test(args[0])) {
+    bot.antiSpam = false
+    await conn.reply(m.chat, "❌ *Anti-Spam desactivado.*", m)
+  } else {
+    await conn.reply(m.chat, `📌 Uso: *.antispam on/off*`, m)
+  }
+}
+
+handler.help = ['antispam on/off']
+handler.tags = ['config']
+handler.command = /^(antispam)$/i
+
 handler.before = async function (m, { conn, isAdmin, isBotAdmin, isOwner, isROwner, isPrems }) {
   const chat = global.db.data.chats[m.chat]
   const bot = global.db.data.settings[conn.user.jid] || {}
@@ -8,17 +27,18 @@ handler.before = async function (m, { conn, isAdmin, isBotAdmin, isOwner, isROwn
   
   const sender = m.sender
   const currentTime = Date.now()
-  const timeWindow = 6000 
-  const warnLimit = 4 
-  const kickLimit = 6 
+  const timeWindow = 6000 // 6 segundos
+  const warnLimit = 4 // Aviso al 4to
+  const kickLimit = 6 // Ban al 6to
 
-  // --- FILTRO: SOLO STICKERS O MENSAJES QUE SON PUROS EMOJIS ---
+  // --- DETECCIÓN: SOLO STICKERS O PUROS EMOJIS ---
   const isEmojiOnly = /^(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F|\p{Emoji_Modifier_Base}|\p{Emoji_Modifier}|\p{Emoji_Component})+$/u.test(m.text?.trim())
   const isSticker = m.mtype === 'stickerMessage'
   
-  if (!isSticker && !isEmojiOnly) return // Si es texto normal, el código se detiene aquí y no cuenta como spam.
+  // Si no es ninguna de las dos, ignoramos el mensaje (permite texto normal)
+  if (!isSticker && !isEmojiOnly) return 
 
-  // --- RESPUESTA AL CREADOR ---
+  // --- RESPUESTA AL CREADOR (SEBASTIÁN) ---
   if (isOwner || isROwner) {
     if (!(sender in userSpamData)) userSpamData[sender] = { lastMessageTime: currentTime, messageCount: 1 }
     const userData = userSpamData[sender]
@@ -46,12 +66,14 @@ handler.before = async function (m, { conn, isAdmin, isBotAdmin, isOwner, isROwn
     if (timeDifference <= timeWindow) {
       userData.messageCount++
       
+      // Advertencia al 4to sticker/emoji
       if (userData.messageCount === warnLimit) {
-        await conn.reply(m.chat, `᥀·࣭࣪̇˖⚔️◗ *@${sender.split('@')[0]}*, ¡Deja el spam de stickers/emojis! (4/6)`, m, { mentions: [sender] })
+        await conn.reply(m.chat, `᥀·࣭࣪̇˖⚔️◗ *@${sender.split('@')[0]}*, ¡Corta el spam de stickers/emojis! (4/6)`, m, { mentions: [sender] })
       } 
+      // Expulsión al 6to
       else if (userData.messageCount >= kickLimit) {
         await conn.reply(m.chat, `᥀·࣭࣪̇˖👺◗ *@${sender.split('@')[0]}* fue eliminado por flood de stickers/emojis.`, m, { mentions: [sender] })
-        await conn.groupParticipantsUpdate(m.chat, [sender], 'remove')
+        if (m.isGroup) await conn.groupParticipantsUpdate(m.chat, [sender], 'remove')
         userData.messageCount = 0 
       }
     } else {
@@ -60,3 +82,5 @@ handler.before = async function (m, { conn, isAdmin, isBotAdmin, isOwner, isROwn
     userData.lastMessageTime = currentTime
   }
 }
+
+export default handler
