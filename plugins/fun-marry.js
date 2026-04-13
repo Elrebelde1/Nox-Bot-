@@ -1,8 +1,3 @@
-/* Código hecho por Destroy
- - https://github.com/The-King-Destroy
- - Dejen créditos aunque sea gracias.
-*/
-
 import fs from 'fs';
 import path from 'path';
 
@@ -47,13 +42,13 @@ const handler = async (m, { conn, command, text }) => {
         if (userIsMarried(proposee)) return await conn.reply(m.chat, `《✧》 *${conn.getName(proposee)}* ya está casado(a).`, m);
         if (proposer === proposee) return await conn.reply(m.chat, `¡No puedes casarte contigo mismo!`, m);
 
-        // --- RESPUESTA AUTOMÁTICA SI ES AL BOT ---
+        // --- RESPUESTA SI ES PARA EL BOT ---
         if (proposee === botJid) {
-            const respuestas = ['Si', 'No'];
+            const respuestas = ['si', 'no'];
             const decision = respuestas[Math.floor(Math.random() * respuestas.length)];
-            await new Promise(res => setTimeout(res, 1500)); // Delay para realismo
+            await new Promise(res => setTimeout(res, 1500));
 
-            if (decision === 'Si') {
+            if (decision === 'si') {
                 marriages[proposer] = botJid;
                 marriages[botJid] = proposer;
                 saveMarriages();
@@ -69,7 +64,7 @@ const handler = async (m, { conn, command, text }) => {
             timeout: setTimeout(() => {
                 conn.reply(m.chat, '*《✧》 Tiempo agotado (30s). Propuesta cancelada.*', m);
                 delete confirmation[proposee];
-            }, 30000) // TIEMPO AJUSTADO A 30 SEGUNDOS
+            }, 30000) 
         };
 
         const confirmationMessage = `♡ @${proposer.split('@')[0]} le ha propuesto matrimonio a @${proposee.split('@')[0]}. 
@@ -95,17 +90,19 @@ const handler = async (m, { conn, command, text }) => {
 
 handler.before = async (m, { conn }) => {
     if (m.isBaileys || !m.text) return;
+    
+    const txt = m.text.trim().toLowerCase();
     if (!(m.sender in confirmation)) return;
 
     const { proposer, timeout } = confirmation[m.sender];
 
-    if (/^No$/i.test(m.text)) {
+    if (txt === 'no') {
         clearTimeout(timeout);
         delete confirmation[m.sender];
         return await conn.reply(m.chat, '*《✧》 Han rechazado tu propuesta de matrimonio.*', m);
     }
 
-    if (/^Si$/i.test(m.text)) {
+    if (txt === 'si' || txt === 'sí') {
         clearTimeout(timeout);
         marriages[proposer] = m.sender;
         marriages[m.sender] = proposer;
