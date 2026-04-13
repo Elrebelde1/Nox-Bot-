@@ -180,5 +180,5 @@ await conn.sendMessage(m.chat, {text: responseMessage, mentions: conn.parseMenti
 break   
 }}
 
-handler.command = ['deletesesion', 'deletebot', 'deletesession', 'deletesession', 'stop', 'pausarbot', 'bots', 'listjadibots', 'subbots']
+handler.command = ['deletesesion', 'deletebot', 'deletesession', 'deletesession', 'stop', 'pausarbot', 'bots', 'listjadibots']
 export default handler
