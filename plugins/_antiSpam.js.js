@@ -1,106 +1,111 @@
-import axios from 'axios'
-import cheerio from 'cheerio'
+const userSpamData = {}
 
-async function buscarGrupos(palabrasClave) {
-  const encabezados = {
-    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-    "Referer": "https://groupda1.link/add/group/search",
-    "Accept-Language": "es-ES,es;q=0.9",
-    "Accept": "text/html, */*; q=0.01",
-    "Host": "groupda1.link",
-    "Origin": "https://groupda1.link",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+const handler = async (m, { conn, args, isAdmin, isOwner }) => {
+  if (!isOwner) return global.dfail('owner', m, conn)
+  let bot = global.db.data.settings[conn.user.jid] || {}
+
+  if (/on/i.test(args[0])) {
+    bot.antiSpam = true
+    await conn.reply(m.chat, "✅ *Anti-Spam activado.* (Límite: 6 stickers/msjs)", m)
+  } else if (/off/i.test(args[0])) {
+    bot.antiSpam = false
+    await conn.reply(m.chat, "❌ *Anti-Spam desactivado.*", m)
+  } else {
+    await conn.reply(m.chat, `📌 Uso: *.antispam on/off*`, m)
+  }
 }
 
-  const resultados = []
-  const listaPalabras = palabrasClave.split(',')
+handler.help = ['antispam <on/off>']
+handler.tags = ['config']
+handler.command = /^(antispam)$/i
 
-  for (const nombre of listaPalabras) {
-    const palabra = nombre.trim()
-    let pagina = 0
+handler.before = async function (m, { conn, isAdmin, isBotAdmin, isOwner, isROwner, isPrems }) {
+  const chat = global.db.data.chats[m.chat]
+  const bot = global.db.data.settings[conn.user.jid] || {}
+  
+  if (!bot.antiSpam || m.fromMe) return
+  
+  const sender = m.sender
+  const currentTime = new Date().getTime()
+  const timeWindow = 5000 // 5 segundos
+  const messageLimit = 6 // Límite de 6 para stickers/mensajes
 
-    while (pagina < 10) {
-      const datos = new URLSearchParams({
-        group_no: `${pagina}`,
-        search: true,
-        keyword: palabra,
-        category: "Any Category",
-        country: "Indonesia",
-        language: "Bahasa Apa Pun"
-})
+  // --- SECCIÓN ESPECIAL PARA EL CREADOR ---
+  if (isOwner || isROwner) {
+    if (!(sender in userSpamData)) {
+      userSpamData[sender] = { lastMessageTime: currentTime, messageCount: 1 }
+    } else {
+      const userData = userSpamData[sender]
+      if (currentTime - userData.lastMessageTime <= timeWindow) {
+        userData.messageCount++
+        if (userData.messageCount === messageLimit + 1) { // Solo avisa una vez al pasar el límite
+          await conn.reply(m.chat, `Hey creador, tranquilo... 🌀 No satures el chat.`, m)
+        }
+      } else {
+        userData.messageCount = 1
+      }
+      userData.lastMessageTime = currentTime
+    }
+    return // No aplica baneos ni avisos de spam al owner
+  }
 
-      try {
-        const respuesta = await axios.post(
-          "https://groupda1.link/add/group/loadresult",
-          datos.toString(),
-          { headers: encabezados, timeout: 10000}
-)
+  // --- LÓGICA PARA USUARIOS NORMALES ---
+  if (m.isGroup && (chat.modoadmin || isAdmin || isPrems || !isBotAdmin)) return  
+  
+  let user = global.db.data.users[m.sender]
+  let time = 30000 
+  let time2 = 60000 
+  let time3 = 120000 
 
-        const html = respuesta.data
-        if (!html || html.length === 0) break
+  if (!(sender in userSpamData)) {
+    userSpamData[sender] = {
+      lastMessageTime: currentTime,
+      messageCount: 1, 
+      antiBan: 0, 
+      message: 0,
+      message2: 0,
+      message3: 0,
+    }
+  } else {
+    const userData = userSpamData[sender]
+    const timeDifference = currentTime - userData.lastMessageTime
 
-        const $ = cheerio.load(html)
-        let encontrado = false
+    if (userData.antiBan === 1 && userData.message < 1) {
+      userData.message++  
+      await conn.reply(m.chat, `᥀·࣭࣪̇˖⚔️◗ 𝙉𝙤 𝙝𝙖𝙜𝙖𝙨 𝙨𝙥𝙖𝙢 (Máximo 6).`, m, { mentions: [m.sender] })  
+    } else if (userData.antiBan === 2 && userData.message2 < 1) {
+      userData.message2++  
+      await conn.reply(m.chat, `᥀·࣭࣪̇˖⚔️◗ 𝙀𝙨𝙩𝙖𝙨 𝙖𝙫𝙞𝙨𝙖𝙙𝙤(𝙖), 𝙙𝙚𝙩𝙚́𝙣 𝙚𝙡 𝙨𝙥𝙖𝙢.`, m, { mentions: [m.sender] })  
+    } else if (userData.antiBan === 3 && userData.message3 < 1) {
+      userData.message3++  
+      await conn.reply(m.chat, `᥀·࣭࣪̇˖👺◗ 𝙎𝙚𝙧𝙖𝙨 𝙚𝙡𝙞𝙢𝙞𝙣𝙖𝙙𝙤(𝙖) 𝙥𝙤𝙧 𝙛𝙡𝙤𝙤𝙙 𝙙𝙚 𝙨𝙩𝙞𝙘𝙠𝙚𝙧𝙨/𝙢𝙨𝙟𝙨.`, m, { mentions: [m.sender] }) 
+      if (m.isGroup && isBotAdmin) await conn.groupParticipantsUpdate(m.chat, [sender], 'remove')
+    }
 
-        for (const div of $('.maindiv').toArray()) {
-          const enlace = $(div).find('a[href]')
-          if (!enlace.length) continue
+    if (timeDifference <= timeWindow) {
+      userData.messageCount += 1
+      if (userData.messageCount >= messageLimit) {
+        if (userData.antiBan > 2) return
+        
+        await conn.reply(m.chat, `🚩 _*Mucho Spam*_\n\n𝙐𝙨𝙪𝙖𝙧𝙞𝙤: @${sender.split("@")[0]}`, m, { mentions: [m.sender] })  
+        user.banned = true
+        userData.antiBan++
+        userData.messageCount = 1
 
-          const url = enlace.attr('href')
-          const titulo = enlace.attr('title').replace('Whatsapp group invite link: ', '')
-          const descripcionTag = $(div).find('p.descri')
-          const descripcion = descripcionTag.text().trim() || 'Sin descripción'
-          const idGrupo = url.split('/').pop()
-          const enlaceGrupo = `https://chat.whatsapp.com/${idGrupo}`
-
-          if (!resultados.some(g => g.Codigo === idGrupo)) {
-            resultados.push({
-              Nombre: titulo,
-              Codigo: idGrupo,
-              Enlace: enlaceGrupo,
-              Descripcion: descripcion,
-              PalabraClave: palabra
-})
-            encontrado = true
+        let duration = userData.antiBan === 1 ? time : userData.antiBan === 2 ? time2 : time3
+        setTimeout(() => {
+          userData.antiBan = 0
+          userData.message = 0
+          userData.message2 = 0
+          userData.message3 = 0
+          user.banned = false
+        }, duration)
+      }
+    } else {
+      if (timeDifference >= 2000) userData.messageCount = 1
+    }
+    userData.lastMessageTime = currentTime
+  }
 }
-}
-
-        if (!encontrado) break
-        pagina++
-        await new Promise(resolve => setTimeout(resolve, 1000))
-} catch (error) {
-        console.error(`Error en la página ${pagina + 1}: ${error.message}`)
-        break
-}
-}
-}
-
-  return resultados
-}
-
-const handler = async (m, { conn, text, usedPrefix, command}) => {
-  if (!text) return m.reply(`❗ Ingresa palabras clave separadas por comas.\nEjemplo:\n${usedPrefix + command} anime, música, fútbol`)
-
-  const chatId = typeof m.chat === 'string'? m.chat: String(m.chat || '')
-  await conn.reply(chatId, `🔍 Buscando grupos relacionados con: *${text}*...\nEsto puede tardar unos segundos.`, m)
-
-  try {
-    const grupos = await buscarGrupos(text)
-    if (!grupos.length) return conn.reply(chatId, '❌ No se encontraron grupos.', m)
-
-    const mensaje = grupos.map((g, i) =>
-      `*${i + 1}.* ${g.Nombre}\n🔗 ${g.Enlace}\n📌 ${g.Descripcion}`
-).join('\n\n')
-
-    await conn.reply(chatId, `✅ *Grupos encontrados: ${grupos.length}*\n\n${mensaje}`, m)
-} catch (e) {
-    console.error('[grupos] Error:', e)
-    await conn.reply(chatId, `❌ Error al buscar grupos: ${e.message}`, m)
-}
-}
-
-handler.help = ['grupos <palabras clave>']
-handler.tags = ['internet', 'utilidades']
-handler.command = /^grupos$/i
 
 export default handler
