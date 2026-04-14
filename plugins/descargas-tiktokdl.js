@@ -1,4 +1,4 @@
-let marriages = {} // Objeto para almacenar las parejas
+let marriages = {} 
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
     const id = m.chat
@@ -8,82 +8,88 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
     // --- [ 1. COMANDO: MARRY / CASAR ] ---
     if (command === 'marry' || command === 'casar') {
-        if (!who) return m.reply(`*⚠️ Etiqueta o responde al mensaje de la persona con la que te quieres casar.*`)
+        if (!who) return m.reply(`*⚠️ Etiqueta o responde a la persona con la que te quieres casar.*`)
         if (who === m.sender) return m.reply('*😂 No puedes casarte contigo mismo.*')
-        if (who === conn.user.jid) return m.reply('*🛡️ Lo siento, yo solo estoy casado con mi código.*')
+        
+        if (marriages[id][m.sender]) return m.reply('*⚠️ Ya estás casado/a.*')
+        if (marriages[id][who]) return m.reply('*⚠️ Esa persona ya está comprometida.*')
 
-        // Verificar si alguno ya está casado
-        if (marriages[id][m.sender]) return m.reply('*⚠️ Ya estás casado/a. Primero divórciate.*')
-        if (marriages[id][who]) return m.reply('*⚠️ Esa persona ya está en un compromiso.*')
-
-        let name1 = conn.getName(m.sender)
-        let name2 = conn.getName(who)
-
-        let txt = `*💍 ✨ ¡PROPUESTA DE MATRIMONIO! ✨ 💍*\n\n*@${m.sender.split`@`[0]}* le ha pedido matrimonio a *@${who.split`@`[0]}*.\n\n*¿Aceptas, @${who.split`@`[0]}?*\nResponde con "Si" para aceptar o "No" para rechazar.`
+        let txt = `*💍 ✨ ¡PROPUESTA DE MATRIMONIO! ✨ 💍*\n\n*@${m.sender.split`@`[0]}* le ha pedido matrimonio a *@${who.split`@`[0]}*.\n\n*¿Aceptas?* Responde con *Si* o *No* en los próximos 60 segundos.`
         
         await conn.reply(m.chat, txt, m, { mentions: [m.sender, who] })
 
-        // Filtro para esperar respuesta del receptor
-        const filter = m => m.sender === who && /^(si|no)$/i.test(m.text)
-        const response = await m.chat.collectMessages({ filter, max: 1, time: 60000 })
+        // --- SISTEMA DE ESPERA DE RESPUESTA ---
+        try {
+            let response = await new Promise((resolve, reject) => {
+                let timeout = setTimeout(() => {
+                    conn.ev.off('messages.upsert', handlerMsg)
+                    reject(new Error('timeout'))
+                }, 60000) // 1 minuto de espera
 
-        if (response.length > 0) {
-            if (response[0].text.toLowerCase() === 'si') {
+                let handlerMsg = async ({ messages }) => {
+                    let msg = messages[0]
+                    if (!msg.message || msg.key.remoteJid !== id || msg.key.participant !== who) return
+                    
+                    let body = msg.message.conversation || msg.message.extendedTextMessage?.text || ''
+                    if (/^(si|no)$/i.test(body)) {
+                        clearTimeout(timeout)
+                        conn.ev.off('messages.upsert', handlerMsg)
+                        resolve(body.toLowerCase())
+                    }
+                }
+                conn.ev.on('messages.upsert', handlerMsg)
+            })
+
+            if (response === 'si') {
                 marriages[id][m.sender] = { partner: who, date: Date.now(), status: 'Casados' }
                 marriages[id][who] = { partner: m.sender, date: Date.now(), status: 'Casados' }
-                return m.reply(`*🎊 🎉 ¡VIVAN LOS NOVIOS! 🎉 🎊*\n\n*${name1}* y *${name2}* ahora están legalmente casados en este grupo.`)
+                return m.reply(`*🎊 🎉 ¡VIVAN LOS NOVIOS! 🎉 🎊*\n\nSe han unido en matrimonio @${m.sender.split`@`[0]} y @${who.split`@`[0]}.`, null, { mentions: [m.sender, who] })
             } else {
-                return m.reply(`*💔 F en el chat:* *@${who.split`@`[0]}* ha rechazado la propuesta.`)
+                return m.reply(`*💔 Rechazado:* *@${who.split`@`[0]}* dijo que no. F.`)
             }
-        } else {
-            return m.reply('*⏰ Se acabó el tiempo:* La propuesta ha expirado.')
+
+        } catch (e) {
+            return m.reply('*⏰ Tiempo agotado:* La propuesta ha expirado.')
         }
     }
 
     // --- [ 2. COMANDO: DIVORCE / DIVORCIAR ] ---
     if (command === 'divorce' || command === 'divorciar') {
-        if (!marriages[id][m.sender]) return m.reply('*⚠️ Ni siquiera estás casado/a...*')
+        if (!marriages[id][m.sender]) return m.reply('*⚠️ No tienes a nadie de quien divorciarte.*')
 
         let partner = marriages[id][m.sender].partner
         delete marriages[id][partner]
         delete marriages[id][m.sender]
 
-        return m.reply(`*💔 Triste noticia:* El matrimonio ha terminado. Ahora ambos están solteros.`)
+        return m.reply(`*💔 Divorcio completado:* Ahora ambos están solteros de nuevo.`)
     }
 
-    // --- [ 3. COMANDO: PAREJA / BODA / STATUS ] ---
+    // --- [ 3. COMANDO: PAREJA / BODA ] ---
     if (command === 'pareja' || command === 'boda') {
         let target = who || m.sender
         let data = marriages[id][target]
 
-        if (!data) return m.reply(`*👤 @${target.split`@`[0]} está soltero/a por ahora.*`, null, { mentions: [target] })
+        if (!data) return m.reply(`*👤 @${target.split`@`[0]} está soltero/a.*`, null, { mentions: [target] })
 
         let partner = data.partner
         let date = new Date(data.date).toLocaleDateString('es-HN')
         
-        let statusTxt = `*─── [ 💖 PERFIL DE PAREJA ] ───*\n\n`
-        statusTxt += `*👤 Usuario:* @${target.split`@`[0]}\n`
-        statusTxt += `*💍 Pareja:* @${partner.split`@`[0]}\n`
-        statusTxt += `*🗓️ Casados desde:* ${date}\n`
-        statusTxt += `*✨ Estado:* ${data.status}`
-
+        let statusTxt = `*─── [ 💖 PERFIL ] ───*\n\n*👤 Usuario:* @${target.split`@`[0]}\n*💍 Pareja:* @${partner.split`@`[0]}\n*🗓️ Desde:* ${date}`
         return conn.reply(m.chat, statusTxt, m, { mentions: [target, partner] })
     }
 
-    // --- [ 4. COMANDO: PAREJAS (LISTADO) ] ---
-    if (command === 'parejas' || command === 'listapasejas') {
+    // --- [ 4. COMANDO: PAREJAS ] ---
+    if (command === 'parejas') {
         let list = Object.keys(marriages[id])
-        if (list.length === 0) return m.reply('*😶 No hay parejas formadas en este grupo todavía.*')
+        if (list.length === 0) return m.reply('*😶 No hay matrimonios en este grupo.*')
 
-        let txt = `*─── [ 💘 CLUB DE PAREJAS ] ───*\n\n`
+        let txt = `*─── [ 💘 MATRIMONIOS ] ───*\n\n`
         let seen = new Set()
-        
         for (let user of list) {
             if (seen.has(user)) continue
             let partner = marriages[id][user].partner
             txt += `*👩‍❤️‍👨 @${user.split`@`[0]}* & *@${partner.split`@`[0]}*\n`
-            seen.add(user)
-            seen.add(partner)
+            seen.add(user); seen.add(partner)
         }
         return conn.reply(m.chat, txt, m, { mentions: Array.from(seen) })
     }
@@ -91,7 +97,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
 handler.help = ['marry', 'divorce', 'pareja', 'parejas']
 handler.tags = ['fun']
-handler.command = ['marry', 'casar', 'divorce', 'divorciar', 'pareja', 'boda', 'parejas', 'listaparejas']
+handler.command = ['marry', 'casar', 'divorce', 'divorciar', 'pareja', 'boda', 'parejas']
 handler.group = true
 
 export default handler
