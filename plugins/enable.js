@@ -141,7 +141,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
 ──────────────────────`.trim())
 }
 
-handler.help = ['enable', 'disable', 'on', 'off']
+handler.help = ['enable','disable','on', 'off']
 handler.tags = ['config']
 handler.command = /^(enable|disable|on|off|1|0)$/i
 
