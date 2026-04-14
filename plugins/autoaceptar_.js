@@ -6,10 +6,10 @@ let handler = async (m, { conn, args, isAdmin, isOwner }) => {
 
   if (args[0] === 'on') {
     chat.autoAceptar = true
-    await m.reply("✅ Auto-aceptar GLOBAL activado (América, Europa y seleccionados).")
+    await m.reply("✅ *Filtro de Seguridad Activado*\nSolo se aceptarán números de América y Europa. Números de Asia, África o prefijos sospechosos serán rechazados.")
   } else if (args[0] === 'off') {
     chat.autoAceptar = false
-    await m.reply("❌ Auto-aceptar desactivado.")
+    await m.reply("❌ *Auto-aceptar desactivado*")
   } else {
     await m.reply("📌 Usa: .autoaceptar on / off")
   }
@@ -26,34 +26,58 @@ handler.before = async function (m, { conn, isBotAdmin }) {
   let chat = global.db.data.chats[m.chat]
   if (!chat?.autoAceptar || !isBotAdmin) return !1
 
-  // Extraemos solo los números del sender (quitamos el @s.whatsapp.net)
   const jid = m.sender || m.author
+  if (!jid) return !1
   const number = jid.split('@')[0]
 
-  // Prefijos permitidos
-  const allowed = ['54', '55', '57', '58', '593', '502', '52', '51', '56', '591', '595', '598', '506', '1', '34', '33', '44', '231', '39', '49']
-  
-  // Prefijos prohibidos
-  const forbidden = ['6', '90', '963', '966', '967', '249', '212', '92', '93', '94', '7', '2', '91']
+  // --- LISTA DE PREFIJOS PERMITIDOS (AMÉRICA Y EUROPA) ---
+  const allowed = [
+    '58',  // Venezuela 🇻🇪
+    '57',  // Colombia 🇨🇴
+    '51',  // Perú 🇵🇪
+    '54',  // Argentina 🇦🇷
+    '56',  // Chile 🇨🇱
+    '52',  // México 🇲🇽
+    '593', // Ecuador 🇪🇨
+    '502', // Guatemala 🇬🇹
+    '504', // Honduras 🇭🇳
+    '505', // Nicaragua 🇳🇮
+    '506', // Costa Rica 🇨🇷
+    '507', // Panamá 🇵🇦
+    '503', // El Salvador 🇸🇻
+    '591', // Bolivia 🇧🇴
+    '595', // Paraguay 🇵🇾
+    '598', // Uruguay 🇺🇾
+    '1',   // USA / Canadá 🇺🇸🇨🇦
+    '34',  // España 🇪🇸
+    '39',  // Italia 🇮🇹
+    '33',  // Francia 🇫🇷
+    '44',  // Reino Unido 🇬🇧
+    '49',  // Alemania 🇩🇪
+    '351'  // Portugal 🇵🇹
+  ]
 
-  // 1. Prioridad: Rechazar si está en la lista negra
-  if (forbidden.some(prefix => number.startsWith(prefix))) {
-    try {
-      await conn.groupRequestParticipantsUpdate(m.chat, [jid], 'reject')
-      console.log(`[AUTO-RECHAZADO] -> ${number}`)
-    } catch (e) {
-      console.error("Error al rechazar:", e)
-    }
-    return !1 
-  }
+  // --- LÓGICA DE PROCESAMIENTO ---
 
-  // 2. Aceptar si está en la lista blanca
-  if (allowed.some(prefix => number.startsWith(prefix))) {
+  // 1. Verificar si el número empieza con alguno de los permitidos
+  const isAllowed = allowed.some(prefix => number.startsWith(prefix))
+
+  if (isAllowed) {
     try {
+      // Delay de 2 segundos para evitar spam del bot y errores de conexión
+      await new Promise(resolve => setTimeout(resolve, 2000))
       await conn.groupRequestParticipantsUpdate(m.chat, [jid], 'accept')
-      console.log(`[AUTO-ACEPTADO] -> ${number}`)
+      console.log(`[OK] Aceptado: ${number}`)
     } catch (e) {
       console.error("Error al aceptar:", e)
+    }
+  } else {
+    // 2. Si NO está en la lista permitida, lo rechazamos (Extranjeros/Spam)
+    try {
+      await conn.groupRequestParticipantsUpdate(m.chat, [jid], 'reject')
+      console.log(`[BLOQUEO] Rechazado por prefijo extranjero: ${number}`)
+    } catch (e) {
+      console.error("Error al rechazar:", e)
     }
   }
 
