@@ -1,9 +1,9 @@
 let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isROwner }) => {
-  let isEnable = /true|enable|(turn)?on|1/i.test(args[0] || ''); 
+  let isEnable = /true|enable|(turn)?on|1/i.test(command);
   let chat = global.db.data.chats[m.chat];
   let user = global.db.data.users[m.sender];
   let bot = global.db.data.settings[conn.user.jid] || {};
-  let type = (command || '').toLowerCase(); 
+  let type = (args[0] || '').toLowerCase();
   let isAll = false, isUser = false;
 
   switch (type) {
@@ -21,9 +21,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
       chat.antiPrivate2 = isEnable;
       break;
 
-      case 'antilag':
-      if (m.isGroup && !isAdmin) return global.dfail('admin', m, conn);
-      if (!m.isGroup && !isOwner) return global.dfail('group', m, conn);
+    case 'antilag':
       chat.antiLag = isEnable;
       break;
 
@@ -107,10 +105,10 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
       break;
 
     default:
-      if (!/[a-z]/.test(command)) return m.reply(`
-🏎️💨 Barboza Sistema 
+      if (!/[01]/.test(command)) return m.reply(`
+🏎️💨 ᴛ - ᴄᴏɴᴛʀᴏʟ ᴄᴇɴᴛᴇʀ
 ──────────────────────
-👌 *Ajustes de Velocidad y Seguridad*
+🚘 *Ajustes de Velocidad y Seguridad*
 
 🏁 *[welcome]* ⮕ Bienvenida
 🏁 *[nsfw]* ⮕ Modo Adulto
@@ -124,7 +122,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
 🏁 *[audios]* ⮕ Notas de Voz
 🏁 *[subbots]* ⮕ Sistema JadiBot
 
-🛠️ *Uso:* ${usedPrefix}antilag on
+🛠️ *Uso:* ${usedPrefix + command} welcome
 ──────────────────────`.trim())
       throw false
   }
@@ -133,7 +131,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
   let scopeText = isAll ? 'ＴＯＤＯ ＥＬ ＢＯＴ' : isUser ? 'ＵＳＵＡＲＩＯ' : 'ＥＳＴＥ ＣＨＡＴ';
 
   let confirm = `
-🥶 *Sasuke Bot* 🔥
+🚘 * 🚘
 ──────────────────────
 🚦 *ESTADO DE LA FUNCIÓN*
 
@@ -147,8 +145,8 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
   m.reply(confirm)
 }
 
-handler.help = ['welcome', 'nsfw', 'antilink', 'antilag', 'antiarabes', 'autoleer', 'restrict', 'document', 'modoadmin', 'audios', 'subbots'].map(v => v + ' <on/off>')
-handler.tags = ['enable']
-handler.command = /^(welcome|bv|bienvenida|antiprivado2|antilag|autoread|autoleer|antispam|antinopor|audios|detect|avisos|jadibotmd|serbot|subbots|restrict|document|antilink|antibot|modoadmin|antiprivado|nsfw|antiarabes)$/i
+handler.help = ['enable', 'disable', 'on', 'off']
+handler.tags = ['nable']
+handler.command = /^(enable|disable|on|off|1|0)$/i
 
 export default handler
