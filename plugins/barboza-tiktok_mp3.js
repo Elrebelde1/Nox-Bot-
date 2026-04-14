@@ -106,7 +106,7 @@ let handler = async (m, { conn, text, usedPrefix, command, isAdmin, isBotAdmin }
 
 handler.help = ['warn', 'delwarn', 'warnlist', 'warnlimit', 'warnreset']
 handler.tags = ['group']
-handler.command = ['warn', 'advertir', 'delwarn', 'quitarwarn', 'warnlist', 'advertencias', 'warnlimit', 'warnreset']
+handler.command = ['warn', 'advertir', 'delwarn', 'quitarwarn', 'warnlist', 'advertencias', 'warnlimit', 'warnreset','setwarn']
 handler.group = true
 
 export default handler
