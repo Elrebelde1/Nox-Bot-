@@ -1,110 +1,58 @@
-let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isROwner }) => {
+let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin }) => {
   
-  // 1. Verificación básica: Si no hay argumentos (.antilag)
-  if (args.length === 0) {
-    return conn.reply(m.chat, `
-💠 *ＳＡＳＵＫＥ - ＣＯＮＴＲＯＬ*
-──────────────────────
-⚙️ _Configuración de: *${command.toUpperCase()}*_
-
-📝 *Uso correcto:*
-🔹 ${usedPrefix}${command} *on*
-🔹 ${usedPrefix}${command} *off*
-──────────────────────`.trim(), m)
+  // 1. Si no hay argumentos, enviar ayuda visual
+  if (!args[0]) {
+    return conn.reply(m.chat, `*💠 CONTROL DE SISTEMA*\n\nUso: ${usedPrefix}${command} [on/off]\nEjemplo: *${usedPrefix}${command} on*`, m)
   }
 
   let isEnable = /true|enable|(turn)?on|1/i.test(args[0]);
   let chat = global.db.data.chats[m.chat];
-  let user = global.db.data.users[m.sender];
-  let bot = global.db.data.settings[conn.user.jid] || {};
   let type = command.toLowerCase();
 
-  // 2. Validación de Permisos (Crucial para que responda en grupos)
-  if (m.isGroup) {
-    if (!(isAdmin || isOwner)) {
-      return conn.reply(m.chat, `❌ *ERROR:* Solo los *Administradores* pueden usar este comando en el grupo.`, m)
-    }
+  // 2. Validación manual de Administrador (para asegurar que responda en grupos)
+  if (m.isGroup && !isAdmin && !isOwner) {
+    return conn.reply(m.chat, `❌ *ERROR:* Solo los administradores pueden usar este comando.`, m)
   }
 
-  // 3. Ejecución de la configuración
+  // 3. Ejecución directa
   try {
     switch (type) {
-      case 'welcome':
-      case 'bienvenida':
-        chat.bienvenida = isEnable;
-        break;
-      
-      case 'antilag':
-        chat.antiLag = isEnable;
-        break;
-
-      case 'antilink':
-        chat.antiLink = isEnable;
-        break;
-
-      case 'antibot':
-        chat.antiBot = isEnable;
-        break;
-
-      case 'nsfw':
-        chat.nsfw = isEnable;
-        break;
-
-      case 'audios':
-        chat.audios = isEnable;
-        break;
-
-      case 'modoadmin':
-        chat.modoadmin = isEnable;
-        break;
-
-      case 'detect':
-        chat.detect = isEnable;
-        break;
-
-      case 'antiarabes':
-        chat.onlyLatinos = isEnable;
-        break;
-
-      // Comandos solo para el Dueño (Owner)
-      case 'autoleer':
-      case 'antispam':
-      case 'restrict':
-      case 'serbot':
-        if (!isOwner) return conn.reply(m.chat, `❌ Este ajuste es solo para el *Owner*.`, m)
-        if (type === 'autoleer') global.opts['autoread'] = isEnable;
-        if (type === 'antispam') bot.antiSpam = isEnable;
-        if (type === 'restrict') bot.restrict = isEnable;
-        if (type === 'serbot') bot.jadibotmd = isEnable;
-        break;
-
+      case 'welcome': chat.bienvenida = isEnable; break;
+      case 'antilag': chat.antiLag = isEnable; break;
+      case 'antilink': chat.antiLink = isEnable; break;
+      case 'nsfw': chat.nsfw = isEnable; break;
+      case 'detect': chat.detect = isEnable; break;
+      case 'audios': chat.audios = isEnable; break;
+      case 'antibot': chat.antiBot = isEnable; break;
       default:
-        return conn.reply(m.chat, "❌ Función no reconocida.", m);
+        return conn.reply(m.chat, `❌ La función *${type}* no está registrada.`, m)
     }
 
-    let statusText = isEnable ? 'ＡＣＴＩＶＡＤＯ ✅' : 'ＤＥＳＡＣＴＩＶＡＤＯ ❌';
+    let status = isEnable ? 'ＡＣＴＩＶＡＤＯ ✅' : 'ＤＥＳＡＣＴＩＶＡＤＯ ❌';
 
-    // 4. Respuesta de confirmación
+    // 4. Mensaje de éxito con diseño Sasuke
     await conn.reply(m.chat, `
-💠 *ＳＡＳＵＫＥ ＳＹＳＴＥＭ*
+💠 *ＳＡＳＵＫＥ ＢＯＴ*
 ──────────────────────
-⚙️ *FUNCIÓN:* ${type.toUpperCase()}
-📡 *ESTADO:* ${statusText}
+⚙️ *COMANDO:* ${type.toUpperCase()}
+📡 *ESTADO:* ${status}
 
-✨ _Cambios aplicados en este chat._
+🚀 _Configuración aplicada con éxito._
 ──────────────────────`.trim(), m)
 
-  } catch (e) {
-    console.log(e)
-    conn.reply(m.chat, `❌ Ocurrió un error interno al configurar ${type}`, m)
+  } catch (err) {
+    // Si falla, el bot enviará el error al chat para que sepas qué pasó
+    conn.reply(m.chat, `⚠️ *ERROR CRÍTICO:* ${err.message}`, m)
   }
 }
 
-handler.help = ['antilag on/off', 'antilink on/off', 'welcome on/off']
+handler.help = ['antilag on/off']
 handler.tags = ['config']
-handler.command = /^(antilag|welcome|bienvenida|autoleer|antispam|audios|detect|serbot|restrict|antilink|antibot|modoadmin|nsfw|antiarabes)$/i
+// Aquí añadimos todos los comandos que quieras activar
+handler.command = /^(antilag|welcome|antilink|nsfw|detect|audios|antibot)$/i
 
-// IMPORTANTE: Esto permite que el comando funcione en grupos
-handler.group = true 
+// Forzar que funcione en grupos y privados
+handler.group = true
+handler.private = true
 
 export default handler
