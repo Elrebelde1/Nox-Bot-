@@ -10,7 +10,6 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
   const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
   let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
 
-  // Validación de argumento on/off
   if (!args[0] || !/on|off|enable|disable|1|0/i.test(args[0])) {
     throw `⚠️ *Formato incorrecto*\n\n📌 Uso: *${usedPrefix + command} on* o *${usedPrefix + command} off*`
   }
@@ -23,14 +22,14 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
       break
 
     case 'antilag':
-      if (m.isGroup && !isAdmin) return global.dfail('admin', m, conn)
-      chat.antiLag = isEnable
+      if (!isOwner) return global.dfail('owner', m, conn)
+      bot.antiLag = isEnable 
       break
 
     case 'subbots':
     case 'serbot':
       if (!isROwner) return global.dfail('rowner', m, conn)
-      bot.jadibotmd = isEnable
+      bot.jadibotmd = isEnable 
       break
 
     case 'antispam':
@@ -88,7 +87,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
       return
   }
 
-  let statusTxt = `┏━━━━━━━━━━━━━━━━━━━━━┓\n┃ ✨ *AJUSTE ACTUALIZADO* ✨\n┃━━━━━━━━━━━━━━━━━━━━━┃\n┃ ⚙️ *Función:* ${type}\n┃ 📊 *Estado:* ${isEnable ? 'Activado ✅' : 'Desactivado ❌'}\n┗━━━━━━━━━━━━━━━━━━━━━┛`
+  let statusTxt = `┏━━━━━━━━━━━━━━━━━━━━━┓\n┃ ✨ *AJUSTE ACTUALIZADO* ✨\n┃━━━━━━━━━━━━━━━━━━━━━┃\n┃ ⚙️ *Función:* ${type}\n┃ 📊 *Estado:* ${isEnable ? 'Activado ✅' : 'Desactivado ❌'}\n┃ 🌎 *Ámbito:* ${['antilag', 'subbots', 'serbot', 'antispam', 'antiprivado'].includes(type) ? 'Global (Todo el Bot)' : 'Local (Este Chat)'}\n┗━━━━━━━━━━━━━━━━━━━━━┛`
 
   await conn.sendMessage(m.chat, {
     text: statusTxt,
@@ -102,11 +101,8 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
   }, { quoted: m })
 }
 
-// Lista manual de ayuda
 handler.help = ['welcome on/off', 'antilag on/off', 'antilink on/off', 'antibot on/off', 'modoadmin on/off', 'subbots on/off']
 handler.tags = ['config']
-
-// Comandos individuales uno tras otro en la expresión regular
 handler.command = /^(welcome|bienvenida|antilag|subbots|serbot|antispam|antilink|antibot|modoadmin|antiestados|nsfw|antinopor|audios|detect|antiprivado|autoread)$/i
 
 export default handler
