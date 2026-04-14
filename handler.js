@@ -290,7 +290,7 @@ command = (command || '').toLowerCase()
 const gruposPermitidos = ['120363420992965884@g.us','120363404767596170@g.us'
 ];
 
-const comandosPermitidos = ['serbot', 'bots', 'kick', 'code', 's', 'delsession', 'on', 'off', 'tutosub', 'antilag', 'welcome', 'antilink']; 
+const comandosPermitidos = ['serbot', 'subbots', 'bots', 'kick', 'code', 's', 'delsession', 'on', 'off', 'tutosub', 'antilag', 'welcome', 'bienvenida', 'antilink', 'antibot', 'modoadmin', 'nsfw', 'antinopor', 'audios', 'autoleer', 'autoread', 'antiprivado', 'detect', 'antiestados'];
 
 if (gruposPermitidos.includes(m.chat) &&!comandosPermitidos.includes(command)) {
   return;
