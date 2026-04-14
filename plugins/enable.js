@@ -106,47 +106,43 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
 
     default:
       if (!/[01]/.test(command)) return m.reply(`
-🏎️💨 ᴛ - ᴄᴏɴᴛʀᴏʟ ᴄᴇɴᴛᴇʀ
+💠 *ＳＡＳＵＫＥ - ＣＯＮＴＲＯＬ*
 ──────────────────────
-🚘 *Ajustes de Velocidad y Seguridad*
+⚙️ _*Ajustes de Sasuke Bot*_
 
-🏁 *[welcome]* ⮕ Bienvenida
-🏁 *[nsfw]* ⮕ Modo Adulto
-🏁 *[antilink]* ⮕ Bloqueo de Links
-🏁 *[antilag]* ⮕ Optimizar RAM
-🏁 *[antiarabes]* ⮕ Filtro Regional
-🏁 *[autoleer]* ⮕ Lectura Auto
-🏁 *[restrict]* ⮕ Restricciones
-🏁 *[document]* ⮕ Modo Documento
-🏁 *[modoadmin]* ⮕ Solo Staff
-🏁 *[audios]* ⮕ Notas de Voz
-🏁 *[subbots]* ⮕ Sistema JadiBot
+🔹 *[welcome]* ⮕ _Bienvenida_
+🔹 *[nsfw]* ⮕ _Modo Hot_
+🔹 *[antilink]* ⮕ _Anti-Links_
+🔹 *[antilag]* ⮕ _Limpieza_
+🔹 *[antiarabes]* ⮕ _Filtro Pais_
+🔹 *[autoleer]* ⮕ _Auto Read_
+🔹 *[restrict]* ⮕ _Restringir_
+🔹 *[document]* ⮕ _Documentos_
+🔹 *[modoadmin]* ⮕ _Staff Only_
+🔹 *[audios]* ⮕ _Audios Bot_
+🔹 *[subbots]* ⮕ _SerBot_
+🔹 *[antibot]* ⮕ _Anti-Bots_
+🔹 *[detect]* ⮕ _Avisos_
 
-🛠️ *Uso:* ${usedPrefix + command} welcome
+📝 *𝚄𝚜𝚘:* ${usedPrefix + command} [𝚏𝚞𝚗𝚌𝚒ó𝚗]
 ──────────────────────`.trim())
       throw false
   }
 
-  let statusText = isEnable ? 'ＥＮＣＥＮＤＩＤＯ ✅' : 'ＡＰＡＧＡＤＯ ❌';
-  let scopeText = isAll ? 'ＴＯＤＯ ＥＬ ＢＯＴ' : isUser ? 'ＵＳＵＡＲＩＯ' : 'ＥＳＴＥ ＣＨＡＴ';
+  let statusText = isEnable ? 'Ｏｎ ✅' : 'Ｏｆｆ ❌';
 
-  let confirm = `
-🚘 * 🚘
+  // Formato exacto: .función On/Off
+  m.reply(`
+💠 *ＳＡＳＵＫＥ ＢＯＴ*
 ──────────────────────
-🚦 *ESTADO DE LA FUNCIÓN*
+✨ *.${type} ${statusText}*
 
-🛠️ *Parámetro:* \`${type}\`
-⚡ *Estado:* ${statusText}
-📍 *Ruta:* ${scopeText}
-
-💨 *¡Motor configurado correctamente!*
-──────────────────────`.trim()
-
-  m.reply(confirm)
+🚀 _El motor se ha configurado con éxito._
+──────────────────────`.trim())
 }
 
 handler.help = ['enable', 'disable', 'on', 'off']
-handler.tags = ['nable']
+handler.tags = ['config']
 handler.command = /^(enable|disable|on|off|1|0)$/i
 
 export default handler
