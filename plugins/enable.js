@@ -1,148 +1,118 @@
 let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isROwner }) => {
-  let isEnable = /true|enable|(turn)?on|1/i.test(command);
+  
+  // Si no hay argumentos (ej: .antilag solo), muestra cómo usarlo
+  if (!args[0]) return m.reply(`
+💠 *ＳＡＳＵＫＥ - ＣＯＮＴＲＯＬ*
+──────────────────────
+⚙️ _Configuración de: *${command.toUpperCase()}*_
+
+📝 *Estado deseado:*
+🔹 ${usedPrefix}${command} *on*  ⮕ _Activar_
+🔹 ${usedPrefix}${command} *off* ⮕ _Desactivar_
+
+🚀 _Ingresa una opción para cambiar el motor._
+──────────────────────`.trim())
+
+  let isEnable = /true|enable|(turn)?on|1/i.test(args[0]);
   let chat = global.db.data.chats[m.chat];
   let user = global.db.data.users[m.sender];
   let bot = global.db.data.settings[conn.user.jid] || {};
-  let type = (args[0] || '').toLowerCase();
-  let isAll = false, isUser = false;
+  let type = command.toLowerCase();
 
+  // Validaciones de seguridad (Admin/Owner)
+  const adminFunctions = ['welcome', 'bienvenida', 'detect', 'audios', 'nsfw', 'antilink', 'antibot', 'modoadmin', 'antiarabes', 'antilag'];
+  const ownerFunctions = ['autoleer', 'restrict', 'serbot', 'antispam', 'jadibotmd'];
+
+  if (adminFunctions.includes(type)) {
+    if (m.isGroup && !isAdmin && !isOwner) return global.dfail('admin', m, conn);
+    if (!m.isGroup && !isOwner) return global.dfail('group', m, conn);
+  }
+
+  if (ownerFunctions.includes(type)) {
+    if (!isOwner && !isROwner) return global.dfail('owner', m, conn);
+  }
+
+  // Lógica de encendido y apagado
   switch (type) {
     case 'welcome':
-    case 'bv':
     case 'bienvenida':
-      if (m.isGroup && !isAdmin) return global.dfail('admin', m, conn);
-      if (!m.isGroup && !isOwner) return global.dfail('group', m, conn);
       chat.bienvenida = isEnable;
       break;
-
-    case 'antiprivado2':
-      if (m.isGroup && !isAdmin) return global.dfail('admin', m, conn);
-      if (!m.isGroup && !isOwner) return global.dfail('group', m, conn);
-      chat.antiPrivate2 = isEnable;
-      break;
-
+    
     case 'antilag':
       chat.antiLag = isEnable;
       break;
 
-    case 'autoread':
     case 'autoleer':
-      isAll = true;
-      if (!isROwner) return global.dfail('rowner', m, conn);
       global.opts['autoread'] = isEnable;
       break;
 
     case 'antispam':
-      isAll = true;
-      if (!isOwner) return global.dfail('owner', m, conn);
       bot.antiSpam = isEnable;
       break;
 
-    case 'antinopor':
-      isAll = true;
-      if (!isOwner) return global.dfail('owner', m, conn);
-      chat.antiLinkxxx = isEnable;
-      break;
-
     case 'audios':
-      if (m.isGroup && !isAdmin) return global.dfail('admin', m, conn);
       chat.audios = isEnable;
       break;
 
     case 'detect':
     case 'avisos':
-      if (m.isGroup && !isAdmin) return global.dfail('admin', m, conn);
       chat.detect = isEnable;
       break;
 
-    case 'jadibotmd':
     case 'serbot':
-    case 'subbots':
-      isAll = true;
-      if (!isOwner) return global.dfail('rowner', m, conn);
+    case 'jadibotmd':
       bot.jadibotmd = isEnable;
       break;
 
     case 'restrict':
-      isAll = true;
-      if (!isOwner) return global.dfail('rowner', m, conn);
       bot.restrict = isEnable;
       break;
 
-    case 'document':
-      isUser = true;
-      user.useDocument = isEnable;
-      break;
-
     case 'antilink':
-      if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn);
       chat.antiLink = isEnable;
       break;
 
     case 'antibot':
-      if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn);
       chat.antiBot = isEnable;
       break;
 
     case 'modoadmin':
-      if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn);
       chat.modoadmin = isEnable;
       break;
 
-    case 'antiprivado':
-      isAll = true;
-      bot.antiPrivate = isEnable;
-      break;
-
     case 'nsfw':
-      if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn);
       chat.nsfw = isEnable;
       break;
 
     case 'antiarabes':
-      if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn);
       chat.onlyLatinos = isEnable;
       break;
 
+    case 'document':
+      user.useDocument = isEnable;
+      break;
+
     default:
-      if (!/[01]/.test(command)) return m.reply(`
-💠 *ＳＡＳＵＫＥ - ＣＯＮＴＲＯＬ*
-──────────────────────
-⚙️ _*Ajustes de Sasuke Bot*_
-
-🔹 *[welcome]* ⮕ _Bienvenida_
-🔹 *[nsfw]* ⮕ _Modo Hot_
-🔹 *[antilink]* ⮕ _Anti-Links_
-🔹 *[antilag]* ⮕ _Limpieza_
-🔹 *[antiarabes]* ⮕ _Filtro Pais_
-🔹 *[autoleer]* ⮕ _Auto Read_
-🔹 *[restrict]* ⮕ _Restringir_
-🔹 *[document]* ⮕ _Documentos_
-🔹 *[modoadmin]* ⮕ _Staff Only_
-🔹 *[audios]* ⮕ _Audios Bot_
-🔹 *[subbots]* ⮕ _SerBot_
-🔹 *[antibot]* ⮕ _Anti-Bots_
-🔹 *[detect]* ⮕ _Avisos_
-
-📝 *𝚄𝚜𝚘:* ${usedPrefix + command} [𝚏𝚞𝚗𝚌𝚒ó𝚗]
-──────────────────────`.trim())
-      throw false
+      return m.reply("❌ *Error:* Esta función no existe en el sistema.");
   }
 
-  let statusText = isEnable ? 'Ｏｎ ✅' : 'Ｏｆｆ ❌';
+  let statusText = isEnable ? 'ＡＣＴＩＶＡＤＯ ✅' : 'ＤＥＳＡＣＴＩＶＡＤＯ ❌';
 
-  // Formato correcto: .subbots On ✅
+  // Respuesta final con diseño mejorado
   m.reply(`
-💠 *ＳＡＳＵＫＥ ＢＯＴ*
+💠 *ＳＡＳＵＫＥ ＳＹＳＴＥＭ*
 ──────────────────────
-✨ *${usedPrefix}${type} ${statusText}*
+⚙️ *FUNCIÓN:* ${type.toUpperCase()}
+📡 *ESTADO:* ${statusText}
 
-🚀 _El motor se ha configurado con éxito._
+✨ _La configuración se aplicó con éxito._
 ──────────────────────`.trim())
 }
 
-handler.help = ['enable', 'disable', 'on', 'off']
+// Lista de comandos que activan este archivo
+handler.help = ['antilag on/off', 'antilink on/off', 'nsfw on/off', 'welcome on/off']
 handler.tags = ['config']
-handler.command = /^(enable|disable|on|off|1|0)$/i
+handler.command = /^(antilag|welcome|bienvenida|autoleer|antispam|audios|detect|avisos|serbot|jadibotmd|restrict|antilink|antibot|modoadmin|nsfw|antiarabes|document)$/i
 
 export default handler
