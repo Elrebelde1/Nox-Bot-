@@ -21,7 +21,9 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
       chat.antiPrivate2 = isEnable;
       break;
 
-    case 'antilag':
+      case 'antilag':
+      if (m.isGroup && !isAdmin) return global.dfail('admin', m, conn);
+      if (!m.isGroup && !isOwner) return global.dfail('group', m, conn);
       chat.antiLag = isEnable;
       break;
 
