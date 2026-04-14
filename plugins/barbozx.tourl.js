@@ -59,7 +59,6 @@ let handler = async (m, { conn, text, usedPrefix, command, isAdmin, isBotAdmin }
 
         if (!warns[id][who]) warns[id][who] = { count: 0, reasons: [], lastWarn: 0 }
 
-        // LÓGICA AUTO-RESET (24 HORAS)
         let now = Date.now()
         let timePassed = now - warns[id][who].lastWarn
         if (warns[id][who].count > 0 && timePassed > 86400000) { 
@@ -99,6 +98,7 @@ let handler = async (m, { conn, text, usedPrefix, command, isAdmin, isBotAdmin }
 
 handler.help = ['warn', 'delwarn', 'warnlist', 'warnlimit', 'warnreset']
 handler.tags = ['group']
+// AQUÍ ESTÁN TODOS LOS COMANDOS INCLUIDOS:
 handler.command = ['warn', 'advertir', 'delwarn', 'quitarwarn', 'warnlist', 'advertencias', 'warnlimit', 'warnreset']
 handler.group = true
 
