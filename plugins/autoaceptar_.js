@@ -22,58 +22,41 @@ handler.group = true
 
 handler.before = async function (m, { conn, isBotAdmin }) {
   if (!m.isGroup) return !1
-  
+
   let chat = global.db.data.chats[m.chat]
   if (!chat?.autoAceptar || !isBotAdmin) return !1
 
-  // Prefijos permitidos (Ampliados con Canadá y los más conocidos)
-  const allowed = [
-    '54',  // Argentina 🇦🇷
-    '55',  // Brasil 🇧🇷
-    '57',  // Colombia 🇨🇴
-    '58',  // Venezuela 🇻🇪
-    '593', // Ecuador 🇪🇨
-    '502', // Guatemala 🇬🇹
-    '52',  // México 🇲🇽
-    '51',  // Perú 🇵🇪
-    '56',  // Chile 🇨🇱
-    '591', // Bolivia 🇧🇴
-    '595', // Paraguay 🇵🇾
-    '598', // Uruguay 🇺🇾
-    '506', // Costa Rica 🇨🇷
-    '1',   // USA y Canadá 🇺🇸🇨🇦
-    '34',  // España 🇪🇸
-    '33',  // Francia 🇫🇷
-    '44',  // Reino Unido 🇬🇧
-    '231', // Liberia 🇱🇷
-    '39',  // Italia 🇮🇹
-    '49'   // Alemania 🇩🇪
-  ]
+  // Extraemos solo los números del sender (quitamos el @s.whatsapp.net)
+  const jid = m.sender || m.author
+  const number = jid.split('@')[0]
+
+  // Prefijos permitidos
+  const allowed = ['54', '55', '57', '58', '593', '502', '52', '51', '56', '591', '595', '598', '506', '1', '34', '33', '44', '231', '39', '49']
   
-  // Prefijos prohibidos (Spam/Bots/Riesgo)
+  // Prefijos prohibidos
   const forbidden = ['6', '90', '963', '966', '967', '249', '212', '92', '93', '94', '7', '2', '91']
 
-  const sender = m.sender
-
   // 1. Prioridad: Rechazar si está en la lista negra
-  if (forbidden.some(prefix => sender.startsWith(prefix))) {
+  if (forbidden.some(prefix => number.startsWith(prefix))) {
     try {
-      await conn.groupRequestParticipantsUpdate(m.chat, [sender], 'reject')
+      await conn.groupRequestParticipantsUpdate(m.chat, [jid], 'reject')
+      console.log(`[AUTO-RECHAZADO] -> ${number}`)
     } catch (e) {
       console.error("Error al rechazar:", e)
     }
-    return !1
+    return !1 
   }
 
-  // 2. Aceptar si está en la lista blanca (Latam, Norteamérica, Europa)
-  if (allowed.some(prefix => sender.startsWith(prefix))) {
+  // 2. Aceptar si está en la lista blanca
+  if (allowed.some(prefix => number.startsWith(prefix))) {
     try {
-      await conn.groupRequestParticipantsUpdate(m.chat, [sender], 'accept')
+      await conn.groupRequestParticipantsUpdate(m.chat, [jid], 'accept')
+      console.log(`[AUTO-ACEPTADO] -> ${number}`)
     } catch (e) {
       console.error("Error al aceptar:", e)
     }
   }
-  
+
   return !0
 }
 
