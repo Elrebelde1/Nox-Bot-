@@ -2,14 +2,18 @@ import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 
 let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isROwner }) => {
+  let type = command.toLowerCase()
   let isEnable = /true|enable|(turn)?on|1/i.test(args[0])
   let chat = global.db.data.chats[m.chat]
+  let user = global.db.data.users[m.sender]
   let bot = global.db.data.settings[conn.user.jid] || {}
-  let type = command.toLowerCase()
+  let isAll = false, isUser = false
 
+  // Imagen de catálogo de Sasuke Bot
   const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
   let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
 
+  // Validar que se pase on/off
   if (!args[0] || !/on|off|enable|disable|1|0/i.test(args[0])) {
     throw `⚠️ *Formato incorrecto*\n\n📌 Uso: *${usedPrefix + command} on* o *${usedPrefix + command} off*`
   }
@@ -24,17 +28,19 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
     case 'antilag':
       if (!isOwner) return global.dfail('owner', m, conn)
       bot.antiLag = isEnable 
-      break
-
-    case 'subbots':
-    case 'serbot':
-      if (!isROwner) return global.dfail('rowner', m, conn)
-      bot.jadibotmd = isEnable 
+      isAll = true
       break
 
     case 'antispam':
       if (!isOwner) return global.dfail('owner', m, conn)
       bot.antiSpam = isEnable
+      isAll = true
+      break
+
+    case 'autoread':
+      if (!isROwner) return global.dfail('rowner', m, conn)
+      global.opts['autoread'] = isEnable
+      isAll = true
       break
 
     case 'antilink':
@@ -52,13 +58,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
       chat.modoadmin = isEnable
       break
 
-    case 'antiestados':
-      if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn)
-      chat.antiestados = isEnable
-      break
-
     case 'nsfw':
-    case 'antinopor':
       if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn)
       chat.nsfw = isEnable
       break
@@ -68,36 +68,46 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
       chat.audios = isEnable
       break
 
-    case 'detect':
-      if (m.isGroup && !isAdmin) return global.dfail('admin', m, conn)
-      chat.detect = isEnable
-      break
-
     case 'antiprivado':
       if (!isOwner) return global.dfail('owner', m, conn)
       bot.antiPrivate = isEnable
+      isAll = true
       break
 
-    case 'autoread':
+    case 'serbot':
+    case 'subbots':
       if (!isROwner) return global.dfail('rowner', m, conn)
-      global.opts['autoread'] = isEnable
+      bot.jadibotmd = isEnable
+      isAll = true
       break
 
     default:
       return
   }
 
-  // Guardar cambios en la base de datos
+  // Guardar en la base de datos
   global.db.data.settings[conn.user.jid] = bot
 
-  let statusTxt = `┏━━━━━━━━━━━━━━━━━━━━━┓\n┃ ✨ *AJUSTE ACTUALIZADO* ✨\n┃━━━━━━━━━━━━━━━━━━━━━┃\n┃ ⚙️ *Función:* ${type}\n┃ 📊 *Estado:* ${isEnable ? 'Activado ✅' : 'Desactivado ❌'}\n┃ 🌎 *Ámbito:* ${['antilag', 'subbots', 'serbot', 'antispam', 'antiprivado'].includes(type) ? 'Global (Todo el Bot)' : 'Local (Este Chat)'}\n┗━━━━━━━━━━━━━━━━━━━━━┛`
+  let statusIcon = isEnable ? '✅ *Activado*' : '❌ *Desactivado*'
+  let scopeTxt = isAll ? '🌐 Global' : isUser ? '👤 Usuario' : '🏘️ Chat Actual'
+
+  let statusTxt = `
+┏━━━━━━━━━━━━━━━━━━━━━┓
+┃ ✨ *ＳＡＳＵＫＥ ＢＯＴ* ✨
+┃━━━━━━━━━━━━━━━━━━━━━┃
+┃ ⚙️ *AJUSTE ACTUALIZADO*
+┃
+┃ ➤ *FUNCIÓN:* ${type}
+┃ ➤ *ESTADO:* ${statusIcon}
+┃ ➤ *ÁMBITO:* ${scopeTxt}
+┗━━━━━━━━━━━━━━━━━━━━━┛`.trim()
 
   await conn.sendMessage(m.chat, {
     text: statusTxt,
     contextInfo: {
       externalAdReply: {
         title: 'Sᴀsᴜᴋᴇ Bᴏᴛ ─ Uᴘᴅᴀᴛᴇ',
-        body: 'Configuración del Sistema',
+        body: 'Control de Sistema',
         thumbnail: catalogoImg,
         mediaType: 1,
         showAdAttribution: true
@@ -106,8 +116,8 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
   }, { quoted: m })
 }
 
-handler.help = ['welcome on/off', 'antilag on/off', 'antilink on/off', 'antibot on/off', 'modoadmin on/off', 'subbots on/off']
+handler.help = ['antilag on/off', 'welcome on/off', 'nsfw on/off']
 handler.tags = ['config']
-handler.command = /^(welcome|bienvenida|antilag|subbots|serbot|antispam|antilink|antibot|modoadmin|antiestados|nsfw|antinopor|audios|detect|antiprivado|autoread)$/i
+handler.command = /^(welcome|bienvenida|antilag|antispam|antilink|antibot|modoadmin|nsfw|audios|antiprivado|serbot|subbots|autoread)$/i
 
 export default handler
