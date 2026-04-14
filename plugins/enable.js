@@ -87,6 +87,9 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
       return
   }
 
+  // Guardar cambios en la base de datos
+  global.db.data.settings[conn.user.jid] = bot
+
   let statusTxt = `┏━━━━━━━━━━━━━━━━━━━━━┓\n┃ ✨ *AJUSTE ACTUALIZADO* ✨\n┃━━━━━━━━━━━━━━━━━━━━━┃\n┃ ⚙️ *Función:* ${type}\n┃ 📊 *Estado:* ${isEnable ? 'Activado ✅' : 'Desactivado ❌'}\n┃ 🌎 *Ámbito:* ${['antilag', 'subbots', 'serbot', 'antispam', 'antiprivado'].includes(type) ? 'Global (Todo el Bot)' : 'Local (Este Chat)'}\n┗━━━━━━━━━━━━━━━━━━━━━┛`
 
   await conn.sendMessage(m.chat, {
@@ -94,8 +97,10 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
     contextInfo: {
       externalAdReply: {
         title: 'Sᴀsᴜᴋᴇ Bᴏᴛ ─ Uᴘᴅᴀᴛᴇ',
+        body: 'Configuración del Sistema',
         thumbnail: catalogoImg,
-        mediaType: 1
+        mediaType: 1,
+        showAdAttribution: true
       }
     }
   }, { quoted: m })
