@@ -106,41 +106,41 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
 
     default:
       if (!/[01]/.test(command)) return m.reply(`
-- ᴄᴏɴᴛʀᴏʟ ᴄᴇɴᴛᴇʀ
-──────────────────────
+- á´„á´É´á´›Ê€á´ÊŸ á´„á´‡É´á´›á´‡Ê€
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 *Ajustes de Velocidad y Seguridad*
 
-🏁 *[welcome]* ⮕ Bienvenida
-🏁 *[nsfw]* ⮕ Modo Adulto
-🏁 *[antilink]* ⮕ Bloqueo de Links
-🏁 *[antilag]* ⮕ Optimizar RAM
-🏁 *[antiarabes]* ⮕ Filtro Regional
-🏁 *[autoleer]* ⮕ Lectura Auto
-🏁 *[restrict]* ⮕ Restricciones
-🏁 *[document]* ⮕ Modo Documento
-🏁 *[modoadmin]* ⮕ Solo Staff
-🏁 *[audios]* ⮕ Notas de Voz
-🏁 *[subbots]* ⮕ Sistema JadiBot
+ðŸ *[welcome]* â®• Bienvenida
+ðŸ *[nsfw]* â®• Modo Adulto
+ðŸ *[antilink]* â®• Bloqueo de Links
+ðŸ *[antilag]* â®• Optimizar RAM
+ðŸ *[antiarabes]* â®• Filtro Regional
+ðŸ *[autoleer]* â®• Lectura Auto
+ðŸ *[restrict]* â®• Restricciones
+ðŸ *[document]* â®• Modo Documento
+ðŸ *[modoadmin]* â®• Solo Staff
+ðŸ *[audios]* â®• Notas de Voz
+ðŸ *[subbots]* â®• Sistema JadiBot
 
-🛠️ *Uso:* ${usedPrefix + command} welcome
-──────────────────────`.trim())
+ðŸ› ï¸ *Uso:* ${usedPrefix + command} welcome
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€`.trim())
       throw false
   }
 
-  let statusText = isEnable ? 'ＥＮＣＥＮＤＩＤＯ ✅' : 'ＡＰＡＧＡＤＯ ❌';
-  let scopeText = isAll ? 'ＴＯＤＯ ＥＬ ＢＯＴ' : isUser ? 'ＵＳＵＡＲＩＯ' : 'ＥＳＴＥ ＣＨＡＴ';
+  let statusText = isEnable ? 'ï¼¥ï¼®ï¼£ï¼¥ï¼®ï¼¤ï¼©ï¼¤ï¼¯ âœ…' : 'ï¼¡ï¼°ï¼¡ï¼§ï¼¡ï¼¤ï¼¯ âŒ';
+  let scopeText = isAll ? 'ï¼´ï¼¯ï¼¤ï¼¯ ï¼¥ï¼¬ ï¼¢ï¼¯ï¼´' : isUser ? 'ï¼µï¼³ï¼µï¼¡ï¼²ï¼©ï¼¯' : 'ï¼¥ï¼³ï¼´ï¼¥ ï¼£ï¼¨ï¼¡ï¼´';
 
   let confirm = `
-🚘 
-──────────────────────
-🚦 *ESTADO DE LA FUNCIÓN*
+ðŸš˜ 
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+ðŸš¦ *ESTADO DE LA FUNCIÃ“N*
 
-🛠️ *Parámetro:* \`${type}\`
-⚡ *Estado:* ${statusText}
-📍 *Ruta:* ${scopeText}
+ðŸ› ï¸ *ParÃ¡metro:* \`${type}\`
+âš¡ *Estado:* ${statusText}
+ðŸ“ *Ruta:* ${scopeText}
 
-💨 *¡Motor configurado correctamente!*
-──────────────────────`.trim()
+ðŸ’¨ *Â¡Motor configurado correctamente!*
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€`.trim()
 
   m.reply(confirm)
 }
