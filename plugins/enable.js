@@ -2,16 +2,18 @@ import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 
 let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isROwner }) => {
-  // Si no hay argumentos, no hacemos nada para evitar spam, o puedes mostrar el menú
-  if (!args[0]) return m.reply(`⚠️ *Uso correcto:* ${usedPrefix + command} on/off`)
-
   let isEnable = /true|enable|(turn)?on|1/i.test(args[0])
   let chat = global.db.data.chats[m.chat]
   let bot = global.db.data.settings[conn.user.jid] || {}
+  
+  // Extraemos el nombre del comando quitando el 'on' u 'off' si es que viene pegado, 
+  // aunque la lógica normal es que sea el comando solo.
   let type = command.toLowerCase()
   
   const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
   let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
+
+  if (!args[0]) return m.reply(`⚠️ *Formato incorrecto*\n\n📌 Uso: *${usedPrefix + command} on* o *${usedPrefix + command} off*`)
 
   switch (type) {
     case 'welcome':
@@ -56,6 +58,10 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
       chat.nsfw = isEnable
       break
 
+    case 'antiestados':
+      chat.antiViewOnce = isEnable
+      break
+
     case 'audios':
       chat.audios = isEnable
       break
@@ -66,8 +72,13 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
       global.opts['autoread'] = isEnable
       break
 
+    case 'antiprivado':
+      if (!isOwner) return global.dfail('owner', m, conn)
+      bot.antiPrivate = isEnable
+      break
+
     default:
-      return // Si no coincide con ninguno, sale sin error
+      return
   }
 
   let statusTxt = `
@@ -92,10 +103,35 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
   }, { quoted: m })
 }
 
-handler.help = ['welcome on/off', 'antilag on/off', 'antilink on/off', 'antibot on/off', 'modoadmin on/off', 'subbots on/off']
+handler.help = [
+  'welcome on/off',
+  'antilag on/off',
+  'antilink on/off',
+  'antibot on/off',
+  'modoadmin on/off',
+  'subbots on/off'
+]
+
 handler.tags = ['config']
 
-// Esta es la parte clave: debe reconocer cada palabra como un comando individual
-handler.command = /^(welcome|bienvenida|antilag|subbots|serbot|antispam|antilink|antibot|modoadmin|nsfw|antinopor|audios|autoleer|autoread)$/i
+// Handler command con la lista manual como pediste
+handler.command = [
+  'welcome on/off',
+  'bienvenida on/off',
+  'antilag on/off',
+  'subbots on/off',
+  'serbot on/off',
+  'antispam on/off',
+  'antilink on/off',
+  'antibot on/off',
+  'modoadmin on/off',
+  'antiestados on/off',
+  'nsfw on/off',
+  'antinopor on/off',
+  'audios on/off',
+  'autoleer on/off',
+  'autoread on/off',
+  'antiprivado on/off'
+]
 
 export default handler
