@@ -1,5 +1,3 @@
-import { Chat, Warns } from './path/to/your/models.js'
-
 let handler = async (m, { conn, text, usedPrefix, command, isAdmin, isBotAdmin }) => {
     try {
         let chatData = await global.Chat.findOne({ chatId: m.chat }) || {};
