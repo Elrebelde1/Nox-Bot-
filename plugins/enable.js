@@ -2,6 +2,9 @@ import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 
 let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isROwner }) => {
+  // Si no hay argumentos, no hacemos nada para evitar spam, o puedes mostrar el menú
+  if (!args[0]) return m.reply(`⚠️ *Uso correcto:* ${usedPrefix + command} on/off`)
+
   let isEnable = /true|enable|(turn)?on|1/i.test(args[0])
   let chat = global.db.data.chats[m.chat]
   let bot = global.db.data.settings[conn.user.jid] || {}
@@ -9,11 +12,6 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
   
   const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
   let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
-
-  // Validación de argumento on/off
-  if (!args[0] || !/on|off|enable|disable|1|0/i.test(args[0])) {
-    throw `⚠️ *Formato incorrecto*\n\n📌 Uso: *${usedPrefix + command} on* o *${usedPrefix + command} off*`
-  }
 
   switch (type) {
     case 'welcome':
@@ -23,7 +21,6 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
       break
 
     case 'antilag':
-      if (m.isGroup && !isAdmin) return global.dfail('admin', m, conn)
       chat.antiLag = isEnable
       break
 
@@ -45,13 +42,13 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
 
     case 'antibot':
       if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn)
-      chat.antiBot = isEnable;
-      break;
+      chat.antiBot = isEnable
+      break
 
     case 'modoadmin':
       if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn)
-      chat.modoadmin = isEnable;
-      break;
+      chat.modoadmin = isEnable
+      break
 
     case 'nsfw':
     case 'antinopor':
@@ -59,24 +56,9 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
       chat.nsfw = isEnable
       break
 
-    case 'antiestados':
-      chat.antiViewOnce = isEnable;
-      break;
-
-    case 'detect':
-    case 'avisos':
-      if (m.isGroup && !isAdmin) return global.dfail('admin', m, conn)
-      chat.detect = isEnable
-      break
-
     case 'audios':
       chat.audios = isEnable
       break
-
-    case 'antiprivado':
-      if (!isOwner) return global.dfail('owner', m, conn)
-      bot.antiPrivate = isEnable;
-      break;
 
     case 'autoleer':
     case 'autoread':
@@ -85,7 +67,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
       break
 
     default:
-      return
+      return // Si no coincide con ninguno, sale sin error
   }
 
   let statusTxt = `
@@ -110,19 +92,10 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
   }, { quoted: m })
 }
 
-// Lista manual de ayuda tal cual tu captura
-handler.help = [
-  'welcome on/off',
-  'antilag on/off',
-  'antilink on/off',
-  'antibot on/off',
-  'modoadmin on/off',
-  'subbots on/off'
-]
-
+handler.help = ['welcome on/off', 'antilag on/off', 'antilink on/off', 'antibot on/off', 'modoadmin on/off', 'subbots on/off']
 handler.tags = ['config']
 
-// Comandos individuales uno tras otro
-handler.command = /^(welcome|bienvenida|antilag|subbots|serbot|antispam|antilink|antibot|modoadmin|antiestados|nsfw|antinopor|audios|detect|antiprivado|autoread)$/i
+// Esta es la parte clave: debe reconocer cada palabra como un comando individual
+handler.command = /^(welcome|bienvenida|antilag|subbots|serbot|antispam|antilink|antibot|modoadmin|nsfw|antinopor|audios|autoleer|autoread)$/i
 
 export default handler
