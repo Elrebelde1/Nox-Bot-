@@ -2,21 +2,16 @@ import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 
 let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isROwner }) => {
-  let type = command.toLowerCase()
-  let isEnable = /true|enable|(turn)?on|1/i.test(args[0])
+  let isEnable = /true|enable|(turn)?on|1/i.test(command)
   let chat = global.db.data.chats[m.chat]
   let user = global.db.data.users[m.sender]
   let bot = global.db.data.settings[conn.user.jid] || {}
+  let type = (args[0] || '').toLowerCase()
   let isAll = false, isUser = false
 
-  // Imagen de catálogo de Sasuke Bot
+  // Imagen de catálogo de Barboza
   const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
   let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
-
-  // Validar que se pase on/off
-  if (!args[0] || !/on|off|enable|disable|1|0/i.test(args[0])) {
-    throw `⚠️ *Formato incorrecto*\n\n📌 Uso: *${usedPrefix + command} on* o *${usedPrefix + command} off*`
-  }
 
   switch (type) {
     case 'welcome':
@@ -37,12 +32,6 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
       isAll = true
       break
 
-    case 'autoread':
-      if (!isROwner) return global.dfail('rowner', m, conn)
-      global.opts['autoread'] = isEnable
-      isAll = true
-      break
-
     case 'antilink':
       if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn)
       chat.antiLink = isEnable
@@ -59,6 +48,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
       break
 
     case 'nsfw':
+    case 'antinopor':
       if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn)
       chat.nsfw = isEnable
       break
@@ -82,22 +72,41 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
       break
 
     default:
-      return
+      if (!/[01]/.test(command)) return m.reply(`
+┏━━━━━━━━━━━━━━━━━━━━━┓
+┃ ✨ *ＢＡＲＢＯＺＡ ＢＯＴ* ✨
+┃━━━━━━━━━━━━━━━━━━━━━┃
+┃ ⚙️ *PANEL DE CONFIGURACIÓN*
+┃
+┃ ➤ *welcome*
+┃ ➤ *antilag*
+┃ ➤ *antilink*
+┃ ➤ *antispam*
+┃ ➤ *antibot*
+┃ ➤ *modoadmin*
+┃ ➤ *nsfw*
+┃ ➤ *audios*
+┃ ➤ *antiprivado*
+┃ ➤ *subbots*
+┃
+┃ 💡 *Uso:* \`${usedPrefix + command} [función]\`
+┗━━━━━━━━━━━━━━━━━━━━━┛`.trim())
+      throw false
   }
 
-  // Guardar en la base de datos
+  // Guardar configuración
   global.db.data.settings[conn.user.jid] = bot
 
-  let statusIcon = isEnable ? '✅ *Activado*' : '❌ *Desactivado*'
+  let statusIcon = isEnable ? '『 ACTIVADO ✅ 』' : '『 DESACTIVADO ❌ 』'
   let scopeTxt = isAll ? '🌐 Global' : isUser ? '👤 Usuario' : '🏘️ Chat Actual'
 
   let statusTxt = `
 ┏━━━━━━━━━━━━━━━━━━━━━┓
-┃ ✨ *ＳＡＳＵＫＥ ＢＯＴ* ✨
+┃ ✨ *ＢＡＲＢＯＺＡ ＢＯＴ* ✨
 ┃━━━━━━━━━━━━━━━━━━━━━┃
 ┃ ⚙️ *AJUSTE ACTUALIZADO*
 ┃
-┃ ➤ *FUNCIÓN:* ${type}
+┃ ➤ *MÓDULO:* \`${type}\`
 ┃ ➤ *ESTADO:* ${statusIcon}
 ┃ ➤ *ÁMBITO:* ${scopeTxt}
 ┗━━━━━━━━━━━━━━━━━━━━━┛`.trim()
@@ -106,8 +115,8 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
     text: statusTxt,
     contextInfo: {
       externalAdReply: {
-        title: 'Sᴀsᴜᴋᴇ Bᴏᴛ ─ Uᴘᴅᴀᴛᴇ',
-        body: 'Control de Sistema',
+        title: 'Bᴀʀʙᴏᴢᴀ ─ Sʏsᴛᴇᴍ',
+        body: 'Control de Sasuke Bot',
         thumbnail: catalogoImg,
         mediaType: 1,
         showAdAttribution: true
@@ -116,8 +125,8 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
   }, { quoted: m })
 }
 
-handler.help = ['antilag on/off', 'welcome on/off', 'nsfw on/off']
+handler.help = ['on', 'off']
 handler.tags = ['config']
-handler.command = /^(welcome|bienvenida|antilag|antispam|antilink|antibot|modoadmin|nsfw|audios|antiprivado|serbot|subbots|autoread)$/i
+handler.command = /^(on|off|enable|disable|1|0)$/i
 
 export default handler
