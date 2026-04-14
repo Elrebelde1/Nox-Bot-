@@ -1,9 +1,9 @@
 let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isROwner }) => {
-  let isEnable = /true|enable|(turn)?on|1/i.test(command);
+  let isEnable = /true|enable|(turn)?on|1/i.test(args[0] || ''); 
   let chat = global.db.data.chats[m.chat];
   let user = global.db.data.users[m.sender];
   let bot = global.db.data.settings[conn.user.jid] || {};
-  let type = (args[0] || '').toLowerCase();
+  let type = (command || '').toLowerCase(); 
   let isAll = false, isUser = false;
 
   switch (type) {
@@ -105,48 +105,48 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
       break;
 
     default:
-      if (!/[01]/.test(command)) return m.reply(`
-- á´„á´É´á´›Ê€á´ÊŸ á´„á´‡É´á´›á´‡Ê€
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-*Ajustes de Velocidad y Seguridad*
+      if (!/[a-z]/.test(command)) return m.reply(`
+🏎️💨 Barboza Sistema 
+──────────────────────
+👌 *Ajustes de Velocidad y Seguridad*
 
-ðŸ *[welcome]* â®• Bienvenida
-ðŸ *[nsfw]* â®• Modo Adulto
-ðŸ *[antilink]* â®• Bloqueo de Links
-ðŸ *[antilag]* â®• Optimizar RAM
-ðŸ *[antiarabes]* â®• Filtro Regional
-ðŸ *[autoleer]* â®• Lectura Auto
-ðŸ *[restrict]* â®• Restricciones
-ðŸ *[document]* â®• Modo Documento
-ðŸ *[modoadmin]* â®• Solo Staff
-ðŸ *[audios]* â®• Notas de Voz
-ðŸ *[subbots]* â®• Sistema JadiBot
+🏁 *[welcome]* ⮕ Bienvenida
+🏁 *[nsfw]* ⮕ Modo Adulto
+🏁 *[antilink]* ⮕ Bloqueo de Links
+🏁 *[antilag]* ⮕ Optimizar RAM
+🏁 *[antiarabes]* ⮕ Filtro Regional
+🏁 *[autoleer]* ⮕ Lectura Auto
+🏁 *[restrict]* ⮕ Restricciones
+🏁 *[document]* ⮕ Modo Documento
+🏁 *[modoadmin]* ⮕ Solo Staff
+🏁 *[audios]* ⮕ Notas de Voz
+🏁 *[subbots]* ⮕ Sistema JadiBot
 
-ðŸ› ï¸ *Uso:* ${usedPrefix + command} welcome
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€`.trim())
+🛠️ *Uso:* ${usedPrefix}antilag on
+──────────────────────`.trim())
       throw false
   }
 
-  let statusText = isEnable ? 'ï¼¥ï¼®ï¼£ï¼¥ï¼®ï¼¤ï¼©ï¼¤ï¼¯ âœ…' : 'ï¼¡ï¼°ï¼¡ï¼§ï¼¡ï¼¤ï¼¯ âŒ';
-  let scopeText = isAll ? 'ï¼´ï¼¯ï¼¤ï¼¯ ï¼¥ï¼¬ ï¼¢ï¼¯ï¼´' : isUser ? 'ï¼µï¼³ï¼µï¼¡ï¼²ï¼©ï¼¯' : 'ï¼¥ï¼³ï¼´ï¼¥ ï¼£ï¼¨ï¼¡ï¼´';
+  let statusText = isEnable ? 'ＥＮＣＥＮＤＩＤＯ ✅' : 'ＡＰＡＧＡＤＯ ❌';
+  let scopeText = isAll ? 'ＴＯＤＯ ＥＬ ＢＯＴ' : isUser ? 'ＵＳＵＡＲＩＯ' : 'ＥＳＴＥ ＣＨＡＴ';
 
   let confirm = `
-ðŸš˜ 
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-ðŸš¦ *ESTADO DE LA FUNCIÃ“N*
+🥶 *Sasuke Bot* 🔥
+──────────────────────
+🚦 *ESTADO DE LA FUNCIÓN*
 
-ðŸ› ï¸ *ParÃ¡metro:* \`${type}\`
-âš¡ *Estado:* ${statusText}
-ðŸ“ *Ruta:* ${scopeText}
+🛠️ *Parámetro:* \`${type}\`
+⚡ *Estado:* ${statusText}
+📍 *Ruta:* ${scopeText}
 
-ðŸ’¨ *Â¡Motor configurado correctamente!*
-â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€`.trim()
+💨 *¡Motor configurado correctamente!*
+──────────────────────`.trim()
 
   m.reply(confirm)
 }
 
-handler.help = ['enable', 'disable', 'on', 'off']
-handler.tags = ['nable']
-handler.command = /^(enable|disable|on|off|1|0)$/i
+handler.help = ['welcome', 'nsfw', 'antilink', 'antilag', 'antiarabes', 'autoleer', 'restrict', 'document', 'modoadmin', 'audios', 'subbots'].map(v => v + ' <on/off>')
+handler.tags = ['enable']
+handler.command = /^(welcome|bv|bienvenida|antiprivado2|antilag|autoread|autoleer|antispam|antinopor|audios|detect|avisos|jadibotmd|serbot|subbots|restrict|document|antilink|antibot|modoadmin|antiprivado|nsfw|antiarabes)$/i
 
 export default handler
