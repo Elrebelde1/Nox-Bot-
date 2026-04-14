@@ -131,17 +131,17 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
 
   let statusText = isEnable ? 'Ｏｎ ✅' : 'Ｏｆｆ ❌';
 
-  // Formato exacto: .función On/Off
+  // Formato correcto: .subbots On ✅
   m.reply(`
 💠 *ＳＡＳＵＫＥ ＢＯＴ*
 ──────────────────────
-✨ *.${type} ${statusText}*
+✨ *${usedPrefix}${type} ${statusText}*
 
 🚀 _El motor se ha configurado con éxito._
 ──────────────────────`.trim())
 }
 
-handler.help = ['enable','disable','on', 'off']
+handler.help = ['enable', 'disable', 'on', 'off']
 handler.tags = ['config']
 handler.command = /^(enable|disable|on|off|1|0)$/i
 
