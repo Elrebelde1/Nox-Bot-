@@ -1,67 +1,60 @@
-import { existsSync, readFileSync } from 'fs'
-import { join } from 'path'
 let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isROwner }) => {
 let isEnable = /true|enable|(turn)?on|1/i.test(args[0])
 let chat = global.db.data.chats[m.chat]
 let bot = global.db.data.settings[conn.user.jid] || {}
 let type = command.toLowerCase()
-const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
-let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
 if (m.isGroup) {
 if (!('antiLag' in chat)) chat.antiLag = false
 }
 if (!args[0]) return m.reply(`⚠️ *Formato incorrecto*\n\n📌 Uso: *${usedPrefix + command} on* o *${usedPrefix + command} off*`)
+let fail = false
 switch (type) {
-case 'welcome':
-case 'bienvenida':
-if (m.isGroup && !isAdmin) return global.dfail('admin', m, conn)
+case 'welcome': case 'bienvenida':
+if (m.isGroup && !isAdmin) { global.dfail('admin', m, conn); fail = true; break }
 chat.bienvenida = isEnable
 break
 case 'antilag':
-if (m.isGroup && !isAdmin) return global.dfail('admin', m, conn)
 chat.antiLag = isEnable
 break
-case 'subbots':
-case 'serbot':
-if (!isROwner) return global.dfail('rowner', m, conn)
+case 'subbots': case 'serbot':
+if (!isROwner) { global.dfail('rowner', m, conn); fail = true; break }
 bot.jadibotmd = isEnable
 break
 case 'antispam':
-if (!isOwner) return global.dfail('owner', m, conn)
+if (!isOwner) { global.dfail('owner', m, conn); fail = true; break }
 bot.antiSpam = isEnable
 break
 case 'antilink':
-if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn)
+if (m.isGroup && !isAdmin) { global.dfail('admin', m, conn); fail = true; break }
 chat.antiLink = isEnable
 break
 case 'antibot':
-if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn)
+if (m.isGroup && !isAdmin) { global.dfail('admin', m, conn); fail = true; break }
 chat.antiBot = isEnable
 break
 case 'modoadmin':
-if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn)
+if (m.isGroup && !isAdmin) { global.dfail('admin', m, conn); fail = true; break }
 chat.modoadmin = isEnable
 break
-case 'nsfw':
-case 'antinopor':
-if (m.isGroup && !(isAdmin || isOwner)) return global.dfail('admin', m, conn)
+case 'nsfw': case 'antinopor':
+if (m.isGroup && !isAdmin) { global.dfail('admin', m, conn); fail = true; break }
 chat.nsfw = isEnable
 break
 case 'audios':
 chat.audios = isEnable
 break
-case 'autoleer':
-case 'autoread':
-if (!isROwner) return global.dfail('rowner', m, conn)
+case 'autoread': case 'autoleer':
+if (!isROwner) { global.dfail('rowner', m, conn); fail = true; break }
 global.opts['autoread'] = isEnable
 break
 case 'antiprivado':
-if (!isOwner) return global.dfail('owner', m, conn)
+if (!isOwner) { global.dfail('owner', m, conn); fail = true; break }
 bot.antiPrivate = isEnable
 break
 default:
 return
 }
+if (fail) return
 let statusTxt = `
 ┏━━━━━━━━━━━━━━━━━━┓
 ✨ *AJUSTE ACTUALIZADO* ✨
@@ -75,12 +68,12 @@ contextInfo: {
 externalAdReply: {
 title: 'SASUKE BOT — CONFIG',
 body: 'Panel de Control Actualizado',
-thumbnail: catalogoImg,
+thumbnailUrl: 'https://files.catbox.moe/t7uytz.png',
 mediaType: 1,
 showAdAttribution: true
 }}}, { quoted: m })
 }
-handler.help = ['welcome on/off', 'antilag on/off', 'antilink on/off', 'antibot on/off', 'modoadmin on/off', 'subbots on/off']
+handler.help = ['welcome', 'antilag', 'antilink', 'antibot', 'modoadmin', 'subbots'].map(v => v + ' on/off')
 handler.tags = ['config']
-handler.command = /^(welcome|bienvenida|antilag|subbots|serbot|antispam|antilink|antibot|modoadmin|nsfw|antinopor|audios|autoleer|autoread|antiprivado)$/i
+handler.command = ['welcome', 'bienvenida', 'antilag', 'subbots', 'serbot', 'antispam', 'antilink', 'antibot', 'modoadmin', 'nsfw', 'antinopor', 'audios', 'autoleer', 'autoread', 'antiprivado']
 export default handler
