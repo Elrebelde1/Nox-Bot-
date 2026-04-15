@@ -1,5 +1,3 @@
-Ponle aquí el . amor que es para medir el amor entre la pareja y el marrylist las parejas del grupo 
-
 import fs from 'fs';
 import path from 'path';
 
