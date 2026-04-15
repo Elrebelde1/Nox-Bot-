@@ -164,11 +164,34 @@ const handler = async (m, { conn, command, usedPrefix }) => {
         return conn.sendMessage(m.chat, { text: `*🌑 Vínculo roto:* Ahora ambos son libres.\n\n> Barboza Bot`, mentions: [sender, partner] }, { quoted: m });
     }
 
+    // --- COMANDO AMOR MEJORADO (FUNCIÓN 3) ---
     if (/^amor$/i.test(command)) {
-        if (!userIsMarried(sender)) return m.reply('*⚠️ Primero debes estar casado.*');
-        let partner = marriages[sender].partner;
-        let porcentaje = Math.floor(Math.random() * 100);
-        let loveTxt = `*❤️ Medidor de Amor*\n\n*Vínculo:* @${sender.split`@`[0]} x @${partner.split`@`[0]}\n*Porcentaje:* ${porcentaje}%`;
+        if (!userIsMarried(sender)) return m.reply('*⚠️ Primero debes estar unido mediante .marry.*');
+        
+        let data = marriages[sender];
+        let partner = data.partner;
+        let now = Date.now();
+        let daysMarried = Math.floor((now - data.date) / (1000 * 60 * 60 * 24));
+        
+        // El amor base es 10% y sube 2% por cada día casado hasta el 100%
+        let porcentaje = Math.min(10, 10 + (daysMarried * 2));
+        if (porcentaje < 100) porcentaje = 10 + (daysMarried * 2);
+        if (porcentaje > 100) porcentaje = 100;
+
+        let rango = "";
+        if (porcentaje < 25) rango = "Novatos del Amor 🌱";
+        else if (porcentaje < 50) rango = "Vínculo Fortalecido 🔥";
+        else if (porcentaje < 75) rango = "Amor Incondicional ❤️";
+        else if (porcentaje < 100) rango = "Almas Gemelas ✨";
+        else rango = "Pareja Legendaria 👑";
+
+        let loveTxt = `*─── [ ❤️ 𝓔𝓢𝓣𝓐𝓓𝓞 𝓓𝓔𝓛 𝓐𝓜𝓞𝓡 ] ───*\n\n`;
+        loveTxt += `*Pareja:* @${sender.split`@`[0]} ⚔️ @${partner.split`@`[0]}\n`;
+        loveTxt += `*Nivel de Amor:* [${porcentaje}%]\n`;
+        loveTxt += `*Rango:* ${rango}\n`;
+        loveTxt += `*Días juntos:* ${daysMarried} día(s)\n\n`;
+        loveTxt += `> ${porcentaje === 100 ? '¡Su amor ha alcanzado la cima eterna!' : '¡Sigan cultivando su vínculo para subir de nivel!'}`;
+        
         return conn.reply(m.chat, loveTxt, m, { mentions: [sender, partner] });
     }
 };
