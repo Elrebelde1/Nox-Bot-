@@ -1,3 +1,5 @@
+Ponle aquí el . amor que es para medir el amor entre la pareja y el marrylist las parejas del grupo 
+
 import fs from 'fs';
 import path from 'path';
 
@@ -52,44 +54,6 @@ const handler = async (m, { conn, command, usedPrefix, text }) => {
         if (userIsMarried(sender)) return m.reply('*⚠️ Ya tienes un vínculo.*');
         const sentMsg = await conn.reply(m.chat, `*─── [ 💍 𝓥𝓘𝓝𝓒𝓤𝓛𝓞 ] ───*\n\n*👤 @${sender.split`@`[0]}* propone matrimonio a *@${proposee.split`@`[0]}*.`, m, { mentions: [sender, proposee] });
         confirmation[proposee] = { proposer: sender, type: 'marry', msgId: sentMsg.key.id, timeout: setTimeout(() => { delete confirmation[proposee]; }, 60000) };
-    }
-
-    // --- COMANDO AMOR (COMPATIBILIDAD) ---
-    if (/^amor$/i.test(command)) {
-        if (!userIsMarried(sender)) return m.reply('*⚠️ No tienes una pareja para medir el amor.*');
-        const partner = marriages[sender].partner;
-        const porcentaje = Math.floor(Math.random() * 101);
-        let mensaje = "";
-        if (porcentaje >= 90) mensaje = "💖 ¡Son el uno para el otro! Destinados a la eternidad.";
-        else if (porcentaje >= 70) mensaje = "❤️ Tienen una química increíble.";
-        else if (porcentaje >= 50) mensaje = "🙂 Su amor es estable, pero necesita más citas.";
-        else mensaje = "📉 Parece que necesitan hablar más.";
-
-        return conn.reply(m.chat, `*─── [ ❤️ 𝓜𝓔𝓓𝓘𝓓𝓞𝓡 𝓓𝓔 𝓐𝓜𝓞𝓡 ] ───*\n\n*Pareja:* @${sender.split`@`[0]} & @${partner.split`@`[0]}\n*Compatibilidad:* ${porcentaje}%\n\n> ${mensaje}`, m, { mentions: [sender, partner] });
-    }
-
-    // --- COMANDO MARRYLIST (LISTA DE PAREJAS) ---
-    if (/^marrylist$/i.test(command)) {
-        const parejasEncontradas = [];
-        const visto = new Set();
-
-        for (const user in marriages) {
-            const partner = marriages[user].partner;
-            if (!visto.has(user) && !visto.has(partner)) {
-                parejasEncontradas.push([user, partner]);
-                visto.add(user);
-                visto.add(partner);
-            }
-        }
-
-        if (parejasEncontradas.length === 0) return m.reply('*❌ No hay parejas registradas en el bot.*');
-
-        let lista = `*─── [ 💍 𝓛𝓘𝓢𝓣𝓐 𝓓𝓔 𝓟𝓐𝓡𝓔𝓙𝓐𝓢 ] ───*\n\n`;
-        parejasEncontradas.forEach(([u1, u2], i) => {
-            lista += `*${i + 1}.* @${u1.split`@`[0]} 💖 @${u2.split`@`[0]}\n`;
-        });
-        
-        return conn.reply(m.chat, lista, m, { mentions: visto.toJSON ? visto.toJSON() : Array.from(visto) });
     }
 
     // --- ADOPTAR HIJOS ---
@@ -202,9 +166,9 @@ handler.before = async (m) => {
     }
 };
 
-handler.help = ['marry', 'divorce', 'adoptar', 'adoptar_mascota', 'familia', 'alimentar', 'amor', 'marrylist'];
+handler.help = ['marry', 'divorce', 'adoptar', 'adoptar_mascota', 'familia', 'alimentar'];
 handler.tags = ['fun'];
-handler.command = ['marry', 'divorce', 'pareja', 'adoptar', 'adoptar_mascota', 'familia', 'alimentar', 'amor', 'marrylist'];
+handler.command = ['marry', 'divorce', 'pareja', 'adoptar', 'adoptar_mascota', 'familia', 'alimentar',amor','marrylist'];
 handler.group = true;
 
 export default handler;
