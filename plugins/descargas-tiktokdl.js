@@ -22,7 +22,7 @@ function saveMarriages() {
 
 const userIsMarried = (user) => Object.hasOwn(marriages, user);
 
-const handler = async (m, { conn, command }) => {
+const handler = async (m, { conn, command, usedPrefix }) => {
     const sender = m.sender;
 
     if (/^marry$/i.test(command)) {
@@ -64,6 +64,27 @@ const handler = async (m, { conn, command }) => {
         };
     }
 
+    if (/^marrylist$/i.test(command)) {
+        let couples = Object.entries(marriages);
+        if (couples.length === 0) return m.reply('*😶 No hay vínculos registrados en este sector.*');
+
+        let txt = `*─── [ 💘 𝓛𝓘𝓢𝓣𝓐 𝓓𝓔 𝓥𝓘𝓝𝓒𝓤𝓛𝓞𝓢 ] ───*\n\n`;
+        let seen = new Set();
+        let count = 0;
+
+        for (let [user, partner] of couples) {
+            if (!seen.has(user) && !seen.has(partner)) {
+                seen.add(user);
+                seen.add(partner);
+                count++;
+                txt += `*${count}.* @${user.split`@`[0]} ⚔️ @${partner.split`@`[0]}\n`;
+            }
+        }
+
+        txt += `\n*✨ Total de parejas:* ${count}\n*Barboza Bot*`;
+        return conn.reply(m.chat, txt, m, { mentions: Array.from(seen) });
+    }
+
     if (/^divorce$/i.test(command)) {
         if (!userIsMarried(sender)) return m.reply('*⚠️ No tienes ningún vínculo que romper.*');
         const partner = marriages[sender];
@@ -85,12 +106,10 @@ handler.before = async (m) => {
     if (!confirmation[m.sender]) return;
 
     const { proposer, timeout, msgId } = confirmation[m.sender];
-    
     if (m.quoted.id !== msgId) return;
 
     const txt = m.text.trim().toLowerCase();
 
-    // --- RESPUESTA: NO ---
     if (/^no$/i.test(txt)) {
         clearTimeout(timeout);
         delete confirmation[m.sender];
@@ -98,7 +117,6 @@ handler.before = async (m) => {
         return conn.reply(m.chat, '*💔 Vínculo rechazado.* El destino ha sido negado.', m);
     }
 
-    // --- RESPUESTA: ACEPTO ---
     if (/^acepto$/i.test(txt)) {
         marriages[proposer] = m.sender;
         marriages[m.sender] = proposer;
@@ -108,15 +126,14 @@ handler.before = async (m) => {
         delete confirmation[m.sender];
         delete proposals[proposer];
 
-        const winTxt = `*─── [ 💍 𝓑𝓞𝓓𝓐 𝓒𝓞𝓝𝓕𝓘𝓡𝓜𝓐𝓓𝓐 ] ───*\n\n🎊 *@${proposer.split`@`[0]}* y *@${m.sender.split`@`[0]}* han aceptado unir sus caminos 💞\n\n> *Que nadie se interponga en su destino.*\n> *Barboza Bot*`;
-        
+        const winTxt = `*─── [ 💍 𝓑𝓞𝓓𝓐 𝓒𝓞𝓝𝓕𝓘𝓡𝓜𝓐𝓓𝓐 ] ───*\n\n🎊 *@${proposer.split`@`[0]}* y *@${m.sender.split`@`[0]}* han aceptado unir sus caminos 💞\n\n> *Barboza Bot*`;
         return conn.sendMessage(m.chat, { text: winTxt, mentions: [proposer, m.sender] }, { quoted: m });
     }
 };
 
-handler.help = ['marry', 'divorce', 'partner'];
+handler.help = ['marry', 'marrylist', 'divorce', 'partner'];
 handler.tags = ['fun'];
-handler.command = ['marry', 'divorce', 'partner', 'pareja'];
+handler.command = ['marry', 'marrylist', 'divorce', 'partner', 'pareja'];
 handler.group = true;
 
 export default handler;
