@@ -46,7 +46,6 @@ const handler = async (m, { conn, command, usedPrefix }) => {
         if (!proposee) return m.reply('*🐍 [ ERROR ] ➔ Responde o etiqueta a alguien para la propuesta.*');
         if (proposee === sender) return m.reply('*🤨 No puedes casarte contigo mismo.*');
         
-        // --- BLOQUEO DE INFIDELIDAD ---
         if (userIsMarried(proposee)) {
             const partner = marriages[proposee].partner;
             if (!marriages[proposee].spied) marriages[proposee].spied = [];
@@ -55,7 +54,6 @@ const handler = async (m, { conn, command, usedPrefix }) => {
                 marriages[partner].spied.push(sender);
                 saveMarriages();
             }
-            // Mensaje que impide la boda y avisa al esposo/a
             const infielTxt = `*🚫 ACCIÓN BLOQUEADA 🚫*\n\n@${sender.split`@`[0]}, no puedes proponerle matrimonio a *@${proposee.split`@`[0]}* porque ya tiene un destino sellado con *@${partner.split`@`[0]}*.\n\n⚠️ *@${partner.split`@`[0]}*, ¡cuida lo tuyo! Intentaron robarte la pareja. 🐍🔥`;
             return conn.reply(m.chat, infielTxt, m, { mentions: [partner, sender, proposee] });
         }
@@ -92,18 +90,18 @@ const handler = async (m, { conn, command, usedPrefix }) => {
                 txt += `*${count}.* @${user.split`@`[0]} ⚔️ @${partner.split`@`[0]}\n   🔹 *Tiempo:* ${getDuration(data.date)}\n\n`;
             }
         }
-        txt += `> *Para ver pretendientes usa:* ${usedPrefix}espiar @pareja\n*Barboza Bot*`;
+        txt += `> *Para ver pretendientes responde a un mensaje de tu pareja con:* ${usedPrefix}espiar\n*Barboza Bot*`;
         return conn.reply(m.chat, txt, m, { mentions: Array.from(seen) });
     }
 
     if (/^espiar$/i.test(command)) {
-        if (!userIsMarried(sender)) return m.reply(`*⚠️ Primero debes ver la lista de parejas con ${usedPrefix}marrylist para saber si alguien tiene pareja.*`);
+        if (!userIsMarried(sender)) return m.reply(`*⚠️ Primero debes ver la lista de parejas con ${usedPrefix}marrylist.*`);
         
         const partner = marriages[sender].partner;
-        const target = m.mentionedJid[0] || m.quoted?.sender;
+        const target = m.quoted?.sender; // Ahora detecta solo por respuesta de mensaje
 
         if (!target || target !== partner) {
-            return m.reply(`*🕵️‍♂️ Seguridad:* Debes etiquetar a tu pareja actual (@${partner.split`@`[0]}) para ver si alguien ha intentado propasarse.`, null, { mentions: [partner] });
+            return m.reply(`*🕵️‍♂️ Seguridad:* Debes responder a un mensaje de tu pareja actual (@${partner.split`@`[0]}) con el comando para ver si alguien ha intentado propasarse.`, null, { mentions: [partner] });
         }
 
         const data = marriages[sender];
@@ -111,7 +109,7 @@ const handler = async (m, { conn, command, usedPrefix }) => {
             return conn.reply(m.chat, `*🛡️ REPORTE:* @${partner.split`@`[0]}, nadie ha intentado romper tu vínculo con @${sender.split`@`[0]}. Todo está en orden.`, m, { mentions: [partner, sender] });
         }
 
-        let spyTxt = `*🕵️‍♂️ [ ALERTA DE SEGURIDAD CONYUGAL ] 🕵️‍♂️*\n\n`;
+        let spyTxt = `*🕵️‍♂️ [ ALERTA DE SEGURIDAD ] 🕵️‍♂️*\n\n`;
         spyTxt += `*⚠️ @${partner.split`@`[0]}*, se han detectado los siguientes pretendientes para @${sender.split`@`[0]}:*\n\n`;
         data.spied.forEach((user, i) => { spyTxt += `*${i + 1}.* @${user.split`@`[0]}\n`; });
         spyTxt += `\n> *Reporte generado por Barboza Bot*`;
