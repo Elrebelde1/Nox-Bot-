@@ -128,7 +128,7 @@ const handler = async (m, { conn, command, usedPrefix, text }) => {
         let txt = `*─── [ 👨‍👩‍👧‍👦 𝓕𝓐𝓜𝓘𝓛𝓘𝓐 𝓑𝓐𝓡𝓑𝓞𝓩𝓐 ] ───*\n\n`;
         txt += `*Padres:* @${sender.split`@`[0]} & @${partner.split`@`[0]}\n`;
         txt += `*Unión:* ${formatDate(data.date)}\n\n`;
-
+        
         if (data.pet) {
             const h = data.pet.hunger;
             txt += `*Mascota:* ${data.pet.type} ${data.pet.name}\n`;
@@ -166,7 +166,7 @@ handler.before = async (m) => {
 
 handler.help = ['marry', 'divorce', 'adoptar', 'adoptar_mascota', 'familia', 'alimentar'];
 handler.tags = ['fun'];
-handler.command = ['marry', 'divorce', 'pareja', 'adoptar', 'adoptar_mascota', 'familia', 'alimentar',amor','marrylist'];
+handler.command = ['marry', 'divorce', 'pareja', 'adoptar', 'adoptar_mascota', 'familia', 'alimentar'];
 handler.group = true;
 
 export default handler;
