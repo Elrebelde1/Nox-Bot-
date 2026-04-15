@@ -29,6 +29,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         if (!who) return m.reply(`*⚠️ Etiqueta a quien te propuso el vínculo.*`)
         if (db[m.sender]) return m.reply('*⚠️ Ya estás en un compromiso.*')
         
+        // Guardar datos con Fecha Exacta
         let now = Date.now()
         db[m.sender] = { partner: who, date: now }
         db[who] = { partner: m.sender, date: now }
@@ -41,7 +42,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         return conn.reply(m.chat, str, m, { mentions: [m.sender, who] })
     }
 
-    // --- COMANDO PAREJA / ESTADO ---
+    // --- COMANDO PAREJA / ESTADO (CON TIEMPO TRANSGURRIDO) ---
     if (command === 'pareja' || command === 'partner' || command === 'boda') {
         let user = who || m.sender
         if (!db[user]) return m.reply(`*👤 @${user.split('@')[0]} camina en soledad por ahora.*`, null, { mentions: [user] })
@@ -50,49 +51,23 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         let partner = data.partner
         let weddingDate = data.date
         
+        // Cálculo de tiempo transcurrido
         let diff = Date.now() - weddingDate
         let days = Math.floor(diff / (1000 * 60 * 60 * 24))
         let hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
         let mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
 
-        let timeStr = `${days}d, ${hours}h y ${mins}m`
+        let timeStr = `${days} días, ${hours} horas y ${mins} minutos`
+        if (days === 0 && hours === 0) timeStr = `${mins} minutos (¡Recién casados! 🥂)`
 
         let str = `*─── [ 📜 𝓔𝓧𝓟𝓔𝓓𝓘𝓔𝓝𝓣𝓔 𝓐𝓜𝓞𝓡𝓞𝓢𝓞 ] ───*\n\n`
         str += `*👤 Usuario:* @${user.split('@')[0]}\n`
         str += `*💍 Compañero/a:* @${partner.split('@')[0]}\n`
         str += `*🗓️ Sello creado:* ${new Date(weddingDate).toLocaleString('es-ES')}\n`
-        str += `*⏳ Tiempo unido:* ${timeStr}\n\n`
+        str += `*⏳ Tiempo de unión:* ${timeStr}\n\n`
         str += `*✨ Estado:* Vínculo Eterno`
 
         return conn.reply(m.chat, str, m, { mentions: [user, partner] })
-    }
-
-    // --- COMANDO MARRYLIST (LISTA DE PAREJAS) ---
-    if (command === 'marrylist' || command === 'parejas') {
-        let list = Object.keys(db)
-        if (list.length === 0) return m.reply('*😶 No hay vínculos registrados en el sistema.*')
-        
-        let str = `*─── [ 💘 𝓛𝓘𝓢𝓣𝓐 𝓓𝓔 𝓥𝓘𝓝𝓒𝓤𝓛𝓞𝓢 ] ───*\n\n`
-        let seen = new Set()
-        let count = 1
-        
-        for (let user of list) {
-            if (seen.has(user)) continue
-            let data = db[user]
-            let partner = data.partner
-            
-            // Solo mostrar parejas si ambos están en la DB (seguridad)
-            if (db[partner]) {
-                str += `*${count}.* @${user.split('@')[0]} ❤️ @${partner.split('@')[0]}\n`
-                str += `   ╰ *Tiempo:* ${Math.floor((Date.now() - data.date) / (1000 * 60 * 60 * 24))} días juntos\n\n`
-                seen.add(user)
-                seen.add(partner)
-                count++
-            }
-        }
-        
-        if (seen.size === 0) return m.reply('*😶 No hay vínculos activos actualmente.*')
-        return conn.reply(m.chat, str, m, { mentions: Array.from(seen) })
     }
 
     // --- COMANDO DIVORCIO ---
@@ -102,19 +77,19 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         delete db[m.sender]
         delete db[ex]
         fs.writeFileSync(path, JSON.stringify(db, null, 2))
-        return m.reply(`*🌑 Vínculo roto:* Has vuelto a la soledad.`, null, { mentions: [ex] })
+        return m.reply(`*🌑 Vínculo roto:* El contrato con *@${ex.split('@')[0]}* ha terminado. Vuelves a la soledad.`, null, { mentions: [ex] })
     }
 
     // --- COMANDO RECHAZAR ---
     if (command === 'rechazar') {
         if (!who) return m.reply(`*⚠️ Etiqueta a quien vas a rechazar.*`)
-        return conn.reply(m.chat, `*💔 Rechazado:* *@${m.sender.split('@')[0]}* ha rechazado la propuesta.`, m, { mentions: [m.sender, who] })
+        return conn.reply(m.chat, `*💔 Rechazado:* *@${m.sender.split('@')[0]}* ha decidido no aceptar la propuesta de *@${who.split('@')[0]}*.`, m, { mentions: [m.sender, who] })
     }
 }
 
-handler.help = ['marry', 'marrylist', 'aceptar', 'divorce', 'pareja']
+handler.help = ['marry', 'aceptar', 'rechazar', 'divorce', 'pareja']
 handler.tags = ['fun']
-handler.command = ['marry', 'casar', 'marrylist', 'parejas', 'aceptar', 'rechazar', 'divorce', 'divorciar', 'parejas', 'partner', 'boda']
+handler.command = ['marry', 'casar', 'aceptar', 'rechazar', 'divorce', 'divorciar', 'pareja', 'partner', 'boda']
 handler.group = true
 
 export default handler
