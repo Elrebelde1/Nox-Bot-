@@ -50,8 +50,21 @@ const handler = async (m, { conn, command, usedPrefix, text }) => {
         const proposee = m.quoted?.sender || (m.mentionedJid && m.mentionedJid[0]);
         if (!proposee) return m.reply('*🐍 Responde o etiqueta a alguien.*');
         if (userIsMarried(sender)) return m.reply('*⚠️ Ya tienes un vínculo.*');
-        const sentMsg = await conn.reply(m.chat, `*─── [ 💍 𝓥𝓘𝓝𝓒𝓤𝓛𝓞 ] ───*\n\n*👤 @${sender.split`@`[0]}* propone matrimonio a *@${proposee.split`@`[0]}*.`, m, { mentions: [sender, proposee] });
-        confirmation[proposee] = { proposer: sender, type: 'marry', msgId: sentMsg.key.id, timeout: setTimeout(() => { delete confirmation[proposee]; }, 60000) };
+        if (userIsMarried(proposee)) return m.reply('*⚠️ Esa persona ya está casada.*');
+        if (proposee === sender) return m.reply('*🤨 No puedes casarte contigo mismo.*');
+
+        const txt = `*─── [ 💍 𝓥𝓘𝓝𝓒𝓤𝓛𝓞 ] ───*\n\n*👤 @${sender.split`@`[0]}* propone matrimonio a *@${proposee.split`@`[0]}*.\n\n> *Responde a este mensaje con:* \n> ✅ "acepto" para confirmar.\n> ❌ "rechazo" para cancelar.`;
+        
+        const sentMsg = await conn.reply(m.chat, txt, m, { mentions: [sender, proposee] });
+        
+        confirmation[proposee] = { 
+            proposer: sender, 
+            type: 'marry', 
+            msgId: sentMsg.key.id, 
+            timeout: setTimeout(() => { 
+                delete confirmation[proposee]; 
+            }, 60000) 
+        };
     }
 
     // --- COMANDO AMOR (COMPATIBILIDAD) ---
@@ -68,11 +81,10 @@ const handler = async (m, { conn, command, usedPrefix, text }) => {
         return conn.reply(m.chat, `*─── [ ❤️ 𝓜𝓔𝓓𝓘𝓓𝓞𝓡 𝓓𝓔 𝓐𝓜𝓞𝓡 ] ───*\n\n*Pareja:* @${sender.split`@`[0]} & @${partner.split`@`[0]}\n*Compatibilidad:* ${porcentaje}%\n\n> ${mensaje}`, m, { mentions: [sender, partner] });
     }
 
-    // --- COMANDO MARRYLIST (LISTA DE PAREJAS) ---
+    // --- COMANDO MARRYLIST ---
     if (/^marrylist$/i.test(command)) {
         const parejasEncontradas = [];
         const visto = new Set();
-
         for (const user in marriages) {
             const partner = marriages[user].partner;
             if (!visto.has(user) && !visto.has(partner)) {
@@ -81,15 +93,12 @@ const handler = async (m, { conn, command, usedPrefix, text }) => {
                 visto.add(partner);
             }
         }
-
-        if (parejasEncontradas.length === 0) return m.reply('*❌ No hay parejas registradas en el bot.*');
-
+        if (parejasEncontradas.length === 0) return m.reply('*❌ No hay parejas registradas.*');
         let lista = `*─── [ 💍 𝓛𝓘𝓢𝓣𝓐 𝓓𝓔 𝓟𝓐𝓡𝓔𝓙𝓐𝓢 ] ───*\n\n`;
         parejasEncontradas.forEach(([u1, u2], i) => {
             lista += `*${i + 1}.* @${u1.split`@`[0]} 💖 @${u2.split`@`[0]}\n`;
         });
-        
-        return conn.reply(m.chat, lista, m, { mentions: visto.toJSON ? visto.toJSON() : Array.from(visto) });
+        return conn.reply(m.chat, lista, m, { mentions: Array.from(visto) });
     }
 
     // --- ADOPTAR HIJOS ---
@@ -98,7 +107,7 @@ const handler = async (m, { conn, command, usedPrefix, text }) => {
         const target = m.quoted?.sender || (m.mentionedJid && m.mentionedJid[0]);
         if (!target) return m.reply('*🍼 Menciona a quien quieras adoptar.*');
         const partner = marriages[sender].partner;
-        const sentMsg = await conn.reply(m.chat, `*─── [ 🍼 𝓐𝓓𝓞𝓟𝓒𝓘𝓞𝓝 ] ───*\n\nLa pareja *@${sender.split`@`[0]}* y *@${partner.split`@`[0]}* quieren adoptarte.`, m, { mentions: [sender, partner, target] });
+        const sentMsg = await conn.reply(m.chat, `*─── [ 🍼 𝓐𝓓𝓞𝓟𝓒𝓘𝓞𝓝 ] ───*\n\nLa pareja *@${sender.split`@`[0]}* y *@${partner.split`@`[0]}* quieren adoptarte.\n\n> Responde "acepto" para ser su hijo/a.`, m, { mentions: [sender, partner, target] });
         confirmation[target] = { proposer: sender, type: 'adopt', msgId: sentMsg.key.id, timeout: setTimeout(() => { delete confirmation[target]; }, 60000) };
     }
 
@@ -191,13 +200,27 @@ handler.before = async (m) => {
     if (!m.text || !m.quoted || !confirmation[m.sender]) return;
     const { proposer, type, msgId } = confirmation[m.sender];
     if (m.quoted.id !== msgId) return;
-    if (/^acepto$/i.test(m.text)) {
+
+    const txt = m.text.toLowerCase();
+
+    if (/^acepto$/i.test(txt)) {
         if (type === 'marry') {
             marriages[proposer] = { partner: m.sender, date: Date.now(), children: [], pet: null };
             marriages[m.sender] = { partner: proposer, date: Date.now(), children: [], pet: null };
             saveMarriages();
-            m.reply('*💍 ¡Vínculo sellado!*');
+            m.reply('*💍 ¡Vínculo sellado! Ahora son pareja oficialmente.*');
         }
+        if (type === 'adopt') {
+            const partner = marriages[proposer].partner;
+            const childData = { jid: m.sender, date: Date.now() };
+            marriages[proposer].children.push(childData);
+            marriages[partner].children.push(childData);
+            saveMarriages();
+            m.reply('*🍼 ¡Adopción confirmada! Bienvenido a la familia.*');
+        }
+        delete confirmation[m.sender];
+    } else if (/^rechazo$/i.test(txt)) {
+        m.reply('*❌ La propuesta ha sido rechazada.*');
         delete confirmation[m.sender];
     }
 };
