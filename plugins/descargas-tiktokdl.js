@@ -13,8 +13,10 @@ function loadMarriages() {
         const data = raw[user];
         if (typeof data === 'object' && raw[data.partner]?.partner === user) {
             valid[user] = data;
+            // Asegurar que exista el array de espionaje
+            if (!valid[user].spied) valid[user].spied = [];
         } else if (typeof data === 'string' && raw[data] === user) {
-            valid[user] = { partner: data, date: Date.now() };
+            valid[user] = { partner: data, date: Date.now(), spied: [] };
         }
     }
     return valid;
@@ -46,10 +48,19 @@ const handler = async (m, { conn, command }) => {
         if (!proposee) return m.reply('*🐍 [ ERROR ] ➔ Responde al mensaje de alguien para proponer un vínculo.*');
         if (proposee === sender) return m.reply('*🤨 No puedes sellar un vínculo contigo mismo.*');
         
-        // ALERTA DE INFIDELIDAD
+        // --- SISTEMA DE INFIDELIDAD Y ESPIONAJE ---
         if (userIsMarried(proposee)) {
             const partner = marriages[proposee].partner;
-            const infielTxt = `*⚠️ ¡ALERTA DE INFIDELIDAD! ⚠️*\n\n@${partner.split`@`[0]}, ¡atento! *@${sender.split`@`[0]}* está intentando robarte a tu pareja *@${proposee.split`@`[0]}*. 🐍🔥\n\n> Barboza Bot`;
+            
+            // Guardar al que intentó robarse a la pareja (Espionaje)
+            if (!marriages[proposee].spied) marriages[proposee].spied = [];
+            if (!marriages[proposee].spied.includes(sender)) {
+                marriages[proposee].spied.push(sender);
+                marriages[partner].spied.push(sender); // Ambos pueden ver quién intentó
+                saveMarriages();
+            }
+
+            const infielTxt = `*⚠️ ¡ALERTA DE INFIDELIDAD! ⚠️*\n\n@${partner.split`@`[0]}, ¡atento! *@${sender.split`@`[0]}* está intentando robarte a tu pareja *@${proposee.split`@`[0]}*. 🐍🔥\n\n> El intento ha sido registrado en el sistema de espionaje.`;
             return conn.reply(m.chat, infielTxt, m, { mentions: [partner, sender, proposee] });
         }
 
@@ -69,6 +80,22 @@ const handler = async (m, { conn, command }) => {
                 }
             }, 60000)
         };
+    }
+
+    // COMANDO .ESPIAR
+    if (/^espiar$/i.test(command)) {
+        if (!userIsMarried(sender)) return m.reply('*⚠️ Solo las personas casadas pueden usar el sistema de espionaje.*');
+        const data = marriages[sender];
+        if (!data.spied || data.spied.length === 0) return m.reply('*🛡️ Tu relación está segura. Nadie ha intentado nada.*');
+
+        let spyTxt = `*🕵️‍♂️ [ REGISTRO DE ESPIONAJE ] 🕵️‍♂️*\n\n`;
+        spyTxt += `*Lista de personas que intentaron meterse en tu relación:*\n`;
+        data.spied.forEach((user, i) => {
+            spyTxt += `*${i + 1}.* @${user.split`@`[0]}\n`;
+        });
+        spyTxt += `\n> *Barboza Bot te mantiene informado.*`;
+        
+        return conn.reply(m.chat, spyTxt, m, { mentions: data.spied });
     }
 
     if (/^marrylist$/i.test(command)) {
@@ -103,18 +130,13 @@ const handler = async (m, { conn, command }) => {
         return conn.sendMessage(m.chat, { text: `*🌑 Vínculo roto:* Ahora ambos son libres.\n\n> Barboza Bot`, mentions: [sender, partner] }, { quoted: m });
     }
 
-    // COMANDO .AMOR
     if (/^amor$/i.test(command)) {
-        if (!userIsMarried(sender)) return m.reply('*⚠️ Primero debes estar casado para usar este comando.*');
+        if (!userIsMarried(sender)) return m.reply('*⚠️ Primero debes estar casado.*');
         let partner = marriages[sender].partner;
         let porcentaje = Math.floor(Math.random() * 100);
         let nivel = porcentaje > 80 ? '💞 Amor Eterno' : porcentaje > 50 ? '⚖️ Estable' : '💔 En Crisis';
         
-        let loveTxt = `*❤️ Medidor de Amor - Barboza Bot*\n\n`;
-        loveTxt += `*Pareja:* @${sender.split`@`[0]} x @${partner.split`@`[0]}\n`;
-        loveTxt += `*Porcentaje:* ${porcentaje}%\n`;
-        loveTxt += `*Estado:* ${nivel}`;
-        
+        let loveTxt = `*❤️ Medidor de Amor*\n\n*Pareja:* @${sender.split`@`[0]} x @${partner.split`@`[0]}\n*Porcentaje:* ${porcentaje}%\n*Estado:* ${nivel}`;
         return conn.reply(m.chat, loveTxt, m, { mentions: [sender, partner] });
     }
 };
@@ -132,8 +154,8 @@ handler.before = async (m) => {
 
     if (/^acepto$/i.test(txt)) {
         let now = Date.now();
-        marriages[proposer] = { partner: m.sender, date: now };
-        marriages[m.sender] = { partner: proposer, date: now };
+        marriages[proposer] = { partner: m.sender, date: now, spied: [] };
+        marriages[m.sender] = { partner: proposer, date: now, spied: [] };
         saveMarriages();
         clearTimeout(timeout); delete confirmation[m.sender]; delete proposals[proposer];
         const winTxt = `*─── [ 💍 𝓑𝓞𝓓𝓐 𝓒𝓞𝓝𝓕𝓘𝓡𝓜𝓐𝓓𝓐 ] ───*\n\n🎊 *@${proposer.split`@`[0]}* y *@${m.sender.split`@`[0]}* unidos 💞\n\n> *Barboza Bot*`;
@@ -141,9 +163,9 @@ handler.before = async (m) => {
     }
 };
 
-handler.help = ['marry', 'marrylist', 'divorce', 'amor'];
+handler.help = ['marry', 'marrylist', 'divorce', 'amor', 'espiar'];
 handler.tags = ['fun'];
-handler.command = ['marry', 'marrylist', 'divorce', 'pareja', 'amor'];
+handler.command = ['marry', 'marrylist', 'divorce', 'pareja', 'amor', 'espiar'];
 handler.group = true;
 
 export default handler;
