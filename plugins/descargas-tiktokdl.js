@@ -1,63 +1,136 @@
-let marriages = {} 
+import fs from 'fs';
+import path from 'path';
 
-let handler = async (m, { conn, text, usedPrefix, command }) => {
-    const id = m.chat
-    if (!marriages[id]) marriages[id] = {}
+const marriagesFile = path.resolve('media/game/marry.js');
+let marriages = loadMarriages();
+let proposals = {}; 
+const confirmation = {};
 
-    if (command === 'marry' || command === 'casar') {
-        let who = m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : false
-        if (!who) return m.reply(`*🐍 [ ERROR ] ➔ Etiqueta a alguien.*`)
-        if (who === m.sender) return m.reply('*🤨 No puedes casarte contigo mismo.*')
-        if (marriages[id][m.sender]) return m.reply('*⚠️ Ya estás casado/a.*')
-        if (marriages[id][who]) return m.reply('*⚠️ Esa persona ya tiene pareja.*')
-
-        global.db.data.users[who].pasaporte = m.sender 
-        
-        let str = `*─── [ 💍 𝓢𝓐𝓢𝓤𝓚𝓔 - 𝓑𝓞𝓓𝓐 ] ───*\n\n*👤 @${m.sender.split`@`[0]}* solicita un vínculo con *@${who.split`@`[0]}*.\n\n*¿Aceptas?*\n\n> *⚠️ RESPONDE a este mensaje con "Si" o "No".*`
-        return conn.reply(m.chat, str, m, { mentions: [m.sender, who] })
+function loadMarriages() {
+    const raw = fs.existsSync(marriagesFile) ? JSON.parse(fs.readFileSync(marriagesFile, 'utf8')) : {};
+    const valid = {};
+    for (const user in raw) {
+        const partner = raw[user];
+        if (raw[partner] === user) valid[user] = partner;
     }
-
-    if (m.quoted && m.quoted.text.includes('𝓢𝓐𝓢𝓤𝓚𝓔 - 𝓑𝓞𝓓𝓐')) {
-        let body = m.text.toLowerCase()
-        if (!/^(si|sí|no)$/i.test(body)) return
-        
-        let userPropuesto = m.sender
-        let userInteresado = global.db.data.users[userPropuesto].pasaporte
-
-        if (!userInteresado) return
-
-        if (body.includes('si')) {
-            marriages[id][userPropuesto] = { partner: userInteresado, date: Date.now() }
-            marriages[id][userInteresado] = { partner: userPropuesto, date: Date.now() }
-            global.db.data.users[userPropuesto].pasaporte = null
-            return conn.reply(m.chat, `*🎊 🎉 ¡VIVAN LOS NOVIOS! 🎉 🎊*\n\nEl vínculo ha sido sellado entre *@${userPropuesto.split`@`[0]}* y *@${userInteresado.split`@`[0]}*.`, m, { mentions: [userPropuesto, userInteresado] })
-        } else {
-            global.db.data.users[userPropuesto].pasaporte = null
-            return m.reply(`*💔 Rechazado:* Se ha roto la propuesta.`)
-        }
-    }
-
-    if (command === 'divorce' || command === 'divorciar') {
-        if (!marriages[id][m.sender]) return m.reply('*⚠️ No tienes pareja.*')
-        let partner = marriages[id][m.sender].partner
-        delete marriages[id][partner]
-        delete marriages[id][m.sender]
-        return m.reply(`*🌑 Vínculo roto.*`)
-    }
-
-    if (command === 'pareja' || command === 'boda') {
-        let who = m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : m.sender
-        let data = marriages[id][who]
-        if (!data) return m.reply(`*👤 @${who.split`@`[0]} camina en soledad.*`, null, { mentions: [who] })
-        let partner = data.partner
-        let statusStr = `*─── [ 📜 𝓔𝓧𝓟𝓔𝓓𝓘𝓔𝓝𝓣𝓔 ] ───*\n\n*👤 Usuario:* @${who.split`@`[0]}\n*💍 Pareja:* @${partner.split`@`[0]}`
-        return conn.reply(m.chat, statusStr, m, { mentions: [who, partner] })
-    }
+    return valid;
 }
 
-handler.help = ['marry']
-handler.tags = ['fun']
-handler.command = ['marry', 'casar', 'divorce', 'divorciar', 'pareja', 'boda']
-handler.group = true
+function saveMarriages() {
+    fs.writeFileSync(marriagesFile, JSON.stringify(marriages, null, 2));
+}
 
-export default handler
+const userIsMarried = (user) => Object.hasOwn(marriages, user);
+
+const handler = async (m, { conn, command }) => {
+    const isPropose = /^marry$/i.test(command);
+    const isDivorce = /^divorce$/i.test(command);
+    const isPartner = /^partner$/i.test(command);
+
+    try {
+        const sender = m.sender;
+
+        if (isPropose) {
+            const proposee = m.quoted?.sender;
+            const proposer = sender;
+
+            if (!proposee) {
+                if (userIsMarried(proposer)) {
+                    return await conn.reply(m.chat,`*🐍 Ya posees un vínculo activo con:* _${conn.getName(marriages[proposer])}_\n\n> Usa *.divorce* si deseas romper el lazo.`, m);
+                } else {
+                    throw new Error('*Debes responder al mensaje de alguien para proponer un vínculo.*');
+                }
+            }
+
+            if (proposer === proposee) throw new Error('No puedes sellar un vínculo contigo mismo.');
+            if (userIsMarried(proposer)) throw new Error(`Ya estás unido a *${conn.getName(marriages[proposer])}*.\nRompe ese lazo antes de intentar otro.`);
+            if (userIsMarried(proposee)) throw new Error(`_${conn.getName(proposee)}_ ya tiene un destino sellado con *${conn.getName(marriages[proposee])}*.`);
+            if (proposals[proposer]) throw new Error('Ya has enviado una propuesta. Espera en silencio.');
+            if (confirmation[proposee]) throw new Error(`Esa persona ya tiene una propuesta pendiente de alguien más.`);
+            if (proposals[proposee] === proposer) throw new Error(`Esa persona ya te propuso un vínculo. Responde a su mensaje primero.`);
+
+            proposals[proposer] = proposee;
+
+            const proposerName = conn.getName(proposer);
+            const proposeeName = conn.getName(proposee);
+            const confirmationMessage = `
+       :¨ ·.· ¨:  ﹏﹏﹏🜲﹏﹏﹏   :¨ ·.· ¨:
+        "·.. 𝐏𝐫𝐨𝐩𝐮𝐞𝐬𝐭𝐚 𝐝' 𝐦𝐚𝐭𝐫𝐢𝐦𝐨𝐧𝐢𝐨 ..·"
+
+💕 \`${proposerName}\` Ha declarado su amor por \`${proposeeName}\` 💕
+
+Y quiere consumar este amor con un matrimonio virtual 💍
+> Más cacho que amor...
+
+
+ 💕✨  𝗥𝗘𝗦𝗣𝗢𝗡𝗗𝗘𝗥   ✨💕
+         ╔════╦════╗
+         ║   𝘀𝗶   ║   𝗻𝗼  ║
+         ╚════╩════╝
+> No es necesario usar prefix (osea . )
+> Barboza Bot`;
+            await conn.reply(m.chat, confirmationMessage, m);
+
+            confirmation[proposee] = {
+                proposer,
+                timeout: setTimeout(() => {
+                    conn.sendMessage(m.chat, { text: '*⏰ Tiempo agotado. El destino ha decidido que no habrá vínculo.*\n\n> Soldado caído 💔\n\n> Barboza Bot' }, { quoted: m });
+                    delete confirmation[proposee];
+                    delete proposals[proposer];
+                }, 60000)
+            };
+
+        } else if (isDivorce) {
+            if (!userIsMarried(sender)) throw new Error('No caminas junto a nadie actualmente.');
+
+            const partner = marriages[sender];
+            delete marriages[sender];
+            delete marriages[partner];
+            saveMarriages();
+
+            await conn.reply(m.chat, `*🌑 Vínculo roto:* _${conn.getName(sender)}_ y _${conn.getName(partner)}_ se han divorciado.\n> Se dio cuenta que le eran infiel 😅\n\n> Barboza Bot`, m);
+
+        } else if (isPartner) {
+            if (!userIsMarried(sender)) throw new Error('Caminas en soledad.');
+            return await conn.reply(m.chat, `*📜 Tu destino está sellado con:* _${conn.getName(marriages[sender])}_`, m);
+        }
+    } catch (error) {
+        await conn.reply(m.chat, `*🐍 [ 𝓢𝓐𝓢𝓤𝓚𝓔 ] ➔* ${error.message}`, m);
+    }
+};
+
+handler.before = async (m) => {
+    if (m.isBaileys) return;
+    if (!confirmation[m.sender]) return;
+    if (!m.text) return;
+
+    const { proposer, timeout } = confirmation[m.sender];
+
+    if (/^no$/i.test(m.text)) {
+        clearTimeout(timeout);
+        delete confirmation[m.sender];
+        delete proposals[proposer];
+        return conn.sendMessage(m.chat, { text: '*💔 El vínculo fue rechazado.*\n\n> Así de fex estás, ni modo yo te invito el primer trago.\n\n> Barboza Bot' }, { quoted: m });
+    }
+
+    if (/^si$/i.test(m.text)) {
+        marriages[proposer] = m.sender;
+        marriages[m.sender] = proposer;
+        saveMarriages();
+
+        clearTimeout(timeout);
+        delete confirmation[m.sender];
+        delete proposals[proposer];
+
+        conn.sendMessage(m.chat, {
+            text: `✩.･:｡≻───── ⋆♡⋆ ─────.•:｡✩\n💍 *¡Boda Confirmada!*\n\n🎊 ${conn.getName(proposer)} y ${conn.getName(m.sender)} ahora están felizmente casados 💞\n\n¡Felicidades a la nueva pareja!\n✩.･:｡≻───── ⋆♡⋆ ─────.•:｡✩\n\n> Barboza Bot`
+        }, { quoted: m });
+    }
+};
+
+handler.tags = ['fun'];
+handler.help = ['marry', 'divorce', 'partner'];
+handler.command = ['marry', 'divorce', 'partner'];
+handler.group = true;
+
+export default handler;
