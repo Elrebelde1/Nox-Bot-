@@ -1,103 +1,106 @@
-import fs from 'fs'
-import path from 'path'
+import fs from 'fs';
+import path from 'path';
 
-const marriagesFile = path.resolve('media/game/marry_family.json')
+const marriagesFile = path.resolve('media/game/marry.json'); // Cambiado a .json para evitar errores de lectura
 
-function loadDB() {
-    if (!fs.existsSync(path.dirname(marriagesFile))) fs.mkdirSync(path.dirname(marriagesFile), { recursive: true })
-    return fs.existsSync(marriagesFile) ? JSON.parse(fs.readFileSync(marriagesFile, 'utf8')) : {}
+// Función para cargar matrimonios
+function loadMarriages() {
+    if (!fs.existsSync(path.dirname(marriagesFile))) fs.mkdirSync(path.dirname(marriagesFile), { recursive: true });
+    return fs.existsSync(marriagesFile) ? JSON.parse(fs.readFileSync(marriagesFile, 'utf8')) : {};
 }
 
-function saveDB(data) {
-    fs.writeFileSync(marriagesFile, JSON.stringify(data, null, 2))
+// Función para guardar matrimonios
+function saveMarriages(data) {
+    fs.writeFileSync(marriagesFile, JSON.stringify(data, null, 2));
 }
 
-let handler = async (m, { conn, command, text, usedPrefix }) => {
-    let db = loadDB()
-    const sender = m.sender
+let proposals = {}; 
+let confirmation = {};
 
-    switch (command) {
-        case 'marry':
-            const proposee = m.quoted?.sender || (m.mentionedJid && m.mentionedJid[0])
-            if (!proposee) return m.reply('💠 *Responde o etiqueta a alguien para proponerle matrimonio.*')
-            if (proposee === sender) return m.reply('Hmp... No puedes casarte contigo mismo.')
-            if (db[sender]) return m.reply(`Ya tienes un vínculo activo con *${conn.getName(db[sender].partner)}*.`)
-            if (db[proposee]) return m.reply('Esa persona ya pertenece a otra dinastía.')
+const handler = async (m, { conn, command }) => {
+    let marriages = loadMarriages();
+    const sender = m.sender;
+    const userIsMarried = (user) => Object.hasOwn(marriages, user);
 
-            const msgMarry = `*─── [ 💍 𝓢𝓐𝓢𝓤𝓓𝓞-𝓑𝓞𝓓𝓐 ] ───*\n\n*👤 @${sender.split('@')[0]}* propone matrimonio a *@${proposee.split('@')[0]}*.\n\n> *Responde a este mensaje con:* "si" o "no".\n\n_Tienes 60 segundos._`
-            const weddingMsg = await conn.reply(m.chat, msgMarry, m, { mentions: [sender, proposee] })
+    if (/^marry$/i.test(command)) {
+        const proposee = m.quoted?.sender;
+        const proposer = sender;
 
-            // --- RECOLECTOR DE RESPUESTA (Sustituye al before) ---
-            const filter = (msg) => msg.sender === proposee && /^(si|sí|no|acepto|rechazo)$/i.test(msg.text) && msg.quoted && msg.quoted.id === weddingMsg.id
-            
-            try {
-                const response = await conn.waitEvent('messages.upsert', filter, 60000)
-                const txt = response.messages[0].text.toLowerCase().trim()
-
-                if (txt.includes('si') || txt.includes('acepto')) {
-                    db = loadDB() // Recargar para evitar sobreescritura
-                    db[sender] = { partner: proposee, date: Date.now(), children: [], pet: null }
-                    db[proposee] = { partner: sender, date: Date.now(), children: [], pet: null }
-                    saveDB(db)
-                    return conn.reply(m.chat, `*── [ 💍 𝓑𝓞𝓓𝓐 𝓒𝓞𝓝𝓕𝓘𝓡𝓜𝓐𝓓𝓐 ] ──*\n\n*¡Vivan los novios! @${sender.split('@')[0]} y @${proposee.split('@')[0]} han sellado su destino.*`, m, { mentions: [sender, proposee] })
-                } else {
-                    return m.reply('*💔 Propuesta rechazada.* "No eres lo suficientemente fuerte para estar a mi lado".')
-                }
-            } catch (e) {
-                return m.reply('*⌛ El tiempo se ha agotado.* La propuesta se desvaneció en las sombras.')
+        if (!proposee) {
+            if (userIsMarried(proposer)) {
+                return await conn.reply(m.chat, `*Hmp... Ya estás atado a un vínculo con ${conn.getName(marriages[proposer])}.*\n> No rompas el contrato tan fácilmente.`, m);
             }
-            break
+            return m.reply('*Mira a los ojos de tu objetivo (responde a su mensaje) para proponerle matrimonio.*');
+        }
 
-        case 'divorce':
-            if (!db[sender]) return m.reply('No tienes ningún vínculo que romper.')
-            const ex = db[sender].partner
-            delete db[sender]
-            delete db[ex]
-            saveDB(db)
-            m.reply(`*🌑 El vínculo se ha roto.* Vuelves a la soledad.`)
-            break
+        if (proposer === proposee) return m.reply('*¿Crees que el amor propio es suficiente para un Sharingan? No puedes casarte contigo mismo.*');
+        if (userIsMarried(proposer)) return m.reply(`*Ya posees un vínculo con ${conn.getName(marriages[proposer])}. Corta ese hilo antes de buscar otro.*`);
+        if (userIsMarried(proposee)) return m.reply(`*Esa persona ya está bajo el Genjutsu matrimonial de ${conn.getName(marriages[proposee])}.*`);
+        if (confirmation[proposee]) return m.reply('*Ya hay una oferta sobre la mesa para esa persona. Espera.*');
 
-        case 'pareja':
-        case 'amor':
-            if (!db[sender]) return m.reply('Caminas solo en las sombras...')
-            const loveP = Math.floor(Math.random() * 101)
-            conn.reply(m.chat, `*❤️ [ VÍNCULO ]*\n*Pareja:* @${db[sender].partner.split('@')[0]}\n*Compatibilidad:* ${loveP}%`, m, { mentions: [db[sender].partner] })
-            break
+        confirmation[proposee] = {
+            proposer,
+            timeout: setTimeout(() => {
+                conn.reply(m.chat, `*⌛ El tiempo se ha agotado...*\n\nLa propuesta de @${proposer.split('@')[0]} se ha desvanecido en las sombras.`, m, { mentions: [proposer] });
+                delete confirmation[proposee];
+            }, 60000)
+        };
 
-        case 'marrylist':
-            let couples = Object.keys(db)
-            if (couples.length === 0) return m.reply('*No hay matrimonios registrados.*')
-            let listStr = `*── [ 💍 𝓛𝓘𝓢𝓣𝓐 𝓓𝓔 𝓥𝓘𝓝𝓒𝓤𝓛𝓞𝓢 ] ──*\n\n`, seen = new Set()
-            for (let u of couples) {
-                if (!seen.has(u)) {
-                    listStr += `• @${u.split('@')[0]} ♾️ @${db[u].partner.split('@')[0]}\n`
-                    seen.add(u); seen.add(db[u].partner)
-                }
-            }
-            conn.reply(m.chat, listStr, m, { mentions: Array.from(seen) })
-            break
+        const proposerName = conn.getName(proposer);
+        const proposeeName = conn.getName(proposee);
+        
+        const confirmationMessage = `*─── [ 💍 𝓥𝓘𝓝𝓒𝓤𝓛𝓞 𝓤𝓒𝓗𝓘𝓗𝓐 ] ───*\n\n*👤 ${proposerName}* quiere restaurar su clan contigo, *${proposeeName}*.\n\n¿Aceptarás este camino de ninja o lo rechazarás?\n\n> *Escribe:* "si" o "no" para responder.\n\n*“La oscuridad es el único lugar donde puedo estar... ¿vienes conmigo?”*`;
+        
+        await conn.reply(m.chat, confirmationMessage, m, { mentions: [proposer, proposee] });
 
-        case 'adoptar':
-            if (!db[sender]) return m.reply('Cásate primero.')
-            if (!text) return m.reply(`*🍼 Uso:* ${usedPrefix}adoptar [Nombre]`)
-            db[sender].children.push(text)
-            db[db[sender].partner].children = db[sender].children
-            saveDB(db)
-            m.reply(`*✨ @${sender.split('@')[0]} y @${db[sender].partner.split('@')[0]} adoptaron a "${text}".*`, null, { mentions: [sender, db[sender].partner] })
-            break
+    } else if (/^divorce$/i.test(command)) {
+        if (!userIsMarried(sender)) return m.reply('*No tienes ningún vínculo que romper. Eres un ninja errante.*');
 
-        case 'familia':
-            if (!db[sender]) return m.reply('No tienes familia.')
-            let f = db[sender]
-            let fam = `*💠 𝐁𝐀𝐑𝐁𝐎𝐙𝐀 𝐅𝐀𝐌𝐈𝐋𝐘 𝐒𝐘𝐒𝐓𝐄𝐌 💠*\n\n*🥷 Padres:* @${sender.split('@')[0]} & @${f.partner.split('@')[0]}\n*👶 Hijos:* ${f.children?.join(', ') || 'Ninguno'}`
-            conn.reply(m.chat, fam, m, { mentions: [sender, f.partner] })
-            break
+        const partner = marriages[sender];
+        delete marriages[sender];
+        delete marriages[partner];
+        saveMarriages(marriages);
+
+        await conn.reply(m.chat, `*🌑 El vínculo se ha roto...*\n\n@${sender.split('@')[0]} y @${partner.split('@')[0]} ahora son extraños de nuevo. El camino de la venganza sigue solo.`, m, { mentions: [sender, partner] });
+
+    } else if (/^partner$/i.test(command)) {
+        if (!userIsMarried(sender)) return m.reply('*Caminas solo en las sombras... No tienes pareja.*');
+        return await conn.reply(m.chat, `*♾️ Tu destino está unido a:* ${conn.getName(marriages[sender])}`, m);
     }
-}
+};
 
-handler.help = ['marry', 'divorce', 'pareja', 'amor', 'marrylist', 'adoptar', 'familia']
-handler.tags = ['fun']
-handler.command = /^(marry|divorce|pareja|amor|marrylist|adoptar|familia)$/i
-handler.group = true
+// --- GESTOR DE RESPUESTAS (CORREGIDO) ---
+handler.before = async (m, { conn }) => {
+    if (m.isBaileys || !m.text) return;
+    if (!confirmation[m.sender]) return;
 
-export default handler
+    const { proposer, timeout } = confirmation[m.sender];
+    const txt = m.text.toLowerCase().trim();
+
+    if (txt === 'no') {
+        clearTimeout(timeout);
+        delete confirmation[m.sender];
+        return conn.reply(m.chat, `*💔 Has rechazado el vínculo.* \n\n"Tal como pensé... no eres lo suficientemente fuerte para estar a mi lado".`, m);
+    }
+
+    if (txt === 'si' || txt === 'sí') {
+        let marriages = loadMarriages();
+        marriages[proposer] = m.sender;
+        marriages[m.sender] = proposer;
+        saveMarriages(marriages);
+
+        clearTimeout(timeout);
+        delete confirmation[m.sender];
+
+        const bodaMsg = `*─── [ 🎊 𝓑𝓞𝓓𝓐 𝓒𝓞𝓝𝓕𝓘𝓡𝓜𝓐𝓓𝓐 ] ───*\n\n*⚡ ¡El vínculo ha sido sellado!*\n\n@${proposer.split('@')[0]} y @${m.sender.split('@')[0]} han unido sus caminos.\n\n*"Cargaré con todo tu odio y moriremos juntos... o viviremos como esposos."*\n\n*¡Felicidades!* 💍`;
+        
+        return conn.reply(m.chat, bodaMsg, m, { mentions: [proposer, m.sender] });
+    }
+};
+
+handler.tags = ['fun'];
+handler.help = ['marry', 'divorce', 'partner'];
+handler.command = ['marry', 'divorce', 'partner'];
+handler.group = true;
+
+export default handler;
