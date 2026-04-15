@@ -46,6 +46,7 @@ const handler = async (m, { conn, command, usedPrefix }) => {
         if (!proposee) return m.reply('*🐍 [ ERROR ] ➔ Responde o etiqueta a alguien para la propuesta.*');
         if (proposee === sender) return m.reply('*🤨 No puedes casarte contigo mismo.*');
         
+        // --- BLOQUEO E INFORME DE INFIDELIDAD ---
         if (userIsMarried(proposee)) {
             const partner = marriages[proposee].partner;
             if (!marriages[proposee].spied) marriages[proposee].spied = [];
@@ -57,8 +58,6 @@ const handler = async (m, { conn, command, usedPrefix }) => {
             const infielTxt = `*🚫 ACCIÓN BLOQUEADA 🚫*\n\n@${sender.split`@`[0]}, no puedes proponerle matrimonio a *@${proposee.split`@`[0]}* porque ya tiene un destino sellado con *@${partner.split`@`[0]}*.\n\n⚠️ *@${partner.split`@`[0]}*, ¡cuida lo tuyo! Intentaron robarte la pareja. 🐍🔥`;
             return conn.reply(m.chat, infielTxt, m, { mentions: [partner, sender, proposee] });
         }
-
-        if (userIsMarried(sender)) return m.reply(`*⚠️ Ya estás unido a:* ${conn.getName(marriages[sender].partner)}`);
 
         proposals[sender] = proposee;
         const confirmationMessage = `*─── [ 💍 𝓑𝓐𝓡𝓑𝓞𝓩𝓐 - 𝓥𝓘𝓝𝓒𝓤𝓛𝓞 ] ───*\n\n*👤 @${sender.split`@`[0]}* solicita un vínculo con *@${proposee.split`@`[0]}*.\n\n¿Aceptas unir tu destino? 💍\n\n> Responde: *Acepto* o *No*`.trim();
@@ -98,10 +97,10 @@ const handler = async (m, { conn, command, usedPrefix }) => {
         if (!userIsMarried(sender)) return m.reply(`*⚠️ Primero debes ver la lista de parejas con ${usedPrefix}marrylist.*`);
         
         const partner = marriages[sender].partner;
-        const target = m.quoted?.sender; // Ahora detecta solo por respuesta de mensaje
+        const target = m.quoted?.sender; 
 
         if (!target || target !== partner) {
-            return m.reply(`*🕵️‍♂️ Seguridad:* Debes responder a un mensaje de tu pareja actual (@${partner.split`@`[0]}) con el comando para ver si alguien ha intentado propasarse.`, null, { mentions: [partner] });
+            return m.reply(`*🕵️‍♂️ Seguridad:* Debes responder a un mensaje de tu pareja actual (@${partner.split`@`[0]}) con el comando para ver el reporte de pretendientes.`, null, { mentions: [partner] });
         }
 
         const data = marriages[sender];
@@ -149,7 +148,7 @@ handler.before = async (m) => {
         marriages[m.sender] = { partner: proposer, date: now, spied: [] };
         saveMarriages();
         clearTimeout(timeout); delete confirmation[m.sender]; delete proposals[proposer];
-        const winTxt = `*─── [ 💍 𝓑𝓞𝓓𝓐 𝓒𝓞𝓝𝓕𝓘𝓡𝓜𝓐𝓓𝓐 ] ───*\n\n🎊 *@${proposer.split`@`[0]}* y *@${m.sender.split`@`[0]}* unidos 💞\n\n> *Barboza Bot*`;
+        const winTxt = `*─── [ 💍 𝓑𝓞𝓓𝓐 𝓒𝓞𝓓𝓘𝓕𝓘𝓒𝓐𝓓𝓐 ] ───*\n\n🎊 *@${proposer.split`@`[0]}* y *@${m.sender.split`@`[0]}* unidos 💞\n\n> *Barboza Bot*`;
         return conn.sendMessage(m.chat, { text: winTxt, mentions: [proposer, m.sender] }, { quoted: m });
     }
 };
