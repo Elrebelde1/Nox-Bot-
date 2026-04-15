@@ -1,157 +1,96 @@
-import fs from 'fs'
-import path from 'path'
+let marriages = {} 
 
-// Configuración de base de datos
-const dir = path.resolve('media/game')
-const file = path.join(dir, 'marry.json')
-if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+let handler = async (m, { conn, text, usedPrefix, command }) => {
+    const id = m.chat
+    if (!marriages[id]) marriages[id] = {}
 
-const getData = () => {
-    try {
-        return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf-8')) : {}
-    } catch { return {} }
-}
-const saveData = (data) => fs.writeFileSync(file, JSON.stringify(data, null, 2))
+    let who = m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : false
 
-// Objeto para propuestas temporales
-global.marryConfirm = global.marryConfirm || {}
+    if (command === 'marry' || command === 'casar') {
+        if (!who) return m.reply(`*🐍 [ ERROR ] ➔ Etiqueta a la persona con la que deseas sellar tu destino.*`)
+        if (who === m.sender) return m.reply('*🤨 No puedes casarte contigo mismo.*')
+        
+        if (marriages[id][m.sender]) return m.reply('*⚠️ Ya tienes un vínculo activo. Primero usa .divorce*')
+        if (marriages[id][who]) return m.reply('*⚠️ Esa persona ya está en un compromiso.*')
 
-let handler = async (m, { conn, command, text, usedPrefix }) => {
-    let db = getData()
-    let user = m.sender
+        let str = `*─── [ 💍 𝓢𝓐𝓢𝓤𝓚𝓔 - 𝓑𝓞𝓓𝓐 ] ───*\n\n*👤 @${m.sender.split`@`[0]}* solicita un vínculo con *@${who.split`@`[0]}*.\n\n*¿Aceptas?*\n\n> *⚠️ RESPONDE a este mensaje con "Si" o "No".*`
+        
+        let weddingMsg = await conn.reply(m.chat, str, m, { mentions: [m.sender, who] })
 
-    switch (command) {
-        case 'marry':
-            let target = m.quoted ? m.quoted.sender : m.mentionedJid && m.mentionedJid[0] ? m.mentionedJid[0] : null
-            if (!target) return m.reply('*💍 Etiqueta o responde al mensaje de alguien para proponerle matrimonio.*')
-            if (db[user]) return m.reply('*⚠️ Tú ya estás en un vínculo.*')
-            if (db[target]) return m.reply('*⚠️ Esa persona ya está casada.*')
-            if (target === user) return m.reply('*🤨 No puedes casarte contigo mismo.*')
+        try {
+            let response = await new Promise((resolve, reject) => {
+                let timeout = setTimeout(() => {
+                    conn.ev.off('messages.upsert', handlerMsg)
+                    reject(new Error('timeout'))
+                }, 60000)
 
-            global.marryConfirm[target] = { from: user, time: Date.now() }
+                let handlerMsg = async ({ messages }) => {
+                    let msg = messages[0]
+                    if (!msg.message || msg.key.remoteJid !== id || msg.key.participant !== who) return
+                    
+                    let cited = msg.message.extendedTextMessage?.contextInfo?.stanzaId
+                    if (cited !== weddingMsg.key.id) return
 
-            let txtM = `*─── [ 💍 𝓟𝓡𝓞𝓟𝓤𝓔𝓢𝓣𝓐 ] ───*\n\n`
-            txtM += `*👤 @${user.split('@')[0]}* le ha pedido matrimonio a *@${target.split('@')[0]}*.\n\n`
-            txtM += `> *Escribe:* "acepto" para unir sus vidas.\n`
-            txtM += `> *Escribe:* "rechazo" para romper su corazón.\n\n`
-            txtM += `_Caduca en 60 segundos._`
+                    let body = (msg.message.conversation || msg.message.extendedTextMessage?.text || '').trim().toLowerCase()
 
-            await conn.reply(m.chat, txtM, m, { mentions: [user, target] })
-            break
-
-        case 'amor':
-            if (!db[user]) return m.reply('*⚠️ No tienes pareja.*')
-            let love = Math.floor(Math.random() * 100) + 1
-            let heart = love > 70 ? '💖' : love > 40 ? '🧡' : '💔'
-            conn.reply(m.chat, `*${heart} [ 𝓒𝓞𝓜𝓟𝓐𝓣𝓘𝓑𝓘𝓛𝓘𝓓𝓐𝓓 ]*\n\n*Pareja:* @${user.split('@')[0]} & @${db[user].partner.split('@')[0]}\n*Nivel de amor:* ${love}%`, m, { mentions: [user, db[user].partner] })
-            break
-
-        case 'marrylist':
-            let list = Object.entries(db)
-            if (list.length === 0) return m.reply('*❌ No hay matrimonios registrados.*')
-            let txtL = `*─── [ 💍 𝓛𝓘𝓢𝓣𝓐 𝓓𝓔 𝓑𝓞𝓓𝓐𝓢 ] ───*\n\n`, visto = new Set()
-            let count = 1
-            for (let [u, d] of list) {
-                if (!visto.has(u)) {
-                    txtL += `*${count++}.* @${u.split('@')[0]} ♾️ @${d.partner.split('@')[0]}\n`
-                    visto.add(u); visto.add(d.partner)
+                    if (/^(si|sí|no)$/i.test(body)) {
+                        clearTimeout(timeout)
+                        conn.ev.off('messages.upsert', handlerMsg)
+                        resolve(body.includes('si') ? 'si' : 'no')
+                    }
                 }
+                conn.ev.on('messages.upsert', handlerMsg)
+            })
+
+            if (response === 'si') {
+                marriages[id][m.sender] = { partner: who, date: Date.now(), status: 'Vínculo Eterno' }
+                marriages[id][who] = { partner: m.sender, date: Date.now(), status: 'Vínculo Eterno' }
+                return conn.reply(m.chat, `*🎊 🎉 ¡EL VÍNCULO SE HA SELLADO! 🎉 🎊*\n\n*@${m.sender.split`@`[0]}* y *@${who.split`@`[0]}* ahora están unidos.`, m, { mentions: [m.sender, who] })
+            } else {
+                return m.reply(`*💔 Rechazado:* *@${who.split`@`[0]}* ha decidido seguir su camino en soledad.`)
             }
-            conn.reply(m.chat, txtL, m, { mentions: Array.from(visto) })
-            break
+        } catch (e) {
+            return m.reply('*⏰ Tiempo agotado:* El destino no esperó por nadie.')
+        }
+    }
 
-        case 'adoptar_mascota':
-            if (!db[user]) return m.reply('*⚠️ Necesitas estar casado para tener una mascota familiar.*')
-            let args = text.split(' ')
-            let tipos = { perro: '🐶', gato: '🐱', conejo: '🐰', zorro: '🦊' }
-            let tipo = args[0]?.toLowerCase()
-            let nombre = args.slice(1).join(' ')
-            if (!tipos[tipo] || !nombre) return m.reply(`*🐾 Uso:* ${usedPrefix}${command} [perro/gato/conejo/zorro] [nombre]`)
-            
-            let nuevaMascota = { type: tipos[tipo], name: nombre, hunger: 50 }
-            db[user].pet = nuevaMascota
-            db[db[user].partner].pet = nuevaMascota
-            saveData(db)
-            m.reply(`*✨ ¡Felicidades! Han adoptado a ${nombre} ${tipos[tipo]}.*`)
-            break
+    if (command === 'divorce' || command === 'divorciar') {
+        if (!marriages[id][m.sender]) return m.reply('*⚠️ No tienes ningún vínculo que romper.*')
+        let partner = marriages[id][m.sender].partner
+        delete marriages[id][partner]
+        delete marriages[id][m.sender]
+        return m.reply(`*🌑 Vínculo roto:* El contrato ha terminado. Vuelves a la soledad.`)
+    }
 
-        case 'alimentar':
-            if (!db[user]?.pet) return m.reply('*❌ No tienen una mascota que alimentar.*')
-            if (db[user].pet.hunger >= 100) return m.reply(`*✋ ${db[user].pet.name} ya está satisfecho.*`)
-            
-            db[user].pet.hunger = Math.min(100, db[user].pet.hunger + 20)
-            db[db[user].partner].pet = db[user].pet // Sincronizar con pareja
-            saveData(db)
-            m.reply(`*🍖 Alimentaste a ${db[user].pet.name}. Hambre: ${db[user].pet.hunger}%*`)
-            break
+    if (command === 'pareja' || command === 'boda') {
+        let target = who || m.sender
+        let data = marriages[id][target]
+        if (!data) return m.reply(`*👤 @${target.split`@`[0]} camina en soledad.*`, null, { mentions: [target] })
+        let partner = data.partner
+        let date = new Date(data.date).toLocaleDateString('es-HN')
+        let statusStr = `*─── [ 📜 𝓔𝓧𝓟𝓔𝓓𝓘𝓔𝓝𝓣𝓔 𝓐𝓜𝓞𝓡𝓞𝓢𝓞 ] ───*\n\n*👤 Usuario:* @${target.split`@`[0]}\n*💍 Compañero/a:* @${partner.split`@`[0]}\n*🗓️ Sello creado:* ${date}\n*✨ Estado:* ${data.status}`
+        return conn.reply(m.chat, statusStr, m, { mentions: [target, partner] })
+    }
 
-        case 'familia':
-            if (!db[user]) return m.reply('*⚠️ No tienes una familia formada.*')
-            let f = db[user]
-            let famMsg = `*─── [ 👨‍👩‍👧‍👦 𝓣𝓤 𝓕𝓐𝓜𝓘𝓛𝓘𝓐 ] ───*\n\n`
-            famMsg += `*Esposos:* @${user.split('@')[0]} & @${f.partner.split('@')[0]}\n`
-            if (f.pet) famMsg += `*Mascota:* ${f.pet.name} ${f.pet.type} (Hambre: ${f.pet.hunger}%)\n`
-            famMsg += `*Fecha de unión:* ${new Date(f.date).toLocaleDateString()}`
-            conn.reply(m.chat, famMsg, m, { mentions: [user, f.partner] })
-            break
-
-        case 'divorce':
-            if (!db[user]) return m.reply('*⚠️ No tienes a nadie de quien divorciarte.*')
-            let exPartner = db[user].partner
-            delete db[user]
-            delete db[exPartner]
-            saveData(db)
-            m.reply('*🌑 El matrimonio ha sido anulado. Ambos son libres ahora.*')
-            break
+    if (command === 'parejas') {
+        let list = Object.keys(marriages[id])
+        if (list.length === 0) return m.reply('*😶 No hay vínculos registrados en esta zona.*')
+        let listStr = `*─── [ 💘 𝓥𝓘𝓝𝓒𝓤𝓛𝓞𝓢 𝓓𝓔𝓛 𝓖𝓡𝓤𝓟𝓞 ] ───*\n\n`
+        let seen = new Set()
+        for (let user of list) {
+            if (seen.has(user)) continue
+            let partner = marriages[id][user].partner
+            listStr += `*🦅 @${user.split`@`[0]}* ∞ *@${partner.split`@`[0]}*\n`
+            seen.add(user)
+            seen.add(partner)
+        }
+        return conn.reply(m.chat, listStr, m, { mentions: Array.from(seen) })
     }
 }
 
-// GESTOR DE RESPUESTAS (CORREGIDO PARA TODOS LOS CASOS)
-handler.before = async (m, { conn }) => {
-    if (!m.text || !m.chat || m.fromMe) return false
-    let txt = m.text.toLowerCase().trim()
-    
-    // Si el usuario que escribe tiene una propuesta pendiente
-    if (global.marryConfirm && global.marryConfirm[m.sender]) {
-        let propuesta = global.marryConfirm[m.sender]
-
-        // Verificar tiempo (1 minuto)
-        if (Date.now() - propuesta.time > 60000) {
-            delete global.marryConfirm[m.sender]
-            return false
-        }
-
-        if (txt === 'acepto') {
-            let db = getData()
-            // Verificar que el proponente no se haya casado con otro en ese minuto
-            if (db[propuesta.from] || db[m.sender]) {
-                delete global.marryConfirm[m.sender]
-                return m.reply('*⚠️ Uno de los dos ya no está disponible.*')
-            }
-
-            // Registrar matrimonio para ambos
-            let datos = { partner: propuesta.from, date: Date.now(), pet: null }
-            db[m.sender] = datos
-            db[propuesta.from] = { partner: m.sender, date: Date.now(), pet: null }
-            
-            saveData(db)
-            await conn.reply(m.chat, `*💍 ¡Vivan los novios! @${propuesta.from.split('@')[0]} y @${m.sender.split('@')[0]} se han casado.*`, m, { mentions: [propuesta.from, m.sender] })
-            delete global.marryConfirm[m.sender]
-            return true
-        }
-
-        if (txt === 'rechazo') {
-            delete global.marryConfirm[m.sender]
-            await m.reply('*💔 La propuesta fue rechazada crudamente.*')
-            return true
-        }
-    }
-    return false
-}
-
-handler.help = ['marry', 'amor', 'marrylist', 'adoptar_mascota', 'alimentar', 'familia', 'divorce']
+handler.help = ['marry', 'divorce', 'pareja', 'parejas']
 handler.tags = ['fun']
-handler.command = /^(marry|amor|marrylist|adoptar_mascota|alimentar|familia|divorce)$/i
+handler.command = ['marry', 'casar', 'divorce', 'divorciar', 'pareja', 'boda', 'parejas']
 handler.group = true
 
 export default handler
