@@ -44,9 +44,11 @@ const handler = async (m, { conn, command, usedPrefix, text }) => {
             if (userIsMarried(proposee)) return m.reply('*⚠️ Esa persona ya está casada.*');
             if (proposee === sender) return m.reply('*🤨 No puedes casarte contigo mismo.*');
 
-            const txtM = `*─── [ 💍 𝓥𝓘𝓝𝓒𝓤𝓛𝓞 ] ───*\n\n*👤 @${sender.split`@`[0]}* propone matrimonio a *@${proposee.split`@`[0]}*.\n\n> Responde: *acepto* o *rechazo*`;
-            const sentMsg = await conn.reply(m.chat, txtM, m, { mentions: [sender, proposee] });
-            confirmation[proposee] = { proposer: sender, type: 'marry', msgId: sentMsg.key.id, time: Date.now() };
+            // Mensaje con instrucciones claras
+            const txtM = `*─── [ 💍 𝓥𝓘𝓝𝓒𝓤𝓛𝓞 ] ───*\n\n*👤 @${sender.split`@`[0]}* propone matrimonio a *@${proposee.split`@`[0]}*.\n\n> *Escribe:* "acepto" para confirmar.\n> *Escribe:* "rechazo" para cancelar.\n\n_Tienes 60 segundos._`;
+            
+            confirmation[proposee] = { proposer: sender, type: 'marry', time: Date.now() };
+            await conn.reply(m.chat, txtM, m, { mentions: [sender, proposee] });
             break;
 
         case 'amor':
@@ -113,22 +115,29 @@ const handler = async (m, { conn, command, usedPrefix, text }) => {
 };
 
 handler.before = async (m, { conn }) => {
+    // Si el mensaje no tiene texto o el usuario no tiene una confirmación pendiente, ignorar.
     if (!m.text || !confirmation[m.sender]) return;
+    
     const conf = confirmation[m.sender];
-    if (Date.now() - conf.time > 60000) return delete confirmation[m.sender];
+    // Expiración tras 60 segundos
+    if (Date.now() - conf.time > 60000) {
+        delete confirmation[m.sender];
+        return;
+    }
 
     const input = m.text.toLowerCase().trim();
+    
     if (input === 'acepto') {
         if (conf.type === 'marry') {
             marriages[conf.proposer] = { partner: m.sender, date: Date.now(), children: [], pet: null };
             marriages[m.sender] = { partner: conf.proposer, date: Date.now(), children: [], pet: null };
             saveMarriages();
-            await conn.reply(m.chat, `*💍 ¡Felicidades! @${conf.proposer.split`@`[0]} y @${m.sender.split`@`[0]} se han casado.*`, m, { mentions: [conf.proposer, m.sender] });
+            await conn.reply(m.chat, `*💍 ¡Vínculo sellado! Felicidades @${conf.proposer.split`@`[0]} y @${m.sender.split`@`[0]}.*`, m, { mentions: [conf.proposer, m.sender] });
         }
         delete confirmation[m.sender];
         return true;
     } else if (input === 'rechazo') {
-        await m.reply('*❌ Propuesta rechazada.*');
+        await conn.reply(m.chat, `*❌ @${m.sender.split`@`[0]} ha rechazado la propuesta.*`, m, { mentions: [m.sender] });
         delete confirmation[m.sender];
         return true;
     }
