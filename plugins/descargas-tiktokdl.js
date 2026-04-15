@@ -22,9 +22,10 @@ function saveMarriages() {
 
 const userIsMarried = (user) => Object.hasOwn(marriages, user);
 
-const handler = async (m, { conn, command, usedPrefix }) => {
+const handler = async (m, { conn, command }) => {
     const sender = m.sender;
 
+    // --- [ COMANDO: MARRY ] ---
     if (/^marry$/i.test(command)) {
         const proposee = m.quoted?.sender || (m.mentionedJid && m.mentionedJid[0]);
         if (!proposee) return m.reply('*🐍 [ ERROR ] ➔ Responde al mensaje de alguien para proponer un vínculo.*');
@@ -64,40 +65,49 @@ const handler = async (m, { conn, command, usedPrefix }) => {
         };
     }
 
-    if (/^marrylist$/i.test(command)) {
-        let couples = Object.entries(marriages);
-        if (couples.length === 0) return m.reply('*😶 No hay vínculos registrados en este sector.*');
-
-        let txt = `*─── [ 💘 𝓛𝓘𝓢𝓣𝓐 𝓓𝓔 𝓥𝓘𝓝𝓒𝓤𝓛𝓞𝓢 ] ───*\n\n`;
-        let seen = new Set();
-        let count = 0;
-
-        for (let [user, partner] of couples) {
-            if (!seen.has(user) && !seen.has(partner)) {
-                seen.add(user);
-                seen.add(partner);
-                count++;
-                txt += `*${count}.* @${user.split`@`[0]} ⚔️ @${partner.split`@`[0]}\n`;
-            }
-        }
-
-        txt += `\n*✨ Total de parejas:* ${count}\n*Barboza Bot*`;
-        return conn.reply(m.chat, txt, m, { mentions: Array.from(seen) });
-    }
-
+    // --- [ COMANDO: DIVORCE (ACTUALIZADO) ] ---
     if (/^divorce$/i.test(command)) {
         if (!userIsMarried(sender)) return m.reply('*⚠️ No tienes ningún vínculo que romper.*');
+        
         const partner = marriages[sender];
+        
+        // Eliminamos los datos de ambos
         delete marriages[sender];
         delete marriages[partner];
         saveMarriages();
-        return m.reply(`*🌑 Vínculo roto:* Ahora ambos son libres.\n\n> Barboza Bot`);
+
+        const divorceTxt = `*🌑 Vínculo roto:* Ahora ambos son libres.\n\n> *@${sender.split`@`[0]}* y *@${partner.split`@`[0]}* han terminado su compromiso.\n> *Barboza Bot*`;
+
+        // Responde al mensaje actual y etiqueta a la ex-pareja
+        return conn.sendMessage(m.chat, { 
+            text: divorceTxt, 
+            mentions: [sender, partner] 
+        }, { quoted: m });
     }
 
+    // --- [ COMANDO: PARTNER / PAREJA ] ---
     if (/^partner|pareja$/i.test(command)) {
         const target = m.mentionedJid[0] || m.quoted?.sender || sender;
         if (!userIsMarried(target)) return m.reply(`*👤 @${target.split`@`[0]} camina en soledad.*`, null, { mentions: [target] });
         return m.reply(`*💍 @${target.split`@`[0]} está unido a @${marriages[target].split`@`[0]}*`, null, { mentions: [target, marriages[target]] });
+    }
+
+    // --- [ COMANDO: MARRYLIST ] ---
+    if (/^marrylist$/i.test(command)) {
+        let couples = Object.entries(marriages);
+        if (couples.length === 0) return m.reply('*😶 No hay vínculos registrados.*');
+        let txt = `*─── [ 💘 𝓛𝓘𝓢𝓣𝓐 𝓓𝓔 𝓥𝓘𝓝𝓒𝓤𝓛𝓞𝓢 ] ───*\n\n`;
+        let seen = new Set();
+        let count = 0;
+        for (let [user, partner] of couples) {
+            if (!seen.has(user) && !seen.has(partner)) {
+                seen.add(user); seen.add(partner);
+                count++;
+                txt += `*${count}.* @${user.split`@`[0]} ⚔️ @${partner.split`@`[0]}\n`;
+            }
+        }
+        txt += `\n*✨ Total:* ${count}\n*Barboza Bot*`;
+        return conn.reply(m.chat, txt, m, { mentions: Array.from(seen) });
     }
 };
 
@@ -131,9 +141,9 @@ handler.before = async (m) => {
     }
 };
 
-handler.help = ['marry', 'marrylist', 'divorce', 'partner'];
+handler.help = ['marry', 'divorce', 'partner', 'marrylist'];
 handler.tags = ['fun'];
-handler.command = ['marry', 'marrylist', 'divorce', 'partner', 'pareja'];
+handler.command = ['marry', 'divorce', 'partner', 'pareja', 'marrylist'];
 handler.group = true;
 
 export default handler;
