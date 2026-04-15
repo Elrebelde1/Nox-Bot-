@@ -13,7 +13,6 @@ function loadMarriages() {
         const data = raw[user];
         if (typeof data === 'object' && raw[data.partner]?.partner === user) {
             valid[user] = data;
-            // Asegurar que exista el array de espionaje
             if (!valid[user].spied) valid[user].spied = [];
         } else if (typeof data === 'string' && raw[data] === user) {
             valid[user] = { partner: data, date: Date.now(), spied: [] };
@@ -32,7 +31,6 @@ function getDuration(ms) {
     let days = Math.floor(diff / (1000 * 60 * 60 * 24));
     let months = Math.floor(days / 30);
     let years = Math.floor(months / 12);
-
     if (years > 0) return `${years} año(s), ${months % 12} mes(es) y ${days % 30} día(s)`;
     if (months > 0) return `${months} mes(es) y ${days % 30} día(s)`;
     return `${days} día(s)`;
@@ -40,34 +38,29 @@ function getDuration(ms) {
 
 const userIsMarried = (user) => Object.hasOwn(marriages, user);
 
-const handler = async (m, { conn, command }) => {
+const handler = async (m, { conn, command, usedPrefix }) => {
     const sender = m.sender;
 
     if (/^marry$/i.test(command)) {
         const proposee = m.quoted?.sender || (m.mentionedJid && m.mentionedJid[0]);
-        if (!proposee) return m.reply('*🐍 [ ERROR ] ➔ Responde al mensaje de alguien para proponer un vínculo.*');
-        if (proposee === sender) return m.reply('*🤨 No puedes sellar un vínculo contigo mismo.*');
+        if (!proposee) return m.reply('*🐍 [ ERROR ] ➔ Responde o etiqueta a alguien para la propuesta.*');
+        if (proposee === sender) return m.reply('*🤨 No puedes casarte contigo mismo.*');
         
-        // --- SISTEMA DE INFIDELIDAD Y ESPIONAJE ---
         if (userIsMarried(proposee)) {
             const partner = marriages[proposee].partner;
-            
-            // Guardar al que intentó robarse a la pareja (Espionaje)
             if (!marriages[proposee].spied) marriages[proposee].spied = [];
             if (!marriages[proposee].spied.includes(sender)) {
                 marriages[proposee].spied.push(sender);
-                marriages[partner].spied.push(sender); // Ambos pueden ver quién intentó
+                marriages[partner].spied.push(sender);
                 saveMarriages();
             }
-
-            const infielTxt = `*⚠️ ¡ALERTA DE INFIDELIDAD! ⚠️*\n\n@${partner.split`@`[0]}, ¡atento! *@${sender.split`@`[0]}* está intentando robarte a tu pareja *@${proposee.split`@`[0]}*. 🐍🔥\n\n> El intento ha sido registrado en el sistema de espionaje.`;
-            return conn.reply(m.chat, infielTxt, m, { mentions: [partner, sender, proposee] });
+            return conn.reply(m.chat, `*⚠️ ¡ALERTA DE INFIDELIDAD! ⚠️*\n\n@${partner.split`@`[0]}, ¡atento! *@${sender.split`@`[0]}* intentó tirar un vínculo con tu pareja *@${proposee.split`@`[0]}*. 🐍🔥`, m, { mentions: [partner, sender, proposee] });
         }
 
         if (userIsMarried(sender)) return m.reply(`*⚠️ Ya estás unido a:* ${conn.getName(marriages[sender].partner)}`);
 
         proposals[sender] = proposee;
-        const confirmationMessage = `*─── [ 💍 𝓑𝓐𝓡𝓑𝓞𝓩𝓐 - 𝓥𝓘𝓝𝓒𝓤𝓛𝓞 ] ───*\n\n*👤 @${sender.split`@`[0]}* solicita un vínculo con *@${proposee.split`@`[0]}*.\n\n¿Aceptas unir tu destino? 💍\n\n> Responde con: *Acepto* o *No*\n*Barboza Bot*`.trim();
+        const confirmationMessage = `*─── [ 💍 𝓑𝓐𝓡𝓑𝓞𝓩𝓐 - 𝓥𝓘𝓝𝓒𝓤𝓛𝓞 ] ───*\n\n*👤 @${sender.split`@`[0]}* solicita un vínculo con *@${proposee.split`@`[0]}*.\n\n¿Aceptas unir tu destino? 💍\n\n> Responde: *Acepto* o *No*`.trim();
 
         const sentMsg = await conn.reply(m.chat, confirmationMessage, m, { mentions: [sender, proposee] });
         confirmation[proposee] = {
@@ -82,44 +75,45 @@ const handler = async (m, { conn, command }) => {
         };
     }
 
-    // COMANDO .ESPIAR
-    if (/^espiar$/i.test(command)) {
-        if (!userIsMarried(sender)) return m.reply('*⚠️ Solo las personas casadas pueden usar el sistema de espionaje.*');
-        const data = marriages[sender];
-        if (!data.spied || data.spied.length === 0) return m.reply('*🛡️ Tu relación está segura. Nadie ha intentado nada.*');
-
-        let spyTxt = `*🕵️‍♂️ [ REGISTRO DE ESPIONAJE ] 🕵️‍♂️*\n\n`;
-        spyTxt += `*Lista de personas que intentaron meterse en tu relación:*\n`;
-        data.spied.forEach((user, i) => {
-            spyTxt += `*${i + 1}.* @${user.split`@`[0]}\n`;
-        });
-        spyTxt += `\n> *Barboza Bot te mantiene informado.*`;
-        
-        return conn.reply(m.chat, spyTxt, m, { mentions: data.spied });
-    }
-
     if (/^marrylist$/i.test(command)) {
         let couples = Object.entries(marriages);
         if (couples.length === 0) return m.reply('*😶 No hay vínculos registrados.*');
-
         let txt = `*─── [ 💘 𝓛𝓘𝓢𝓣𝓐 𝓓𝓔 𝓥𝓘𝓝𝓒𝓤𝓛𝓞𝓢 ] ───*\n\n`;
         let seen = new Set();
         let count = 0;
-
         for (let [user, data] of couples) {
             let partner = data.partner;
             if (!seen.has(user) && !seen.has(partner)) {
                 seen.add(user); seen.add(partner);
                 count++;
-                let dateStr = new Date(data.date).toLocaleDateString('es-ES');
-                let timeAgo = getDuration(data.date);
-                txt += `*${count}.* @${user.split`@`[0]} ⚔️ @${partner.split`@`[0]}\n`;
-                txt += `   🔹 *Fecha:* ${dateStr}\n`;
-                txt += `   🔹 *Tiempo:* ${timeAgo}\n\n`;
+                txt += `*${count}.* @${user.split`@`[0]} ⚔️ @${partner.split`@`[0]}\n   🔹 *Tiempo:* ${getDuration(data.date)}\n\n`;
             }
         }
-        txt += `*✨ Total:* ${count}\n*Barboza Bot*`;
+        txt += `> *Usa ${usedPrefix}espiar @pareja para ver pretendientes.*\n*Barboza Bot*`;
         return conn.reply(m.chat, txt, m, { mentions: Array.from(seen) });
+    }
+
+    if (/^espiar$/i.test(command)) {
+        if (!userIsMarried(sender)) return m.reply('*⚠️ No estás casado.*');
+        
+        const partner = marriages[sender].partner;
+        const target = m.mentionedJid[0] || m.quoted?.sender;
+
+        if (!target || target !== partner) {
+            return m.reply(`*🕵️‍♂️ Debes etiquetar a tu pareja (@${partner.split`@`[0]}) para iniciar el espionaje.*`, null, { mentions: [partner] });
+        }
+
+        const data = marriages[sender];
+        if (!data.spied || data.spied.length === 0) {
+            return conn.reply(m.chat, `*🛡️ @${partner.split`@`[0]}, todo está en orden. Nadie ha intentado nada con @${sender.split`@`[0]}.*`, m, { mentions: [partner, sender] });
+        }
+
+        let spyTxt = `*🕵️‍♂️ [ REPORTE DE INTROMISIÓN ] 🕵️‍♂️*\n\n`;
+        spyTxt += `*⚠️ @${partner.split`@`[0]}, aquí están los que intentaron algo con @${sender.split`@`[0]}:*\n\n`;
+        data.spied.forEach((user, i) => { spyTxt += `*${i + 1}.* @${user.split`@`[0]}\n`; });
+        spyTxt += `\n> *Barboza Bot*`;
+        
+        return conn.reply(m.chat, spyTxt, m, { mentions: [...data.spied, partner, sender] });
     }
 
     if (/^divorce$/i.test(command)) {
@@ -134,9 +128,7 @@ const handler = async (m, { conn, command }) => {
         if (!userIsMarried(sender)) return m.reply('*⚠️ Primero debes estar casado.*');
         let partner = marriages[sender].partner;
         let porcentaje = Math.floor(Math.random() * 100);
-        let nivel = porcentaje > 80 ? '💞 Amor Eterno' : porcentaje > 50 ? '⚖️ Estable' : '💔 En Crisis';
-        
-        let loveTxt = `*❤️ Medidor de Amor*\n\n*Pareja:* @${sender.split`@`[0]} x @${partner.split`@`[0]}\n*Porcentaje:* ${porcentaje}%\n*Estado:* ${nivel}`;
+        let loveTxt = `*❤️ Medidor de Amor*\n\n*Vínculo:* @${sender.split`@`[0]} x @${partner.split`@`[0]}\n*Porcentaje:* ${porcentaje}%`;
         return conn.reply(m.chat, loveTxt, m, { mentions: [sender, partner] });
     }
 };
@@ -146,12 +138,10 @@ handler.before = async (m) => {
     const { proposer, timeout, msgId } = confirmation[m.sender];
     if (m.quoted.id !== msgId) return;
     const txt = m.text.trim().toLowerCase();
-
     if (/^no$/i.test(txt)) {
         clearTimeout(timeout); delete confirmation[m.sender]; delete proposals[proposer];
         return conn.reply(m.chat, '*💔 Vínculo rechazado.*', m);
     }
-
     if (/^acepto$/i.test(txt)) {
         let now = Date.now();
         marriages[proposer] = { partner: m.sender, date: now, spied: [] };
