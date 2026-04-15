@@ -137,7 +137,7 @@ handler.before = async (m) => {
 
 handler.help = ['marry', 'marrylist', 'divorce', 'amor', 'espiar', 'adoptar', 'familia'];
 handler.tags = ['fun'];
-handler.command = ['marry', 'marrylist', 'divorce', 'pareja', 'amor', 'espiar', 'adoptar', 'familia'];
+handler.command = ['marry','marrylist','divorce','pareja','amor','espiar','adoptar','familia'];
 handler.group = true;
 
 export default handler;
