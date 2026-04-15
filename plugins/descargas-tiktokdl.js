@@ -56,11 +56,11 @@ let handler = async (m, { conn, command, text, usedPrefix }) => {
             if (!db[user]) return m.reply('*⚠️ Solo casados.*')
             let argsP = text.split(' ')
             let icons = { perro: '🐶', gato: '🐱', conejo: '🐰', zorro: '🦊' }
-            if (!icons[argsP[0]] || !argsP[1]) return m.reply(`*🐾 Uso:* ${usedPrefix}${command} [perro/gato] [nombre]`)
+            if (!icons[argsP[0]] || !argsP[1]) return m.reply(`*🐾 Uso:* ${usedPrefix}${command} [perro/gato/zorro] [nombre]`)
             db[user].pet = { type: icons[argsP[0]], name: argsP.slice(1).join(' '), hunger: 50 }
             db[db[user].partner].pet = db[user].pet
             saveData(db)
-            m.reply(`*✨ Adoptaron a ${argsP.slice(1).join(' ')} ${icons[argsP[0]]}!*`)
+            m.reply(`*✨ ¡Adoptaron a ${argsP.slice(1).join(' ')} ${icons[argsP[0]]}!*`)
             break
 
         case 'alimentar':
@@ -73,7 +73,7 @@ let handler = async (m, { conn, command, text, usedPrefix }) => {
             if (!menu[fIdx]) return m.reply('*❌ Opción inválida.*')
             pet.hunger = Math.min(100, pet.hunger + menu[fIdx].fill)
             db[user].pet = pet; db[db[user].partner].pet = pet
-            saveData(db); m.reply(`*🍖 Alimentado! Hambre: ${pet.hunger}%*`)
+            saveData(db); m.reply(`*🍖 ¡Alimentado! Hambre: ${pet.hunger}%*`)
             break
 
         case 'familia':
@@ -86,7 +86,7 @@ let handler = async (m, { conn, command, text, usedPrefix }) => {
             if (!db[user]) return m.reply('*⚠️ Sin pareja.*')
             let ex = db[user].partner
             delete db[user]; delete db[ex]
-            saveData(db); m.reply('*🌑 Vínculo roto.*')
+            saveData(db); m.reply('*🌑 El vínculo ha sido disuelto.*')
             break
     }
 }
@@ -113,6 +113,9 @@ handler.before = async (m, { conn }) => {
     }
 }
 
+handler.help = ['marry', 'amor', 'marrylist', 'adoptar_mascota', 'alimentar', 'familia', 'divorce']
+handler.tags = ['fun']
 handler.command = /^(marry|amor|marrylist|adoptar_mascota|alimentar|familia|divorce)$/i
 handler.group = true
+
 export default handler
