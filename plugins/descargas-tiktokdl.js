@@ -45,8 +45,15 @@ const handler = async (m, { conn, command }) => {
         const proposee = m.quoted?.sender || (m.mentionedJid && m.mentionedJid[0]);
         if (!proposee) return m.reply('*🐍 [ ERROR ] ➔ Responde al mensaje de alguien para proponer un vínculo.*');
         if (proposee === sender) return m.reply('*🤨 No puedes sellar un vínculo contigo mismo.*');
+        
+        // ALERTA DE INFIDELIDAD
+        if (userIsMarried(proposee)) {
+            const partner = marriages[proposee].partner;
+            const infielTxt = `*⚠️ ¡ALERTA DE INFIDELIDAD! ⚠️*\n\n@${partner.split`@`[0]}, ¡atento! *@${sender.split`@`[0]}* está intentando robarte a tu pareja *@${proposee.split`@`[0]}*. 🐍🔥\n\n> Barboza Bot`;
+            return conn.reply(m.chat, infielTxt, m, { mentions: [partner, sender, proposee] });
+        }
+
         if (userIsMarried(sender)) return m.reply(`*⚠️ Ya estás unido a:* ${conn.getName(marriages[sender].partner)}`);
-        if (userIsMarried(proposee)) return m.reply(`*⚠️ Esa persona ya tiene un destino sellado.*`);
 
         proposals[sender] = proposee;
         const confirmationMessage = `*─── [ 💍 𝓑𝓐𝓡𝓑𝓞𝓩𝓐 - 𝓥𝓘𝓝𝓒𝓤𝓛𝓞 ] ───*\n\n*👤 @${sender.split`@`[0]}* solicita un vínculo con *@${proposee.split`@`[0]}*.\n\n¿Aceptas unir tu destino? 💍\n\n> Responde con: *Acepto* o *No*\n*Barboza Bot*`.trim();
@@ -95,6 +102,21 @@ const handler = async (m, { conn, command }) => {
         saveMarriages();
         return conn.sendMessage(m.chat, { text: `*🌑 Vínculo roto:* Ahora ambos son libres.\n\n> Barboza Bot`, mentions: [sender, partner] }, { quoted: m });
     }
+
+    // COMANDO .AMOR
+    if (/^amor$/i.test(command)) {
+        if (!userIsMarried(sender)) return m.reply('*⚠️ Primero debes estar casado para usar este comando.*');
+        let partner = marriages[sender].partner;
+        let porcentaje = Math.floor(Math.random() * 100);
+        let nivel = porcentaje > 80 ? '💞 Amor Eterno' : porcentaje > 50 ? '⚖️ Estable' : '💔 En Crisis';
+        
+        let loveTxt = `*❤️ Medidor de Amor - Barboza Bot*\n\n`;
+        loveTxt += `*Pareja:* @${sender.split`@`[0]} x @${partner.split`@`[0]}\n`;
+        loveTxt += `*Porcentaje:* ${porcentaje}%\n`;
+        loveTxt += `*Estado:* ${nivel}`;
+        
+        return conn.reply(m.chat, loveTxt, m, { mentions: [sender, partner] });
+    }
 };
 
 handler.before = async (m) => {
@@ -119,9 +141,9 @@ handler.before = async (m) => {
     }
 };
 
-handler.help = ['marry', 'marrylist', 'divorce'];
+handler.help = ['marry', 'marrylist', 'divorce', 'amor'];
 handler.tags = ['fun'];
-handler.command = ['marry', 'marrylist', 'divorce', 'partner', 'pareja'];
+handler.command = ['marry', 'marrylist', 'divorce', 'pareja', 'amor'];
 handler.group = true;
 
 export default handler;
