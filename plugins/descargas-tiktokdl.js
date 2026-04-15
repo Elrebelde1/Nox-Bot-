@@ -1,13 +1,13 @@
 import fs from 'fs'
 import path from 'path'
 
-// Conexión a tu base de datos actual
 const pathDB = path.resolve('media/game/marry.json') 
 
 function readDB() {
     try {
         if (!fs.existsSync(pathDB)) return {}
-        return JSON.parse(fs.readFileSync(pathDB, 'utf-8'))
+        const data = fs.readFileSync(pathDB, 'utf-8')
+        return data ? JSON.parse(data) : {}
     } catch { return {} }
 }
 
@@ -19,123 +19,108 @@ function writeDB(data) {
 let handler = async (m, { conn, text, usedPrefix, command }) => {
     let db = readDB()
     
-    // DETECCIÓN MEJORADA: Prioriza el mensaje respondido (quoted)
+    // Detección ultra-segura del objetivo
     let who = m.quoted ? m.quoted.sender : (m.mentionedJid && m.mentionedJid[0] ? m.mentionedJid[0] : false)
     const sender = m.sender
 
-    // Función local blindada contra errores de "null" o "endsWith"
-    const getName = (jid) => {
+    // Función para obtener nombre sin fallos de 'undefined' o 'null'
+    const getBotName = (jid) => {
         if (!jid) return 'Usuario'
-        try {
-            return conn.getName(jid) 
-        } catch {
-            return jid.split('@')[0]
-        }
+        let res = conn.getName(jid)
+        if (!res || res.includes('+')) res = jid.split('@')[0]
+        return res
     }
 
     switch (command) {
         case 'marry':
         case 'casar':
-            // Si no hay 'who', es porque no respondió a nadie ni etiquetó
-            if (!who) return m.reply(`*💍 Propuesta:* Responde al mensaje de la persona con la que te quieres casar.`)
-            
+            if (!who) return m.reply(`*💍 Propuesta Barboza:* Responde al mensaje de alguien para proponerle matrimonio.`)
             if (who === sender) return m.reply('*🤨 No puedes casarte contigo mismo.*')
             
-            if (db[sender]) {
-                let p = db[sender].partner
-                return m.reply(`*⚠️ Ya tienes un vínculo activo con @${getName(p)}*`, null, { mentions: [p] })
-            }
-            if (db[who]) return m.reply(`*⚠️ Esa persona ya pertenece a otra dinastía.*`)
+            if (db[sender]) return conn.reply(m.chat, `*⚠️ Ya tienes un vínculo activo con:* @${db[sender].partner.split('@')[0]}`, m, { mentions: [db[sender].partner] })
+            if (db[who]) return m.reply(`*⚠️ Esa persona ya está casada con alguien más.*`)
 
-            let strM = `*💠 𝐁𝐀𝐑𝐁𝐎𝐙𝐀 𝐅𝐀𝐌𝐈𝐋𝐘 𝐒𝐘𝐒𝐓𝐄𝐌 💠*\n\n`
-            strM += `*👤 @${getName(sender)}* solicita unir su destino con *@${getName(who)}*.\n\n`
-            strM += `> ✅ Para aceptar: *${usedPrefix}aceptar*\n`
-            strM += `> ❌ Para rechazar: *${usedPrefix}rechazar*`
+            let msgMarry = `*💠 𝐁𝐀𝐑𝐁𝐎𝐙𝐀 𝐅𝐀𝐌𝐈𝐋𝐘 𝐒𝐘𝐒𝐓𝐄𝐌 💠*\n\n`
+            msgMarry += `*👤 @${sender.split('@')[0]}* solicita unir su destino con *@${who.split('@')[0]}*.\n\n`
+            msgMarry += `> ✅ Para aceptar responde: *${usedPrefix}aceptar*\n`
+            msgMarry += `> ❌ Para rechazar responde: *${usedPrefix}rechazar*`
             
-            // Enviamos con mención para que sea claro
-            return conn.reply(m.chat, strM, m, { mentions: [sender, who] })
+            return conn.reply(m.chat, msgMarry, m, { mentions: [sender, who] })
 
         case 'aceptar':
-            // En aceptar, 'who' debe ser la persona que envió la propuesta (el mensaje citado)
             if (!who) return m.reply('*⚠️ Responde al mensaje de la propuesta para aceptar.*')
-            if (db[sender]) return m.reply('*⚠️ Ya estás casado.*')
-            if (db[who]) return m.reply('*⚠️ Esa persona ya se casó con alguien más.*')
+            if (db[sender]) return m.reply('*⚠️ Ya estás en un matrimonio.*')
             
-            db[sender] = { partner: who, date: Date.now(), hijos: [], mascota: null }
-            db[who] = { partner: sender, date: Date.now(), hijos: [], mascota: null }
+            // Guardamos el timestamp actual para evitar el 'NaN'
+            const v_date = Date.now()
+            db[sender] = { partner: who, date: v_date, hijos: [], mascota: null }
+            db[who] = { partner: sender, date: v_date, hijos: [], mascota: null }
             writeDB(db)
             
-            return conn.reply(m.chat, `*🎊 ¡VÍNCULO SELLADO! 🎉*\n\nFelicidades a *@${getName(sender)}* y *@${getName(who)}*.`, m, { mentions: [sender, who] })
-
-        case 'rechazar':
-            if (!who) return m.reply('*⚠️ Responde al mensaje para rechazar.*')
-            return conn.reply(m.chat, `*💔 Propuesta rechazada:* *@${getName(sender)}* ha decidido seguir solo.`, m, { mentions: [sender, who] })
+            return conn.reply(m.chat, `*🎊 ¡VÍNCULO SELLADO! 🎉*\n\nFelicidades *@${sender.split('@')[0]}* y *@${who.split('@')[0]}*. ¡Su dinastía comienza hoy!`, m, { mentions: [sender, who] })
 
         case 'pareja':
         case 'boda':
-            let user = who || sender
-            if (!db[user]) return m.reply(`*👤 @${getName(user)} camina en soledad.*`, null, { mentions: [user] })
+            let target = who || sender
+            if (!db[target]) return conn.reply(m.chat, `*👤 @${target.split('@')[0]} aún no ha encontrado su otra mitad.*`, m, { mentions: [target] })
             
-            let dataP = db[user]
-            let diff = Date.now() - dataP.date
-            let dias = Math.floor(diff / (1000 * 60 * 60 * 24))
+            let p_data = db[target]
+            let timeDiff = Date.now() - p_data.date
+            let p_dias = Math.floor(timeDiff / (1000 * 60 * 60 * 24))
+            let p_horas = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
             
-            return conn.reply(m.chat, `*❤️ EXPEDIENTE AMOROSO*\n\n*💍 Pareja:* @${getName(dataP.partner)}\n*⏳ Tiempo:* ${dias} días.\n*✨ Estado:* Linaje Barboza`, m, { mentions: [dataP.partner] })
+            let msgP = `*❤️ 𝐄𝐗𝐏𝐄𝐃𝐈𝐄𝐍𝐓𝐄 𝐀𝐌𝐎𝐑𝐎𝐒𝐎*\n\n`
+            msgP += `*💍 Pareja:* @${p_data.partner.split('@')[0]}\n`
+            msgP += `*⏳ Tiempo:* ${p_dias} días y ${p_horas} horas.\n`
+            msgP += `*✨ Estado:* Linaje Barboza`
+            return conn.reply(m.chat, msgP, m, { mentions: [p_data.partner] })
 
+        case 'familia':
+            if (!db[sender]) return m.reply('*⚠️ No tienes una familia registrada.*')
+            let f = db[sender]
+            let listH = f.hijos?.map(h => `  • @${h.split('@')[0]}`).join('\n') || '  • Sin hijos'
+            let petInfo = f.mascota ? `*🐾 Mascota:* ${f.mascota.nombre} (${f.mascota.tipo})\n  • *Hambre:* ${f.mascota.hambre}%` : '*🐾 Mascota:* Ninguna'
+            
+            let resF = `*💠 𝐁𝐀𝐑𝐁𝐎𝐙𝐀 𝐅𝐀𝐌𝐈𝐋𝐘 💠*\n\n`
+            resF += `*💍 Pareja:* @${f.partner.split('@')[0]}\n`
+            resF += `*👨‍👩‍👧‍👦 Hijos:*\n${listH}\n\n${petInfo}\n\n> Sasuke Bot`
+            return conn.reply(m.chat, resF, m, { mentions: [sender, f.partner, ...(f.hijos || [])] })
+
+        case 'divorce':
+        case 'divorciar':
+            if (!db[sender]) return m.reply('*⚠️ No tienes un vínculo que romper.*')
+            let exPartner = db[sender].partner
+            delete db[sender]
+            delete db[exPartner]
+            writeDB(db)
+            return m.reply(`*🌑 Vínculo roto:* El linaje ha sido disuelto.`)
+
+        case 'rechazar':
+            if (!who) return m.reply('*⚠️ Responde a la propuesta para rechazarla.*')
+            return conn.reply(m.chat, `*💔 @${sender.split('@')[0]} ha rechazado la propuesta de @${who.split('@')[0]}.*`, m, { mentions: [sender, who] })
+            
         case 'adoptar':
             if (!db[sender]) return m.reply('*⚠️ Debes estar casado para adoptar.*')
-            if (!who) return m.reply('*👶 Responde al mensaje de quien quieras adoptar.*')
-            if (who === sender || who === db[sender].partner) return m.reply('*🤨 No puedes adoptar a tu pareja.*')
-            
+            if (!who) return m.reply('*👶 Responde a quien quieras adoptar.*')
             if (!db[sender].hijos) db[sender].hijos = []
             db[sender].hijos.push(who)
             db[db[sender].partner].hijos = db[sender].hijos
             writeDB(db)
-            return m.reply(`*🍼 ¡ADOPCIÓN EXITOSA!* @${getName(who)} ahora es parte de la familia.`, null, { mentions: [who] })
+            return m.reply(`*🍼 ¡Adoptado!* @${who.split('@')[0]} ahora es parte de su familia.`, null, { mentions: [who] })
 
         case 'adoptar_mascota':
             if (!db[sender]) return m.reply('*⚠️ Solo familias pueden tener mascotas.*')
-            let args = text.split(' ')
-            let tipo = args[0]?.toLowerCase()
-            let nombrePet = args.slice(1).join(' ')
-            if (!['perro', 'gato', 'conejo', 'zorro'].includes(tipo) || !nombrePet) {
-                return m.reply(`*🐾 Uso:* ${usedPrefix}adoptar_mascota [perro|gato|conejo|zorro] [nombre]`)
-            }
-            let mascota = { tipo, nombre: nombrePet, hambre: 100, lastFed: Date.now() }
-            db[sender].mascota = mascota
-            db[db[sender].partner].mascota = mascota
-            writeDB(db)
-            return m.reply(`*🐾 ¡BIENVENIDO!* Han adoptado un ${tipo} llamado *${nombrePet}*.`)
-
-        case 'alimentar':
-            if (!db[sender]?.mascota) return m.reply('*⚠️ No tienes una mascota familiar.*')
-            db[sender].mascota.hambre = 100
-            db[sender].mascota.lastFed = Date.now()
+            let [tipoP, ...nomP] = text.split(' ')
+            let nPet = nomP.join(' ')
+            if (!['perro', 'gato', 'zorro'].includes(tipoP) || !nPet) return m.reply(`*🐾 Uso:* ${usedPrefix}adoptar_mascota [perro|gato|zorro] [nombre]`)
+            db[sender].mascota = { tipo: tipoP, nombre: nPet, hambre: 100 }
             db[db[sender].partner].mascota = db[sender].mascota
             writeDB(db)
-            return m.reply(`*🍖 Has alimentado a ${db[sender].mascota.nombre}.*`)
-
-        case 'familia':
-            if (!db[sender]) return m.reply('*⚠️ No tienes una familia registrada.*')
-            let d = db[sender]
-            let hijos = d.hijos?.map(h => `  • @${getName(h)}`).join('\n') || '  • Sin hijos'
-            let petStr = d.mascota ? `*🐾 Mascota:* ${d.mascota.nombre} (${d.mascota.tipo})\n  • *Hambre:* ${d.mascota.hambre}%` : '*🐾 Mascota:* Ninguna'
-            
-            let fRes = `*💠 𝐁𝐀𝐑𝐁𝐎𝐙𝐀 𝐅𝐀𝐌𝐈𝐋𝐘 💠*\n\n*💍 Pareja:* @${getName(d.partner)}\n*👨‍👩‍👧‍👦 Hijos:*\n${hijos}\n\n${petStr}\n\n> Sasuke Bot`
-            return conn.reply(m.chat, fRes, m, { mentions: [sender, d.partner, ...(d.hijos || [])] })
-
-        case 'divorce':
-        case 'divorciar':
-            if (!db[sender]) return m.reply('*⚠️ No tienes un vínculo que disolver.*')
-            let ex = db[sender].partner
-            delete db[sender]
-            delete db[ex]
-            writeDB(db)
-            return m.reply(`*🌑 Vínculo roto:* El linaje ha sido disuelto.`)
+            return m.reply(`*🐾 Han adoptado un ${tipoP} llamado ${nPet}!*`)
     }
 }
 
-handler.command = ['marry', 'casar', 'aceptar', 'rechazar', 'pareja', 'boda', 'adoptar', 'adoptar_mascota', 'familia', 'alimentar', 'divorce', 'divorciar']
+handler.command = ['marry', 'casar', 'aceptar', 'rechazar', 'pareja', 'boda', 'adoptar', 'adoptar_mascota', 'familia', 'divorce', 'divorciar']
 handler.group = true
 
 export default handler
