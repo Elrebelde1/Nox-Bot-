@@ -6,22 +6,21 @@ let marriages = loadMarriages();
 const confirmation = {};
 
 function loadMarriages() {
-    const raw = fs.existsSync(marriagesFile) ? JSON.parse(fs.readFileSync(marriagesFile, 'utf8')) : {};
-    const valid = {};
-    for (const user in raw) {
-        const data = raw[user];
-        if (typeof data === 'object' && raw[data.partner]?.partner === user) {
-            valid[user] = data;
-            if (!valid[user].children) valid[user].children = [];
-            if (valid[user].pet) {
-                if (valid[user].pet.hunger === undefined) valid[user].pet.hunger = 50;
-                if (!valid[user].pet.lastFed) valid[user].pet.lastFed = Date.now();
+    try {
+        if (!fs.existsSync(marriagesFile)) return {};
+        const raw = JSON.parse(fs.readFileSync(marriagesFile, 'utf8'));
+        const valid = {};
+        for (const user in raw) {
+            const data = raw[user];
+            if (typeof data === 'object' && raw[data.partner]?.partner === user) {
+                valid[user] = data;
+                if (!valid[user].children) valid[user].children = [];
             }
-        } else if (typeof data === 'string' && raw[data] === user) {
-            valid[user] = { partner: data, date: Date.now(), children: [], pet: null };
         }
+        return valid;
+    } catch (e) {
+        return {};
     }
-    return valid;
 }
 
 function saveMarriages() {
@@ -35,17 +34,10 @@ function formatDate(ms) {
 
 const userIsMarried = (user) => Object.hasOwn(marriages, user);
 
-const foodMenu = {
-    '🐶': [{ name: 'Croquetas', fill: 20 }, { name: 'Filete', fill: 50 }, { name: 'Hueso', fill: 15 }],
-    '🐱': [{ name: 'Atún', fill: 40 }, { name: 'Leche', fill: 20 }, { name: 'Golosina', fill: 15 }],
-    '🐰': [{ name: 'Zanahoria', fill: 30 }, { name: 'Heno', fill: 55 }],
-    '🦊': [{ name: 'Bayas', fill: 25 }, { name: 'Presa', fill: 50 }]
-};
-
 const handler = async (m, { conn, command, usedPrefix, text }) => {
     const sender = m.sender;
 
-    // --- MATRIMONIO ---
+    // --- COMANDO MARRY ---
     if (/^marry$/i.test(command)) {
         const proposee = m.quoted?.sender || (m.mentionedJid && m.mentionedJid[0]);
         if (!proposee) return m.reply('*🐍 Responde o etiqueta a alguien.*');
@@ -60,11 +52,11 @@ const handler = async (m, { conn, command, usedPrefix, text }) => {
             proposer: sender, 
             type: 'marry', 
             msgId: sentMsg.key.id, 
-            timeout: setTimeout(() => { delete confirmation[proposee]; }, 90000) 
+            timeout: setTimeout(() => { delete confirmation[proposee]; }, 120000) // 2 minutos
         };
     }
 
-    // --- AMOR ---
+    // --- COMANDO AMOR ---
     if (/^amor$/i.test(command)) {
         if (!userIsMarried(sender)) return m.reply('*⚠️ No tienes pareja.*');
         const partner = marriages[sender].partner;
@@ -72,7 +64,7 @@ const handler = async (m, { conn, command, usedPrefix, text }) => {
         return conn.reply(m.chat, `*─── [ ❤️ 𝓐𝓜𝓞𝓡 ] ───*\n\n*Pareja:* @${sender.split`@`[0]} & @${partner.split`@`[0]}\n*Compatibilidad:* ${porcentaje}%`, m, { mentions: [sender, partner] });
     }
 
-    // --- MARRYLIST ---
+    // --- COMANDO MARRYLIST ---
     if (/^marrylist$/i.test(command)) {
         const visto = new Set();
         let lista = `*─── [ 💍 𝓛𝓘𝓢𝓣𝓐 𝓓𝓔 𝓟𝓐𝓡𝓔𝓙𝓐𝓢 ] ───*\n\n`;
@@ -87,54 +79,24 @@ const handler = async (m, { conn, command, usedPrefix, text }) => {
         return conn.reply(m.chat, visto.size > 0 ? lista : '*❌ No hay parejas.*', m, { mentions: Array.from(visto) });
     }
 
-    // --- ADOPTAR ---
+    // --- COMANDO ADOPTAR ---
     if (/^adoptar$/i.test(command)) {
         if (!userIsMarried(sender)) return m.reply('*❌ Primero debes estar casado.*');
         const target = m.quoted?.sender || (m.mentionedJid && m.mentionedJid[0]);
         if (!target) return m.reply('*🍼 Menciona a quien quieras adoptar.*');
-        const sentMsg = await conn.reply(m.chat, `*─── [ 🍼 𝓐𝓓𝓞𝓟𝓒𝓘𝓞𝓝 ] ───*\n\n¿Aceptas ser hijo/a de @${sender.split`@`[0]}?\n\n> Responde *acepto* o *rechazo* al mensaje.`, m, { mentions: [sender, target] });
-        confirmation[target] = { proposer: sender, type: 'adopt', msgId: sentMsg.key.id, timeout: setTimeout(() => { delete confirmation[target]; }, 90000) };
+        const sentMsg = await conn.reply(m.chat, `*🍼 @${target.split`@`[0]}*, ¿aceptas ser adoptado por la familia de *@${sender.split`@`[0]}*?\n\n> Responde *acepto* o *rechazo*`, m, { mentions: [sender, target] });
+        confirmation[target] = { proposer: sender, type: 'adopt', msgId: sentMsg.key.id, timeout: setTimeout(() => { delete confirmation[target]; }, 120000) };
     }
 
-    // --- ADOPTAR MASCOTA ---
-    if (/^adoptar_mascota$/i.test(command)) {
-        if (!userIsMarried(sender)) return m.reply('*⚠️ Solo familias casadas.*');
-        const args = text.split(' ');
-        const icons = { perro: '🐶', gato: '🐱', conejo: '🐰', zorro: '🦊' };
-        if (!icons[args[0]] || !args[1]) return m.reply(`*🐾 Uso:* ${usedPrefix}${command} [perro/gato/zorro] [nombre]`);
-        const petData = { type: icons[args[0]], name: args.slice(1).join(' '), hunger: 50, lastFed: Date.now() };
-        marriages[sender].pet = petData;
-        marriages[marriages[sender].partner].pet = petData;
-        saveMarriages();
-        return m.reply(`*✨ ¡Adoptaron a ${petData.name} ${petData.type}!*`);
-    }
-
-    // --- ALIMENTAR ---
-    if (/^alimentar$/i.test(command)) {
-        if (!userIsMarried(sender)) return m.reply('*⚠️ Sin familia.*');
-        const data = marriages[sender];
-        if (!data.pet) return m.reply('*❌ Sin mascota.*');
-        const menu = foodMenu[data.pet.type];
-        if (!text) return m.reply(`*🍱 MENÚ*\n${menu.map((f, i) => `*${i+1}.* ${f.name} (+${f.fill}%)`).join('\n')}`);
-        const idx = parseInt(text) - 1;
-        if (!menu[idx]) return m.reply('*❌ Opción inválida.*');
-        data.pet.hunger = Math.min(100, data.pet.hunger + menu[idx].fill);
-        data.pet.lastFed = Date.now();
-        marriages[sender].pet = data.pet; marriages[data.partner].pet = data.pet;
-        saveMarriages();
-        return m.reply(`*🍖 Alimentaste a ${data.pet.name}. Saciedad: ${data.pet.hunger}%*`);
-    }
-
-    // --- FAMILIA ---
+    // --- COMANDO FAMILIA ---
     if (/^familia$/i.test(command)) {
         if (!userIsMarried(sender)) return m.reply('*⚠️ Sin familia.*');
         const data = marriages[sender];
         let txt = `*─── [ 👨‍👩‍👧‍👦 𝓕𝓐𝓜𝓘𝓛𝓘𝓐 𝓑𝓐𝓡𝓑𝓞𝓩𝓐 ] ───*\n\n*Padres:* @${sender.split`@`[0]} & @${data.partner.split`@`[0]}\n*Unión:* ${formatDate(data.date)}\n`;
-        if (data.pet) txt += `\n*Mascota:* ${data.pet.type} ${data.pet.name}\n*Hambre:* ${data.pet.hunger}%`;
         return conn.reply(m.chat, txt, m, { mentions: [sender, data.partner] });
     }
 
-    // --- DIVORCIO ---
+    // --- COMANDO DIVORCIO ---
     if (/^divorce$/i.test(command)) {
         if (!userIsMarried(sender)) return m.reply('*⚠️ Sin pareja.*');
         const partner = marriages[sender].partner;
@@ -145,31 +107,33 @@ const handler = async (m, { conn, command, usedPrefix, text }) => {
 };
 
 handler.before = async (m, { conn }) => {
-    if (!m.quoted || !m.text || !confirmation[m.sender]) return;
+    // Si no hay confirmación pendiente para quien envía el mensaje, salimos.
+    if (!confirmation[m.sender]) return;
+    
+    const input = (m.text || '').toLowerCase().trim();
     const conf = confirmation[m.sender];
-    if (m.quoted.id !== conf.msgId) return;
 
-    const input = m.text.toLowerCase().trim();
-    const { proposer, type } = conf;
-
-    if (input === 'acepto') {
-        if (type === 'marry') {
-            marriages[proposer] = { partner: m.sender, date: Date.now(), children: [], pet: null };
-            marriages[m.sender] = { partner: proposer, date: Date.now(), children: [], pet: null };
+    // Verificamos "acepto" o "rechazo"
+    if (/^acepto$/i.test(input)) {
+        if (conf.type === 'marry') {
+            marriages[conf.proposer] = { partner: m.sender, date: Date.now(), children: [], pet: null };
+            marriages[m.sender] = { partner: conf.proposer, date: Date.now(), children: [], pet: null };
             saveMarriages();
-            await conn.reply(m.chat, '*💍 ¡Vínculo sellado! Felicidades.*', m);
-        } else if (type === 'adopt') {
-            const partner = marriages[proposer].partner;
+            await conn.reply(m.chat, '*💍 ¡Vínculo sellado! Ahora están unidos oficialmente.*', m);
+        } else if (conf.type === 'adopt') {
+            const partner = marriages[conf.proposer].partner;
             const child = { jid: m.sender, date: Date.now() };
-            marriages[proposer].children.push(child);
+            marriages[conf.proposer].children.push(child);
             marriages[partner].children.push(child);
             saveMarriages();
             await conn.reply(m.chat, '*🍼 ¡Adopción completada!*', m);
         }
         clearTimeout(conf.timeout);
         delete confirmation[m.sender];
-        return true;
-    } else if (input === 'rechazo') {
+        return true; 
+    } 
+    
+    if (/^rechazo$/i.test(input)) {
         await conn.reply(m.chat, '*❌ Propuesta rechazada.*', m);
         clearTimeout(conf.timeout);
         delete confirmation[m.sender];
@@ -177,9 +141,7 @@ handler.before = async (m, { conn }) => {
     }
 };
 
-handler.help = ['marry', 'divorce', 'adoptar', 'adoptar_mascota', 'familia', 'alimentar', 'amor', 'marrylist'];
-handler.tags = ['fun'];
-handler.command = ['marry', 'divorce', 'pareja', 'adoptar', 'adoptar_mascota', 'familia', 'alimentar', 'amor', 'marrylist'];
+handler.command = ['marry', 'divorce', 'pareja', 'adoptar', 'familia', 'amor', 'marrylist'];
 handler.group = true;
 
 export default handler;
