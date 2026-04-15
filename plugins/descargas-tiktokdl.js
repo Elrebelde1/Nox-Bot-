@@ -14,8 +14,9 @@ function loadMarriages() {
         if (typeof data === 'object' && raw[data.partner]?.partner === user) {
             valid[user] = data;
             if (!valid[user].spied) valid[user].spied = [];
+            if (!valid[user].children) valid[user].children = []; // Array para los hijos
         } else if (typeof data === 'string' && raw[data] === user) {
-            valid[user] = { partner: data, date: Date.now(), spied: [] };
+            valid[user] = { partner: data, date: Date.now(), spied: [], children: [] };
         }
     }
     return valid;
@@ -38,18 +39,17 @@ function getDuration(ms) {
 
 const userIsMarried = (user) => Object.hasOwn(marriages, user);
 
-const handler = async (m, { conn, command, usedPrefix }) => {
+const handler = async (m, { conn, command, usedPrefix, text }) => {
     const sender = m.sender;
 
+    // --- COMANDO MARRY ---
     if (/^marry$/i.test(command)) {
         const proposee = m.quoted?.sender || (m.mentionedJid && m.mentionedJid[0]);
         if (!proposee) return m.reply('*🐍 [ ERROR ] ➔ Responde o etiqueta a alguien para la propuesta.*');
         if (proposee === sender) return m.reply('*🤨 No puedes casarte contigo mismo.*');
         
-        // --- BLOQUEO E INFORME DE INFIDELIDAD ---
         if (userIsMarried(proposee)) {
             const partner = marriages[proposee].partner;
-            if (!marriages[proposee].spied) marriages[proposee].spied = [];
             if (!marriages[proposee].spied.includes(sender)) {
                 marriages[proposee].spied.push(sender);
                 marriages[partner].spied.push(sender);
@@ -59,103 +59,134 @@ const handler = async (m, { conn, command, usedPrefix }) => {
             return conn.reply(m.chat, infielTxt, m, { mentions: [partner, sender, proposee] });
         }
 
-        proposals[sender] = proposee;
+        proposals[sender] = { type: 'marriage', target: proposee };
         const confirmationMessage = `*─── [ 💍 𝓑𝓐𝓡𝓑𝓞𝓩𝓐 - 𝓥𝓘𝓝𝓒𝓤𝓛𝓞 ] ───*\n\n*👤 @${sender.split`@`[0]}* solicita un vínculo con *@${proposee.split`@`[0]}*.\n\n¿Aceptas unir tu destino? 💍\n\n> Responde: *Acepto* o *No*`.trim();
 
         const sentMsg = await conn.reply(m.chat, confirmationMessage, m, { mentions: [sender, proposee] });
-        confirmation[proposee] = {
-            proposer: sender,
-            msgId: sentMsg.key.id,
-            timeout: setTimeout(() => {
-                if (confirmation[proposee]) {
-                    conn.sendMessage(m.chat, { text: '*⏰ Tiempo agotado.*' }, { quoted: sentMsg });
-                    delete confirmation[proposee]; delete proposals[sender];
-                }
-            }, 60000)
-        };
+        confirmation[proposee] = { proposer: sender, type: 'marriage', msgId: sentMsg.key.id, timeout: setTimeout(() => {
+            if (confirmation[proposee]) {
+                conn.sendMessage(m.chat, { text: '*⏰ Tiempo agotado.*' }, { quoted: sentMsg });
+                delete confirmation[proposee];
+            }
+        }, 60000)};
+    }
+
+    // --- COMANDO ADOPTAR (HIJOS) ---
+    if (/^adoptar$/i.test(command)) {
+        if (!userIsMarried(sender)) return m.reply('*⚠️ Necesitas estar casado para formar una familia.*');
+        const child = m.quoted?.sender || (m.mentionedJid && m.mentionedJid[0]);
+        if (!child) return m.reply('*🍼 Menciona o responde al mensaje de quien quieres adoptar.*');
+        if (child === sender || child === marriages[sender].partner) return m.reply('*🤨 No puedes adoptarte a ti mismo ni a tu pareja.*');
+
+        proposals[sender] = { type: 'adoption', target: child };
+        const adoptMsg = `*─── [ 🍼 𝓑𝓐𝓡𝓑𝓞𝓩𝓐 - 𝓐𝓓𝓞𝓟𝓒𝓘𝓞𝓝 ] ───*\n\nLa pareja conformada por *@${sender.split`@`[0]}* y *@${marriages[sender].partner.split`@`[0]}* quieren adoptarte como su hijo/a, *@${child.split`@`[0]}*.\n\n¿Aceptas formar parte de su familia? ❤️\n\n> Responde: *Acepto* o *No*`;
+
+        const sentMsg = await conn.reply(m.chat, adoptMsg, m, { mentions: [sender, marriages[sender].partner, child] });
+        confirmation[child] = { proposer: sender, type: 'adoption', msgId: sentMsg.key.id, timeout: setTimeout(() => {
+            if (confirmation[child]) {
+                conn.sendMessage(m.chat, { text: '*⏰ La oferta de adopción expiró.*' }, { quoted: sentMsg });
+                delete confirmation[child];
+            }
+        }, 60000)};
+    }
+
+    // --- COMANDO FAMILIA (VER HIJOS) ---
+    if (/^familia$/i.test(command)) {
+        if (!userIsMarried(sender)) return m.reply('*⚠️ No tienes una familia registrada.*');
+        const data = marriages[sender];
+        const partner = data.partner;
+        let txt = `*─── [ 👨‍👩‍👧‍👦 𝓕𝓐𝓜𝓘𝓛𝓘𝓐 𝓑𝓐𝓡𝓑𝓞𝓩𝓐 ] ───*\n\n`;
+        txt += `*Padres:* @${sender.split`@`[0]} ⚔️ @${partner.split`@`[0]}\n`;
+        txt += `*Tiempo de unión:* ${getDuration(data.date)}\n\n`;
+        txt += `*Hijos:* ${data.children.length > 0 ? '' : 'Ninguno todavía 🍼'}\n`;
+        
+        data.children.forEach((child, i) => {
+            txt += `*${i + 1}.* @${child.split`@`[0]}\n`;
+        });
+        
+        return conn.reply(m.chat, txt, m, { mentions: [sender, partner, ...data.children] });
+    }
+
+    // --- COMANDO ESPIAR ---
+    if (/^espiar$/i.test(command)) {
+        if (!userIsMarried(sender)) return m.reply(`*⚠️ Usa ${usedPrefix}marrylist primero.*`);
+        const partner = marriages[sender].partner;
+        const target = m.quoted?.sender; 
+        if (!target || target !== partner) {
+            return m.reply(`*🕵️‍♂️ Seguridad:* Responde a tu pareja (@${partner.split`@`[0]}) para ver el reporte.`, null, { mentions: [partner] });
+        }
+        const data = marriages[sender];
+        if (!data.spied || data.spied.length === 0) return m.reply('*🛡️ Todo en orden. Nadie ha intentado nada.*');
+        let spyTxt = `*🕵️‍♂️ [ REPORTE DE SEGURIDAD ] 🕵️‍♂️*\n\n⚠️ @${partner.split`@`[0]}, pretendientes de @${sender.split`@`[0]}:\n`;
+        data.spied.forEach((user, i) => { spyTxt += `*${i + 1}.* @${user.split`@`[0]}\n`; });
+        return conn.reply(m.chat, spyTxt, m, { mentions: [...data.spied, partner, sender] });
     }
 
     if (/^marrylist$/i.test(command)) {
         let couples = Object.entries(marriages);
-        if (couples.length === 0) return m.reply('*😶 No hay vínculos registrados.*');
+        if (couples.length === 0) return m.reply('*😶 Sin registros.*');
         let txt = `*─── [ 💘 𝓛𝓘𝓢𝓣𝓐 𝓓𝓔 𝓥𝓘𝓝𝓒𝓤𝓛𝓞𝓢 ] ───*\n\n`;
         let seen = new Set();
-        let count = 0;
         for (let [user, data] of couples) {
             let partner = data.partner;
             if (!seen.has(user) && !seen.has(partner)) {
                 seen.add(user); seen.add(partner);
-                count++;
-                txt += `*${count}.* @${user.split`@`[0]} ⚔️ @${partner.split`@`[0]}\n   🔹 *Tiempo:* ${getDuration(data.date)}\n\n`;
+                txt += `*🔹* @${user.split`@`[0]} ⚔️ @${partner.split`@`[0]} (${getDuration(data.date)})\n`;
             }
         }
-        txt += `> *Para ver pretendientes responde a un mensaje de tu pareja con:* ${usedPrefix}espiar\n*Barboza Bot*`;
         return conn.reply(m.chat, txt, m, { mentions: Array.from(seen) });
     }
 
-    if (/^espiar$/i.test(command)) {
-        if (!userIsMarried(sender)) return m.reply(`*⚠️ Primero debes ver la lista de parejas con ${usedPrefix}marrylist.*`);
-        
-        const partner = marriages[sender].partner;
-        const target = m.quoted?.sender; 
-
-        if (!target || target !== partner) {
-            return m.reply(`*🕵️‍♂️ Seguridad:* Debes responder a un mensaje de tu pareja actual (@${partner.split`@`[0]}) con el comando para ver el reporte de pretendientes.`, null, { mentions: [partner] });
-        }
-
-        const data = marriages[sender];
-        if (!data.spied || data.spied.length === 0) {
-            return conn.reply(m.chat, `*🛡️ REPORTE:* @${partner.split`@`[0]}, nadie ha intentado romper tu vínculo con @${sender.split`@`[0]}. Todo está en orden.`, m, { mentions: [partner, sender] });
-        }
-
-        let spyTxt = `*🕵️‍♂️ [ ALERTA DE SEGURIDAD ] 🕵️‍♂️*\n\n`;
-        spyTxt += `*⚠️ @${partner.split`@`[0]}*, se han detectado los siguientes pretendientes para @${sender.split`@`[0]}:*\n\n`;
-        data.spied.forEach((user, i) => { spyTxt += `*${i + 1}.* @${user.split`@`[0]}\n`; });
-        spyTxt += `\n> *Reporte generado por Barboza Bot*`;
-        
-        return conn.reply(m.chat, spyTxt, m, { mentions: [...data.spied, partner, sender] });
-    }
-
     if (/^divorce$/i.test(command)) {
-        if (!userIsMarried(sender)) return m.reply('*⚠️ No tienes ningún vínculo.*');
+        if (!userIsMarried(sender)) return m.reply('*⚠️ No estás casado.*');
         const partner = marriages[sender].partner;
         delete marriages[sender]; delete marriages[partner];
         saveMarriages();
-        return conn.sendMessage(m.chat, { text: `*🌑 Vínculo roto:* Ahora ambos son libres.\n\n> Barboza Bot`, mentions: [sender, partner] }, { quoted: m });
+        return m.reply('*🌑 Vínculo roto.* Ahora son libres.');
     }
 
     if (/^amor$/i.test(command)) {
-        if (!userIsMarried(sender)) return m.reply('*⚠️ Primero debes estar casado.*');
+        if (!userIsMarried(sender)) return m.reply('*⚠️ No estás casado.*');
         let partner = marriages[sender].partner;
-        let porcentaje = Math.floor(Math.random() * 100);
-        let loveTxt = `*❤️ Medidor de Amor*\n\n*Vínculo:* @${sender.split`@`[0]} x @${partner.split`@`[0]}\n*Porcentaje:* ${porcentaje}%`;
-        return conn.reply(m.chat, loveTxt, m, { mentions: [sender, partner] });
+        let por = Math.floor(Math.random() * 100);
+        return conn.reply(m.chat, `*❤️ Amor entre @${sender.split`@`[0]} y @${partner.split`@`[0]}:* ${por}%`, m, { mentions: [sender, partner] });
     }
 };
 
 handler.before = async (m) => {
     if (!m.text || !m.quoted || m.isBaileys || !confirmation[m.sender]) return;
-    const { proposer, timeout, msgId } = confirmation[m.sender];
+    const { proposer, type, timeout, msgId } = confirmation[m.sender];
     if (m.quoted.id !== msgId) return;
     const txt = m.text.trim().toLowerCase();
+
     if (/^no$/i.test(txt)) {
-        clearTimeout(timeout); delete confirmation[m.sender]; delete proposals[proposer];
-        return conn.reply(m.chat, '*💔 Vínculo rechazado.*', m);
+        clearTimeout(timeout); delete confirmation[m.sender];
+        return conn.reply(m.chat, `*💔 Propuesta de ${type === 'marriage' ? 'vínculo' : 'adopción'} rechazada.*`, m);
     }
+
     if (/^acepto$/i.test(txt)) {
-        let now = Date.now();
-        marriages[proposer] = { partner: m.sender, date: now, spied: [] };
-        marriages[m.sender] = { partner: proposer, date: now, spied: [] };
-        saveMarriages();
-        clearTimeout(timeout); delete confirmation[m.sender]; delete proposals[proposer];
-        const winTxt = `*─── [ 💍 𝓑𝓞𝓓𝓐 𝓒𝓞𝓓𝓘𝓕𝓘𝓒𝓐𝓓𝓐 ] ───*\n\n🎊 *@${proposer.split`@`[0]}* y *@${m.sender.split`@`[0]}* unidos 💞\n\n> *Barboza Bot*`;
-        return conn.sendMessage(m.chat, { text: winTxt, mentions: [proposer, m.sender] }, { quoted: m });
+        clearTimeout(timeout);
+        if (type === 'marriage') {
+            let now = Date.now();
+            marriages[proposer] = { partner: m.sender, date: now, spied: [], children: [] };
+            marriages[m.sender] = { partner: proposer, date: now, spied: [], children: [] };
+            saveMarriages();
+            return conn.reply(m.chat, `*💍 ¡BODA CONFIRMADA!* @${proposer.split`@`[0]} y @${m.sender.split`@`[0]} se han unido. 💞`, m, { mentions: [proposer, m.sender] });
+        }
+        if (type === 'adoption') {
+            const partner = marriages[proposer].partner;
+            marriages[proposer].children.push(m.sender);
+            marriages[partner].children.push(m.sender);
+            saveMarriages();
+            return conn.reply(m.chat, `*🍼 ¡NUEVO HIJO/A!* @${m.sender.split`@`[0]} ahora es parte de la familia de @${proposer.split`@`[0]} y @${partner.split`@`[0]}. ❤️`, m, { mentions: [m.sender, proposer, partner] });
+        }
+        delete confirmation[m.sender];
     }
 };
 
-handler.help = ['marry', 'marrylist', 'divorce', 'amor', 'espiar'];
+handler.help = ['marry', 'marrylist', 'divorce', 'amor', 'espiar', 'adoptar', 'familia'];
 handler.tags = ['fun'];
-handler.command = ['marry', 'marrylist', 'divorce', 'pareja', 'amor', 'espiar'];
+handler.command = ['marry', 'marrylist', 'divorce', 'pareja', 'amor', 'espiar', 'adoptar', 'familia'];
 handler.group = true;
 
 export default handler;
