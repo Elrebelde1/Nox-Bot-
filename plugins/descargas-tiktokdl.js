@@ -6,70 +6,89 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
     let who = m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : false
 
-    // Comandos de Matrimonio
+    // Comando para casarse
     if (command === 'marry' || command === 'casar') {
+        // Validación: Si el que envía el comando ya está casado
         if (marriages[id][m.sender]) {
-            let p = marriages[id][m.sender].partner
-            return m.reply(`*⚠️ Ya estás en un compromiso con @${p.split`@`[0]}.*\n_¡No puedes tener dos vínculos a la vez!_`, null, { mentions: [p] })
+            let pareja = marriages[id][m.sender].partner
+            return m.reply(`*⚠️ Ya posees un vínculo activo con @${pareja.split`@`[0]}.*\n_Para casarte con alguien más, primero debes usar ${usedPrefix}divorce._`, null, { mentions: [pareja] })
         }
         
         if (!who) return m.reply(`*🐍 [ ERROR ] ➔ Etiqueta a la persona con la que deseas sellar tu destino.*`)
         if (who === m.sender) return m.reply('*🤨 No puedes casarte contigo mismo.*')
-        if (marriages[id][who]) return m.reply(`*⚠️ Esa persona ya está unida a alguien más.*`)
+        
+        // Validación: Si la otra persona ya está casada
+        if (marriages[id][who]) {
+            let parejaDeEl = marriages[id][who].partner
+            return m.reply(`*⚠️ Esa persona ya está unida a @${parejaDeEl.split`@`[0]}.*`, null, { mentions: [parejaDeEl] })
+        }
 
-        let str = `*─── [ 💍 𝓢𝓐𝓢𝓔𝓚𝓔 - 𝓑𝓞𝓓𝓐 ] ───*\n\n*👤 @${m.sender.split`@`[0]}* solicita un vínculo con *@${who.split`@`[0]}*.\n\n*¿Aceptas?*\n\n> *⚠️ RESPONDE a este mensaje con "Si" o "No".*`
+        let str = `*─── [ 💍 𝓢𝓐𝓢𝓤𝓚𝓔 - 𝓑𝓞𝓓𝓐 ] ───*\n\n*👤 @${m.sender.split`@`[0]}* solicita un vínculo eterno con *@${who.split`@`[0]}*.\n\n*¿Aceptas este compromiso?*\n\n> *⚠️ RESPONDE a este mensaje escribiendo "Acepto" o "Rechazo".*`
         
         let weddingMsg = await conn.reply(m.chat, str, m, { mentions: [m.sender, who] })
 
-        // Filtro para capturar la respuesta
-        const filter = (msg) => {
-            const isTarget = msg.key.participant === who || msg.participant === who
-            const isReply = msg.message?.extendedTextMessage?.contextInfo?.stanzaId === weddingMsg.key.id
-            return isTarget && isReply && /^(si|sí|no)$/i.test(msg.message?.conversation || msg.message?.extendedTextMessage?.text || '')
-        }
-
         try {
-            // Esperar respuesta por 60 segundos
-            let responseMsg = await conn.waitEvent('messages.upsert', filter, 60000)
-            let body = (responseMsg.messages[0].message.conversation || responseMsg.messages[0].message.extendedTextMessage.text).toLowerCase()
+            let response = await new Promise((resolve, reject) => {
+                let timeout = setTimeout(() => {
+                    conn.ev.off('messages.upsert', handlerMsg)
+                    reject(new Error('timeout'))
+                }, 60000) // 1 minuto para responder
 
-            if (body.includes('si') || body.includes('sí')) {
+                let handlerMsg = async ({ messages }) => {
+                    let msg = messages[0]
+                    if (!msg.message || msg.key.remoteJid !== id || (msg.key.participant || msg.participant) !== who) return
+                    
+                    let cited = msg.message.extendedTextMessage?.contextInfo?.stanzaId
+                    if (cited !== weddingMsg.key.id) return
+
+                    let body = (msg.message.conversation || msg.message.extendedTextMessage?.text || '').trim().toLowerCase()
+
+                    if (body === 'acepto' || body === 'rechazo') {
+                        clearTimeout(timeout)
+                        conn.ev.off('messages.upsert', handlerMsg)
+                        resolve(body)
+                    }
+                }
+                conn.ev.on('messages.upsert', handlerMsg)
+            })
+
+            if (response === 'acepto') {
                 marriages[id][m.sender] = { partner: who, date: Date.now(), status: 'Vínculo Eterno' }
                 marriages[id][who] = { partner: m.sender, date: Date.now(), status: 'Vínculo Eterno' }
-                return conn.reply(m.chat, `*🎊 🎉 ¡EL VÍNCULO SE HA SELLADO! 🎉 🎊*\n\n*@${m.sender.split`@`[0]}* y *@${who.split`@`[0]}* ahora están unidos por el destino.`, m, { mentions: [m.sender, who] })
+                return conn.reply(m.chat, `*🎊 🎉 ¡EL VÍNCULO SE HA SELLADO! 🎉 🎊*\n\n*@${m.sender.split`@`[0]}* y *@${who.split`@`[0]}* ahora están unidos bajo el Sello Eterno.`, m, { mentions: [m.sender, who] })
             } else {
-                return m.reply(`*💔 Rechazado:* *@${who.split`@`[0]}* ha decidido seguir su camino en soledad.`, null, { mentions: [who] })
+                return m.reply(`*💔 Rechazado:* *@${who.split`@`[0]}* ha rechazado la propuesta. El destino los mantendrá separados.`, null, { mentions: [who] })
             }
         } catch (e) {
-            return m.reply('*⏰ Tiempo agotado:* El destino no esperó por nadie. La propuesta ha expirado.')
+            return m.reply('*⏰ Tiempo agotado:* El silencio fue la única respuesta. La propuesta ha expirado.')
         }
     }
 
-    // Comando de Divorcio
+    // Comando para divorcio
     if (command === 'divorce' || command === 'divorciar') {
-        if (!marriages[id][m.sender]) return m.reply('*⚠️ No tienes ningún vínculo activo que romper.*')
+        if (!marriages[id][m.sender]) return m.reply('*⚠️ No tienes ningún vínculo que romper.*')
         let partner = marriages[id][m.sender].partner
         delete marriages[id][partner]
         delete marriages[id][m.sender]
-        return m.reply(`*🌑 Vínculo roto:* El contrato con *@${partner.split`@`[0]}* ha terminado. Vuelves a la soledad.`, null, { mentions: [partner] })
+        return m.reply(`*🌑 Vínculo roto:* Has disuelto tu unión con *@${partner.split`@`[0]}*. Vuelves a la soledad.`, null, { mentions: [partner] })
     }
 
-    // Ver pareja actual
+    // Ver estado de pareja
     if (command === 'pareja' || command === 'boda') {
         let target = who || m.sender
         let data = marriages[id][target]
         if (!data) return m.reply(`*👤 @${target.split`@`[0]} camina en soledad.*`, null, { mentions: [target] })
         
         let partner = data.partner
-        let date = new Date(data.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
+        let date = new Date(data.date).toLocaleDateString('es-ES')
         let statusStr = `*─── [ 📜 𝓔𝓧𝓟𝓔𝓓𝓘𝓔𝓝𝓣𝓔 𝓐𝓜𝓞𝓡𝓞𝓢𝓞 ] ───*\n\n*👤 Usuario:* @${target.split`@`[0]}\n*💍 Compañero/a:* @${partner.split`@`[0]}\n*🗓️ Sello creado:* ${date}\n*✨ Estado:* ${data.status}`
         return conn.reply(m.chat, statusStr, m, { mentions: [target, partner] })
     }
 
-    // Listado de parejas
+    // Listado de parejas del grupo
     if (command === 'parejas') {
         let list = Object.keys(marriages[id])
-        if (list.length === 0) return m.reply('*😶 No hay vínculos registrados en este grupo.*')
+        if (list.length === 0) return m.reply('*😶 No hay vínculos registrados en esta zona.*')
         
         let listStr = `*─── [ 💘 𝓥𝓘𝓝𝓒𝓤𝓛𝓞𝓢 𝓓𝓔𝓛 𝓖𝓡𝓤𝓟𝓞 ] ───*\n\n`
         let seen = new Set()
