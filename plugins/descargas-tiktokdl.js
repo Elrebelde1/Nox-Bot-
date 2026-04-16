@@ -8,15 +8,26 @@ const confirmation = {};
 
 function loadMarriages() {
     if (!fs.existsSync(path.dirname(marriagesFile))) fs.mkdirSync(path.dirname(marriagesFile), { recursive: true });
-    // Estructura: { userJid: { partner: jid, date: timestamp } }
-    return fs.existsSync(marriagesFile) ? JSON.parse(fs.readFileSync(marriagesFile, 'utf8')) : {};
+    if (!fs.existsSync(marriagesFile)) return {};
+    const raw = JSON.parse(fs.readFileSync(marriagesFile, 'utf8'));
+    
+    // Mini-fix: Si los datos viejos no tienen el formato nuevo, los adaptamos
+    for (const user in raw) {
+        if (typeof raw[user] === 'string') {
+            raw[user] = { partner: raw[user], date: Date.now() };
+        }
+    }
+    return raw;
 }
 
 function saveMarriages() {
     fs.writeFileSync(marriagesFile, JSON.stringify(marriages, null, 2));
 }
 
-const userIsMarried = (user) => Object.hasOwn(marriages, user);
+const userIsMarried = (user) => {
+    const m = marriages[user];
+    return m && m.partner && marriages[m.partner];
+};
 
 const handler = async (m, { conn, command, participants }) => {
     const isPropose = /^marry$/i.test(command);
@@ -39,19 +50,22 @@ const handler = async (m, { conn, command, participants }) => {
             let count = 1;
             for (const user in marriages) {
                 const data = marriages[user];
-                const partner = data.partner;
+                const partner = data?.partner;
 
-                // Solo mostrar si ambos están en el grupo y no se han listado ya
-                if (groupParticipants.includes(user) && groupParticipants.includes(partner) && !listed.has(user) && !listed.has(partner)) {
+                if (!partner || listed.has(user)) continue;
+
+                // Verificamos que ambos estén en el grupo
+                if (groupParticipants.includes(user) && groupParticipants.includes(partner)) {
                     listed.add(user);
                     listed.add(partner);
 
-                    const startTime = data.date;
-                    const days = Math.floor((Date.now() - startTime) / (1000 * 60 * 60 * 24));
+                    const startTime = data.date || Date.now();
+                    const diff = Date.now() - startTime;
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
                     const dateStr = new Date(startTime).toLocaleDateString('es-ES');
 
                     text += `*${count}.* @${user.split('@')[0]} ⚔️ @${partner.split('@')[0]}\n`;
-                    text += `   ╰ 📅 *Fecha:* ${dateStr} (${days} días)\n\n`;
+                    text += `   ╰ 📅 *Desde:* ${dateStr} (${days} días)\n\n`;
                     count++;
                 }
             }
@@ -60,66 +74,51 @@ const handler = async (m, { conn, command, participants }) => {
             return conn.reply(m.chat, text, m, { mentions: Array.from(listed) });
         }
 
-        // --- LÓGICA PARA PROPONER (.marry) ---
+        // --- PROPONER (.marry) ---
         if (isPropose) {
-            const proposee = m.quoted?.sender;
-            const proposer = sender;
+            const proposee = m.quoted?.sender || m.mentionedJid?.[0];
+            if (!proposee) throw new Error('Debes responder o mencionar a alguien.');
+            
+            if (userIsMarried(sender)) throw new Error(`Ya tienes un lazo formado con @${marriages[sender].partner.split('@')[0]}`);
+            if (userIsMarried(proposee)) throw new Error(`Esa persona ya tiene un pacto con alguien más.`);
+            if (proposer === proposee) throw new Error('No puedes casarte contigo mismo.');
 
-            if (!proposee) {
-                if (userIsMarried(proposer)) {
-                    return await conn.reply(m.chat, `🦅 Ya caminas junto a *${conn.getName(marriages[proposer].partner)}*\n> Usa *.divorce* para romper los lazos. ⛓️‍💥`, m);
-                }
-                throw new Error('Debes marcar a alguien para proponerle un pacto eterno.');
-            }
-
-            if (proposer === proposee) throw new Error('No puedes restaurar tu clan contigo mismo.');
-            if (userIsMarried(proposer)) throw new Error(`Ya tienes un lazo formado.`);
-            if (userIsMarried(proposee)) throw new Error(`Esa persona ya pertenece a otro clan.`);
-            if (proposals[proposer]) throw new Error('Ya enviaste tu propuesta. Ten paciencia.');
-
-            proposals[proposer] = proposee;
+            proposals[sender] = proposee;
             confirmation[proposee] = {
-                proposer,
+                proposer: sender,
                 timeout: setTimeout(() => {
-                    if (confirmation[proposee]) {
-                        conn.sendMessage(m.chat, { text: '🌑 El tiempo se ha agotado... Las sombras consumieron la propuesta. 🥀' }, { quoted: m });
-                        delete confirmation[proposee];
-                        delete proposals[proposer];
-                    }
+                    delete confirmation[proposee];
+                    delete proposals[sender];
                 }, 60000)
             };
 
-            const confirmationMessage = `   ♱ ──── 𓆩 🍷 𓆪 ──── ♱\n    *𝐏𝐑𝐎𝐏𝐔𝐄𝐒𝐓𝐀 𝐃𝐄 𝐋𝐀𝐙𝐎*\n\n🐈‍⬛ \`${conn.getName(proposer)}\` quiere restaurar su clan contigo, \`${conn.getName(proposee)}\`\n\n¿Aceptarás este destino?\n\n      🌑 𝐒𝐇𝐀𝐑𝐈𝐍𝐆𝐀𝐍 𝐄𝐘𝐄𝐒 🌑\n         ╔════╦════╗\n         ║  .si  ║  .no ║\n         ╚════╩════╝\n> Tienes 60 segundos.`;
-            return await conn.reply(m.chat, confirmationMessage, m);
+            let msg = `   ♱ ──── 𓆩 🍷 𓆪 ──── ♱\n    *𝐏𝐑𝐎𝐏𝐔𝐄𝐒𝐓𝐀 𝐃𝐄 𝐋𝐀𝐙𝐎*\n\n🐈‍⬛ @${sender.split('@')[0]} quiere unir su destino al tuyo, @${proposee.split('@')[0]}\n\n¿Aceptarás?\n\n      🌑 𝐒𝐇𝐀𝐑𝐈𝐍𝐆𝐀𝐍 𝐄𝐘𝐄𝐒 🌑\n         ╔════╦════╗\n         ║  .si  ║  .no ║\n         ╚════╩════╝`;
+            return await conn.reply(m.chat, msg, m, { mentions: [sender, proposee] });
         }
 
-        // --- LÓGICA PARA ACEPTAR (.si) ---
+        // --- ACEPTAR (.si) ---
         if (isAccept) {
-            if (!confirmation[sender]) return; 
-            const { proposer, timeout } = confirmation[sender];
+            const data = confirmation[sender];
+            if (!data) return;
 
             const now = Date.now();
-            marriages[proposer] = { partner: sender, date: now };
-            marriages[sender] = { partner: proposer, date: now };
+            marriages[data.proposer] = { partner: sender, date: now };
+            marriages[sender] = { partner: data.proposer, date: now };
             saveMarriages();
 
-            clearTimeout(timeout);
+            clearTimeout(data.timeout);
             delete confirmation[sender];
-            delete proposals[proposer];
+            delete proposals[data.proposer];
 
-            return conn.sendMessage(m.chat, {
-                text: `𓄿 ─── ✦ ─── 𓄿\n💍 *𝐋𝐀𝐙𝐎 𝐂𝐎𝐍𝐅𝐈𝐑𝐌𝐀𝐃𝐎*\n\n🌌 Han unido sus caminos bajo la luna roja.\n\n*¡Un nuevo poder ha nacido!*\n𓄿 ─── ✦ ─── 𓄿`
-            }, { quoted: m });
+            return conn.reply(m.chat, `𓄿 ─── ✦ ─── 𓄿\n💍 *𝐋𝐀𝐙𝐎 𝐂𝐎𝐍𝐅𝐈𝐑𝐌𝐀𝐃𝐎*\n\n🌌 Han unido sus caminos bajo la luna roja.\n𓄿 ─── ✦ ─── 𓄿`, m);
         }
 
-        // --- RECHAZAR, DIVORCIO Y PARTNER ---
-        if (isReject) {
-            if (!confirmation[sender]) return;
-            const { proposer, timeout } = confirmation[sender];
-            clearTimeout(timeout);
+        // --- OTROS COMANDOS (RECHAZAR, DIVORCIO, PARTNER) ---
+        if (isReject && confirmation[sender]) {
+            clearTimeout(confirmation[sender].timeout);
+            delete proposals[confirmation[sender].proposer];
             delete confirmation[sender];
-            delete proposals[proposer];
-            return conn.sendMessage(m.chat, { text: '🐍 *Has caído en un genjutsu... propuesta rechazada.*' }, { quoted: m });
+            return conn.reply(m.chat, '🐍 *Rechazado... No eres digno de este lazo.*', m);
         }
 
         if (isDivorce) {
@@ -128,23 +127,23 @@ const handler = async (m, { conn, command, participants }) => {
             delete marriages[sender];
             delete marriages[partner];
             saveMarriages();
-            return await conn.reply(m.chat, `🗡️ El lazo se ha cortado. Ahora son extraños de nuevo.`, m);
+            return conn.reply(m.chat, `🗡️ El lazo se ha cortado. El odio es el único camino ahora.`, m);
         }
 
         if (isPartner) {
             if (!userIsMarried(sender)) throw new Error('Caminas solo en la oscuridad.');
-            const data = marriages[sender];
-            const days = Math.floor((Date.now() - data.date) / (1000 * 60 * 60 * 24));
-            return await conn.reply(m.chat, `🦇 Tu compañero es *${conn.getName(data.partner)}*\n\nLlevan unidos *${days}* días.`, m);
+            const info = marriages[sender];
+            const days = Math.floor((Date.now() - info.date) / (1000 * 60 * 60 * 24));
+            return conn.reply(m.chat, `🦇 Tu compañero: @${info.partner.split('@')[0]}\n⌛ Tiempo: *${days}* días.`, m, { mentions: [info.partner] });
         }
 
-    } catch (error) {
-        await conn.reply(m.chat, `⚙️ *Error:* ${error.message}`, m);
+    } catch (e) {
+        conn.reply(m.chat, `⚙️ *Error:* ${e.message}`, m);
     }
 };
 
-handler.tags = ['fun'];
 handler.help = ['marry', 'divorce', 'partner', 'si', 'no', 'marrylist'];
+handler.tags = ['fun'];
 handler.command = ['marry', 'divorce', 'partner', 'si', 'no', 'marrylist'];
 handler.group = true;
 
