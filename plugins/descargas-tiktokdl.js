@@ -4,19 +4,24 @@ import path from 'path';
 // Configuración de la Base de Datos
 const dbPath = path.resolve('media/game/marry.json');
 
-// Función para asegurar que el archivo y la carpeta existan
+// Función para asegurar que el archivo y la carpeta existan con la estructura correcta
 const checkDB = () => {
     const dir = path.dirname(dbPath);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    if (!fs.existsSync(dbPath)) fs.writeFileSync(dbPath, JSON.stringify({ marriages: [] }, null, 2));
+    if (!fs.existsSync(dbPath)) {
+        fs.writeFileSync(dbPath, JSON.stringify({ marriages: [] }, null, 2));
+    }
 };
 
-// Funciones de lectura y escritura seguras
+// Lectura ultra segura
 const readDB = () => {
     checkDB();
     try {
-        return JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
-    } catch {
+        const data = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+        // Si por alguna razón el JSON existe pero no tiene 'marriages', lo arreglamos
+        if (!data || !Array.isArray(data.marriages)) return { marriages: [] };
+        return data;
+    } catch (e) {
         return { marriages: [] };
     }
 };
@@ -25,6 +30,7 @@ const writeDB = (data) => {
     fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
 };
 
+// Mapa temporal para propuestas (se limpia al reiniciar el bot)
 let proposals = new Map();
 
 const handler = async (m, { conn, command, participants }) => {
@@ -32,17 +38,20 @@ const handler = async (m, { conn, command, participants }) => {
     const sender = m.sender;
     const chat = m.chat;
 
-    // Helper: Buscar si alguien ya está casado
-    const getMarriage = (jid) => db.marriages.find(mt => mt.u1 === jid || mt.u2 === jid);
+    // Helper: Buscar si alguien ya está casado (Blindado contra undefined)
+    const getMarriage = (jid) => {
+        if (!db.marriages) return null;
+        return db.marriages.find(mt => mt.u1 === jid || mt.u2 === jid);
+    };
 
     try {
         if (command === 'marry') {
             const target = m.quoted?.sender || m.mentionedJid?.[0];
-            if (!target) throw 'Debes etiquetar o responder al mensaje de tu futuro lazo.';
-            if (target === sender) throw 'No puedes formar un lazo contigo mismo... eso es soledad.';
+            if (!target) throw 'Debes etiquetar o responder a alguien para formar un lazo.';
+            if (target === sender) throw 'No puedes formar un lazo contigo mismo.';
             
-            if (getMarriage(sender)) throw 'Ya tienes un lazo activo. Rómpelo antes de buscar otro.';
-            if (getMarriage(target)) throw 'Esa persona ya juró lealtad a otro clan.';
+            if (getMarriage(sender)) throw 'Ya tienes un lazo activo.';
+            if (getMarriage(target)) throw 'Esa persona ya pertenece a otro clan.';
 
             proposals.set(target, { proposer: sender, time: Date.now() });
 
@@ -57,12 +66,11 @@ const handler = async (m, { conn, command, participants }) => {
 
         if (command === 'si') {
             const prop = proposals.get(sender);
-            if (!prop) return; // Ignorar si no hay propuesta para él
+            if (!prop) return; 
 
-            // Doble check por si se casaron con otro mientras esperaba
             if (getMarriage(sender) || getMarriage(prop.proposer)) {
                 proposals.delete(sender);
-                throw 'Uno de los dos ya ha formado un lazo recientemente.';
+                throw 'Uno de los dos ya ha formado un lazo.';
             }
 
             db.marriages.push({
@@ -86,6 +94,7 @@ const handler = async (m, { conn, command, participants }) => {
 
         if (command === 'marrylist') {
             const groupIds = participants.map(p => p.id);
+            // Filtrar solo los que están en el grupo
             const active = db.marriages.filter(mt => groupIds.includes(mt.u1) && groupIds.includes(mt.u2));
 
             let txt = `   ♱ ─── 𓆩 🍷 𓆪 ─── ♱\n`;
