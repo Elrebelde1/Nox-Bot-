@@ -30,9 +30,6 @@ const handler = async (m, { conn, usedPrefix }) => {
   try {
     const saludo = saludarSegunHora();
     const user = global.db.data.users[m.sender] || { level: 1, exp: 0, limit: 5 };
-    const { level, limit } = user;
-    const totalUsers = Object.keys(global.db.data.users).length;
-    const mode = global.opts?.self ? toStyle('Privado 🔒') : toStyle('Público 🌍');
     const uptime = clockString(process.uptime() * 1000);
     const tagUsuario = `@${m.sender.split('@')[0]}`;
     const userName = (await conn.getName?.(m.sender)) || tagUsuario;
@@ -54,10 +51,9 @@ ${saludo} ${tagUsuario} 👋
 
 ╭━━〔 ⚡ ${toStyle('SASUKE BOT MD')} ⚡ 〕━━⊷
 ┃ 👤 ${toStyle('Usuario')}: ${toStyle(userName)}
-┃ 📊 ${toStyle('Nivel')}: ${level}
-┃ 💎 ${toStyle('Diamantes')}: ${limit}
+┃ 📊 ${toStyle('Nivel')}: ${user.level}
+┃ 💎 ${toStyle('Diamantes')}: ${user.limit}
 ┃ ⏲️ ${toStyle('Uptime')}: ${uptime}
-┃ 🔐 ${toStyle('Modo')}: ${mode}
 ╰━━━━━━━━━━━━━━━⬣
 `.trim();
 
@@ -69,16 +65,15 @@ ${saludo} ${tagUsuario} 👋
 
     const fullMenu = `${header}\n\n${menuBody}`;
 
-    // --- BOTONES DE CANALES ---
     const botones = [
-      { buttonId: `${usedPrefix}c1`, buttonText: { displayText: "📢 𝖢𝖺𝗇𝖺𝗅 1" }, type: 1 },
-      { buttonId: `${usedPrefix}c2`, buttonText: { displayText: "📢 𝖢𝖺𝗇𝖺𝗅 2" }, type: 1 }
+      { buttonId: `.canal1`, buttonText: { displayText: "📢 Canal 1" }, type: 1 },
+      { buttonId: `.canal2`, buttonText: { displayText: "📢 Canal 2" }, type: 1 }
     ]
 
     const buttonMessage = {
       image: { url: imgRandom },
       caption: fullMenu,
-      footer: "𝖡𝗒 𝖡𝖺𝗋𝖻𝗈𝗓𝖺-𝖳𝖾𝖺𝗆 ⚡",
+      footer: "By Barboza-Team ⚡",
       buttons: botones,
       headerType: 4
     }
