@@ -57,7 +57,7 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
 
         const buttonMessage = {
             text: `👤 *𝖲𝖺𝗌𝗎𝗄𝖾 𝖡𝗈𝗍 𝖬𝖣 — 𝖡𝗋𝖺𝗍 𝖢𝗈𝗅𝗈𝗋*\n\n📝 *Texto:* ${textoFinal}\n\n*Elija un color de la lista:*`,
-            footer: "𝖢𝗋𝖾𝖽𝗂𝗍𝗌: 𝖩𝗈𝗍𝖺𝖺.𝗁𝗋𝗓 | 𝖡𝗒 𝖡𝖺𝗋𝖻𝗈𝗓𝖺-𝖳𝖾𝖺𝗆 ⚡",
+            footer: "𝖡𝗒 𝖡𝖺𝗋𝖻𝗈𝗓𝖺-𝖳𝖾𝖺𝗆 ⚡",
             buttons: colores,
             headerType: 1
         }
@@ -65,7 +65,6 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
         return await conn.sendMessage(m.chat, buttonMessage, { quoted: m })
     }
 
-    // --- SISTEMA DE LOADING ---
     let { key } = await conn.sendMessage(m.chat, { text: '⏳ *Procesando su sticker...*' }, { quoted: m })
     
     try {
@@ -87,7 +86,6 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
 
         fs.writeFileSync(img, response.data)
 
-        // Conversión optimizada
         await new Promise((resolve, reject) => {
             exec(`ffmpeg -i ${img} -vcodec libwebp -filter:v "scale=512:512:force_original_aspect_ratio=increase,fps=fps=20" ${webp}`, (err) => {
                 if (err) reject(err)
@@ -95,21 +93,20 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
             })
         })
 
-        await conn.sendMessage(m.chat, { text: '✅ *¡Listo! Enviando...*', edit: key })
-
         await conn.sendMessage(m.chat, { 
             sticker: fs.readFileSync(webp), 
             packname: pack, 
             author: auth 
         }, { quoted: m })
 
-        // Borrar mensaje de loading y archivos temporales
-        await conn.sendMessage(m.chat, { delete: key })
+        // Se edita el mensaje final en lugar de borrarlo
+        await conn.sendMessage(m.chat, { text: '✅ *¡Sticker enviado con éxito!*', edit: key })
+
         fs.unlinkSync(img)
         fs.unlinkSync(webp)
 
     } catch (e) {
-        await conn.sendMessage(m.chat, { text: '❌ *Ocurrió un error al generar el sticker.*', edit: key })
+        await conn.sendMessage(m.chat, { text: '❌ *Error al generar el sticker.*', edit: key })
         console.error(e)
     }
 }
