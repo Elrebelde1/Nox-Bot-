@@ -7,7 +7,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     try {
         if (m.react) m.react('⌛')
 
-        const apiUrl = `https://sylphy.xyz/tools/brat?text=${encodeURIComponent(text)}&color=Negro&fondo=Blanco&type=Anim&api_key=sylphy-6f150d`
+        const apiUrl = `https://sylphyy.xyz/tools/brat?text=${encodeURIComponent(text)}&color=Negro&fondo=Blanco&type=Anim&api_key=sylphy-6f150d`
 
         const response = await axios.get(apiUrl, { responseType: 'arraybuffer' })
         const buffer = Buffer.from(response.data)
