@@ -1,5 +1,3 @@
-// Codigo base por Jotaa.hrz
-// Modificado y Adaptado por Barboza-Team 
 import axios from 'axios'
 import fs from 'fs'
 import { exec } from 'child_process'
@@ -70,8 +68,13 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
     try {
         await m.react('🪄')
 
-        const apiKey = "yosoyyo_sk_u8qjoidy"
-        const apiUrl = `https://yosoyyo-api-ofc.onrender.com/api/brat?text=${encodeURIComponent(textoFinal)}&color=${color.trim().toLowerCase()}&apiKey=${apiKey}`
+        // Configuración de la nueva API
+        const apiKey = "sylphy-6f150d"
+        const colorFondo = color.trim().toLowerCase()
+        // La API pide color de letra y fondo. Por defecto: Letra Negra para fondos claros.
+        const colorLetra = (colorFondo === 'negro' || colorFondo === 'azul' || colorFondo === 'rojo') ? 'Blanco' : 'Negro'
+        
+        const apiUrl = `https://sylphyy.xyz/tools/brat?text=${encodeURIComponent(textoFinal)}&color=${colorLetra}&fondo=${colorFondo}&type=José&api_key=${apiKey}`
 
         const response = await axios.get(apiUrl, { responseType: 'arraybuffer' })
 
