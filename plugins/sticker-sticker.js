@@ -8,13 +8,22 @@ import { join } from 'path'
 let handler = async (m, { conn, args, usedPrefix, command }) => {
   let stiker = false
 
-  // ϟ ʀᴜᴛᴀ ᴅᴇ ʟᴀ ɪᴍᴀɢᴇɴ ᴅᴇʟ ᴄᴀᴛᴀʟᴏɢᴏ
   const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
   let catalogoImg
   if (existsSync(pathImg)) {
     catalogoImg = readFileSync(pathImg)
   } else {
     catalogoImg = { url: 'https://files.catbox.moe/t7uytz.png' }
+  }
+
+  // --- FUNCIÓN PARA ENVIAR LOS CANALES ---
+  // Se activa si el usuario escribe o presiona el botón que mande "ver_canales"
+  if (m.text === 'ver_canales') {
+    let txtCanales = `✨ *¡Hola! Me harías muy feliz si sigues nuestros canales oficiales.* 👤⚡\n\n`
+    txtCanales += `📢 *Canal 1:* https://whatsapp.com/channel/0029Vb8kvXUBfxnzYWsbS81I\n\n`
+    txtCanales += `🚀 *Canal 2:* https://whatsapp.com/channel/0029VbBbaFCAO7RL7UEhBD2F\n\n`
+    txtCanales += `*By Barboza-Team* ⚡`
+    return await conn.reply(m.chat, txtCanales, m)
   }
 
   try {
@@ -53,7 +62,6 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     if (stiker) {
       conn.sendFile(m.chat, stiker, 'sticker.webp', '', m)
     } else {
-      // ϟ ᴍᴇɴsᴀᴊᴇ ᴄᴏɴ ᴇsᴛɪʟᴏ ᴜᴄʜɪʜᴀ sᴍᴀʟʟ ᴄᴀᴘs
       let txt = `╭─〔 ♆ *ᴜᴄʜɪʜᴀ sᴛɪᴄᴋᴇʀ* ♆ 〕─╮\n`
       txt += `│\n`
       txt += `│ 👁️ *ᴇɴᴠɪᴀ ᴜɴᴀ ɪᴍᴀɢᴇɴ ᴏ ᴠɪᴅᴇᴏ* \n`
@@ -61,15 +69,20 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
       txt += `│\n`
       txt += `│ ⏳ *ᴛɪᴇᴍᴘᴏ ʟɪᴍɪᴛᴇ:* 15s\n`
       txt += `│\n`
-      txt += `│ 🔗 *ᴏ ᴜsᴀ ᴜɴ ᴇɴʟᴀᴄᴇ:*\n`
-      txt += `│     ${usedPrefix + command} ᴜʀʟ\n`
-      txt += `│\n`
       txt += `│ 🌑 "ʟᴀ ᴏsᴄᴜʀɪᴅᴀᴅ ᴇs ᴍɪ ɢᴜɪᴀ"\n`
       txt += `╰────────────────────────────╯`
 
+      // --- BOTÓN QUE MANDA EL MENSAJE DE CANALES ---
+      const botones = [
+        { buttonId: `ver_canales`, buttonText: { displayText: "📢 Sigue mis Canales" }, type: 1 }
+      ]
+
       await conn.sendMessage(m.chat, {
         image: catalogoImg.byteLength ? catalogoImg : { url: catalogoImg.url },
-        caption: txt
+        caption: txt,
+        footer: "By Barboza-Team ⚡",
+        buttons: botones,
+        headerType: 4
       }, { quoted: m })
     }
   }
@@ -77,7 +90,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 
 handler.help = ['stiker <img>', 'sticker <url>']
 handler.tags = ['sticker']
-handler.command = ['s', 'sticker', 'stiker']
+handler.command = ['s', 'sticker', 'stiker', 'ver_canales'] // Añadimos 'ver_canales' a los comandos permitidos
 
 export default handler
 
