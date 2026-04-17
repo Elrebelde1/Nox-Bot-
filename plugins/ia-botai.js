@@ -9,7 +9,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   try {
     // Configuración de la nueva API
     const apiKey = "sylphy-6f150d";
-    const url = `https://sylphy.xyz/ai/copilot?text=${encodeURIComponent(text)}&api_key=${apiKey}`;
+    const url = `https://sylphyy.xyz/ai/copilot?text=${encodeURIComponent(text)}&api_key=${apiKey}`;
     
     const res = await fetch(url);
     const data = await res.json();
