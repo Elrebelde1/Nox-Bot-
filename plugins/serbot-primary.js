@@ -49,6 +49,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
 handler.help = ['voz <texto>']
 handler.tags = ['tools']
-handler.command = /^voz|tts|decir$/i
+handler.command = /^voz|decir$/i
 
 export default handler
