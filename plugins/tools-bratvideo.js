@@ -8,25 +8,26 @@ let handler = async (m, { conn, usedPrefix, command, text }) => {
     let textoFinal = txt || m.quoted?.text || text
 
     if (!textoFinal) {
-        return conn.reply(m.chat, `👁️‍🗨️ *MIS OJOS PUEDEN VER TU VACÍO...*\n\nEscribe el texto que deseas imbuir en mi sello.\n💡 *Ejemplo:* ${usedPrefix + command} Mi camino es la oscuridad`, m)
+        return conn.reply(m.chat, `👁️‍🗨️ *MIS OJOS LO VEN TODO...*\n\nEscribe el texto que quieres convertir en sticker.\n💡 *Ejemplo:* ${usedPrefix + command} Barboza manda aquí`, m)
     }
 
+    // Convertir a mayúsculas para el estilo Brat
     textoFinal = textoFinal.toUpperCase().trim()
 
-    // --- MENÚ DE SELECCIÓN MEJORADO ---
+    // --- MENÚ DE SELECCIÓN ---
     if (!color) {
         const colores = [
             { buttonId: `${usedPrefix + command} ${textoFinal}|Blanco`, buttonText: { displayText: "Sasuke - Blanco ⚪" }, type: 1 },
             { buttonId: `${usedPrefix + command} ${textoFinal}|Verde`, buttonText: { displayText: "Sasuke - Verde 🟢" }, type: 1 },
             { buttonId: `${usedPrefix + command} ${textoFinal}|Rojo`, buttonText: { displayText: "Sasuke - Rojo 🔴" }, type: 1 },
             { buttonId: `${usedPrefix + command} ${textoFinal}|Azul`, buttonText: { displayText: "Sasuke - Azul 🔵" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|Rosa`, buttonText: { displayText: "Sasuke - Rosa 🌸" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|Amarillo`, buttonText: { displayText: "Sasuke - Amarillo 🟡" }, type: 1 },
             { buttonId: `${usedPrefix + command} ${textoFinal}|Random`, buttonText: { displayText: "Sasuke - Aleatorio 🌀" }, type: 1 }
         ]
 
         const buttonMessage = {
-            text: `⚔️ *SASUKE UCHIHA - BRAT V* ⚔️\n\n📝 *Sello:* "${textoFinal}"\n\n🔥 *¿Qué elemento de chakra deseas manifestar?*`,
-            footer: "D e v  b y  B a r b o z a  x  S a s u k e 🧬",
+            text: `⚔️ *SASUKE UCHIHA - GENERADOR* ⚔️\n\n📝 *Tu texto:* "${textoFinal}"\n\n🔥 *Elige un color para tu sticker animado:*`,
+            footer: "Dev by Barboza x Sasuke 🧬",
             buttons: colores,
             headerType: 1
         }
@@ -35,37 +36,38 @@ let handler = async (m, { conn, usedPrefix, command, text }) => {
 
     let key 
     try {
-        // --- LÓGICA ALEATORIA ---
+        // --- LÓGICA DE COLOR ALEATORIO ---
         let colorFondo = color.trim()
         if (colorFondo === 'Random') {
             const list = ['Blanco', 'Verde', 'Rojo', 'Azul', 'Amarillo', 'Rosa']
             colorFondo = list[Math.floor(Math.random() * list.length)]
         }
 
-        // Fase 1: Inicio
-        const { key: msgKey } = await conn.sendMessage(m.chat, { text: '👁️‍🗨️ *Has despertado mi curiosidad... Activando Sharingan.*' }, { quoted: m })
+        // FASE 1: ESPAÑOL CLARO
+        const { key: msgKey } = await conn.sendMessage(m.chat, { text: '👁️‍🗨️ *Leyendo tu mensaje... Preparando el diseño.*' }, { quoted: m })
         key = msgKey
 
         const apiKey = "sylphy-6f150d"
         let letraColor = (['negro', 'azul', 'morado'].includes(colorFondo.toLowerCase())) ? 'Blanco' : 'Negro'
 
-        // Fase 2: Progreso
+        // FASE 2: ESPAÑOL CLARO
         await new Promise(res => setTimeout(res, 1000))
-        await conn.sendMessage(m.chat, { text: `⚡ *¡Katon! Impregnando "${colorFondo}" en el pergamino...*`, edit: key })
+        await conn.sendMessage(m.chat, { text: `⚡ *Creando animación con fondo color ${colorFondo.toLowerCase()}...*`, edit: key })
 
         const apiUrl = `https://sylphyy.xyz/tools/brat?text=${encodeURIComponent(textoFinal)}&color=${letraColor}&fondo=${colorFondo}&type=Anim&api_key=${apiKey}`
         const response = await axios.get(apiUrl, { responseType: 'arraybuffer' })
         const buffer = Buffer.from(response.data)
 
-        // Fase 3: Conclusión
+        // FASE 3: MENSAJE FINAL ÉPICO
         await new Promise(res => setTimeout(res, 1000))
-        const frases = [
-            '🌑 *La oscuridad es mi aliada. Aquí tienes tu poder.*',
-            '🐍 *Orochimaru me enseñó más que simples trucos... Mira.*',
-            '⚔️ *He cortado el pasado. El sticker está listo.*',
-            '🔥 *Amaterasu... el fuego negro ha forjado esto.*'
+        const frasesCierre = [
+            '🌑 *Aquí tienes lo que buscabas. Admira mi poder.*',
+            '⚔️ *Terminado. No me hagas perder el tiempo otra vez.*',
+            '🐍 *El proceso ha sido un éxito. Disfruta tu sticker.*',
+            '🔥 *Hecho. Mi poder no tiene límites.*'
         ]
-        await conn.sendMessage(m.chat, { text: frases[Math.floor(Math.random() * frases.length)], edit: key })
+        const finalMsg = frasesCierre[Math.floor(Math.random() * frasesCierre.length)]
+        await conn.sendMessage(m.chat, { text: finalMsg, edit: key })
 
         let pack = `Barboza x Sasuke 🧬`
         let author = `Uchiha Clan`
@@ -74,15 +76,11 @@ let handler = async (m, { conn, usedPrefix, command, text }) => {
         if (stiker) {
             await conn.sendFile(m.chat, stiker, 'bratv.webp', '', m)
             if (m.react) await m.react('🔥')
-            
-            // --- MEJORA: AUDIO DE INVOCACIÓN ---
-            // Solo si tienes los audios en tu bot, si no, puedes quitar esta línea
-            // await conn.sendMessage(m.chat, { audio: { url: './media/chidori.mp3' }, fileName: 'chidori.mp3', mimetype: 'audio/mpeg', ptt: true }, { quoted: m })
         }
 
     } catch (e) {
         console.error(e)
-        if (key) await conn.sendMessage(m.chat, { text: '❌ *Tsk... Mi chakra se ha agotado. Inténtalo más tarde.*', edit: key })
+        if (key) await conn.sendMessage(m.chat, { text: '❌ *Hubo un error al conectar con el servidor. Inténtalo de nuevo.*', edit: key })
     }
 }
 
