@@ -15,7 +15,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     const basePrompt = "Tu nombre es Gemini. Eres un asistente útil y amable. Debes responder SIEMPRE en español, de forma detallada y profesional.";
     
     // Construcción de la URL de forma segura
-    const endpoint = new URL("https://sylphy.xyz/ai/gemini");
+    const endpoint = new URL("https://sylphyy.xyz/ai/gemini");
     endpoint.searchParams.append("q", text);
     endpoint.searchParams.append("prompt", basePrompt);
     endpoint.searchParams.append("api_key", apiKey);
