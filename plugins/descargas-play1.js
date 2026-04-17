@@ -1,13 +1,46 @@
 import fetch from "node-fetch"
 import yts from 'yt-search'
+import { readFileSync, existsSync } from 'fs'
+import { join } from 'path'
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text.trim()) return conn.reply(m.chat, `⚠️ ɪɴɢʀᴇsᴇ ᴇʟ ɴᴏᴍʙʀᴇ ᴏ ʟɪɴᴋ ᴅᴇ ʏᴏᴜᴛᴜʙᴇ.`, m)
+    // Si no hay texto, enviamos el mensaje de ayuda con el botón de canales
+    if (!text.trim()) {
+        const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
+        let catalogoImg
+        if (existsSync(pathImg)) {
+            catalogoImg = readFileSync(pathImg)
+        } else {
+            catalogoImg = { url: 'https://files.catbox.moe/t7uytz.png' }
+        }
+
+        let txt = `╭─〔 ♆ *ᴜᴄʜɪʜᴀ ʏᴏᴜᴛᴜʙᴇ* ♆ 〕─╮\n`
+        txt += `│\n`
+        txt += `│ 🎬 *ᴜsᴏ ᴄᴏʀʀᴇᴄᴛᴏ:* \n`
+        txt += `│ ${usedPrefix + command} [nombre o link]\n`
+        txt += `│\n`
+        txt += `│ 🎵 *ᴇᴊᴇᴍᴘʟᴏ ᴀᴜᴅɪᴏ:* ${usedPrefix}play gatita\n`
+        txt += `│ 📺 *ᴇᴊᴇᴍᴘʟᴏ ᴠɪᴅᴇᴏ:* ${usedPrefix}play2 gatita\n`
+        txt += `│\n`
+        txt += `│ 🌑 "ʙᴜsᴄᴀ ᴛᴜ ᴅᴇsᴛɪɴᴏ ᴇɴ ʟᴀ ᴍᴜsɪᴄᴀ"\n`
+        txt += `╰────────────────────────────╯`
+
+        const botones = [
+            { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
+        ]
+
+        return await conn.sendMessage(m.chat, {
+            image: catalogoImg.byteLength ? catalogoImg : { url: catalogoImg.url },
+            caption: txt,
+            footer: "By Barboza-Team ⚡",
+            buttons: botones,
+            headerType: 4
+        }, { quoted: m })
+    }
 
     try {
         if (m.react) await m.react('⏳')
 
-        // 🔍 Buscador de YouTube
         const search = await yts(text)
         if (!search || !search.all || search.all.length === 0) {
             if (m.react) await m.react('❌')
@@ -23,7 +56,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         let selectedServer = ""
 
         if (isAudio) {
-            // 🎵 Intento 1: Delirius API v1
             try {
                 const res = await fetch(`https://api.delirius.store/download/ytmp3?url=${encodeURIComponent(videoUrl)}`)
                 const json = await res.json()
@@ -31,11 +63,8 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                     downloadUrl = json.data.download
                     selectedServer = "Delirius V1"
                 }
-            } catch {
-                console.log("Fallo Delirius v1, intentando v2...")
-            }
+            } catch { console.log("Error V1") }
 
-            // 🎵 Intento 2: Delirius API v2 (Si el primero falló)
             if (!downloadUrl) {
                 try {
                     const res = await fetch(`https://api.delirius.store/download/ytmp3v2?url=${encodeURIComponent(videoUrl)}`)
@@ -44,12 +73,9 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                         downloadUrl = json.data.download
                         selectedServer = "Delirius V2"
                     }
-                } catch (e) {
-                    console.error("Error en Delirius v2:", e)
-                }
+                } catch (e) { console.error(e) }
             }
         } else {
-            // 📺 Petición a Sylphy v2 para Video
             try {
                 const apiKey = 'sylphy-6f150d'
                 const apiUrl = `https://sylphyy.xyz/download/v2/ytmp4?url=${encodeURIComponent(videoUrl)}&api_key=${apiKey}`
@@ -59,14 +85,12 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                     downloadUrl = json.result.dl_url
                     selectedServer = "Sylphy V2"
                 }
-            } catch (e) {
-                console.error("Error en Sylphy v2:", e)
-            }
+            } catch (e) { console.error(e) }
         }
 
         if (!downloadUrl) {
             if (m.react) await m.react('❌')
-            return conn.reply(m.chat, `🛑 ᴇʀʀᴏʀ: ɴᴏ sᴇ ᴘᴜᴅᴏ ᴏʙᴛᴇɴᴇʀ ᴇʟ ᴇɴʟᴀᴄᴇ ᴅᴇ ᴅᴇsᴄᴀʀɢᴀ.`, m)
+            return conn.reply(m.chat, `🛑 ᴇʀʀᴏʀ: ɴᴏ sᴇ ᴘᴜᴅᴏ ᴏʙᴛᴇɴᴇʀ ᴇʟ ᴇɴʟᴀᴄᴇ.`, m)
         }
 
         let info = `╭─〔 ♆ *ᴜᴄʜɪʜᴀ ʏᴏᴜᴛᴜʙᴇ* ♆ 〕─╮\n`
