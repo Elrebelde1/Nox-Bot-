@@ -1,7 +1,9 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { xpRange } from '../lib/levelling.js';
 import axios from 'axios';
 
+// --- FUNCIÓN PARA EL ESTILO DE LETRA ---
 const toStyle = (text) => {
   if (!text) return '';
   const normal = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.<>!¡-';
@@ -26,6 +28,8 @@ const saludarSegunHora = () => {
   return `🌙 ${toStyle('¡Buenas noches!')}`;
 };
 
+const sectionDivider = '╰━━━━━━━━━━━━━━━⬣';
+
 const handler = async (m, { conn, usedPrefix }) => {
   try {
     const saludo = saludarSegunHora();
@@ -34,6 +38,7 @@ const handler = async (m, { conn, usedPrefix }) => {
     const totalUsers = Object.keys(global.db.data.users).length;
     const mode = global.opts?.self ? toStyle('Privado 🔒') : toStyle('Público 🌍');
     const uptime = clockString(process.uptime() * 1000);
+
     const tagUsuario = `@${m.sender.split('@')[0]}`;
     const userName = (await conn.getName?.(m.sender)) || tagUsuario;
 
@@ -49,12 +54,6 @@ const handler = async (m, { conn, usedPrefix }) => {
         cmds.forEach(cmd => categorizedCommands[tag].add(toStyle(usedPrefix + cmd)));
       });
 
-    const menuBody = Object.entries(categorizedCommands).map(([title, cmds]) => {
-      const styledTitle = toStyle(title.toUpperCase());
-      const list = [...cmds].map(cmd => `┃  » ⚡ ${cmd}`).join('\n');
-      return `╭━━〔 📂 ${styledTitle} 〕━━⊷\n${list}\n╰━━━━━━━━━━━━━━━⬣`;
-    }).join('\n\n');
-
     const header = `
 ${saludo} ${tagUsuario} 👋
 
@@ -63,55 +62,40 @@ ${saludo} ${tagUsuario} 👋
 ┃ 📊 ${toStyle('Nivel')}: ${level}
 ┃ 💎 ${toStyle('Diamantes')}: ${limit}
 ┃ ⏲️ ${toStyle('Uptime')}: ${uptime}
-┃ 👥 ${toStyle('Usuarios')}: ${totalUsers}
 ┃ 🔐 ${toStyle('Modo')}: ${mode}
+╰━━━━━━━━━━━━━━━⬣
+
+╭━━〔 📢 ${toStyle('CANALES OFICIALES')} 〕━━⊷
+┃ 🌟 ${toStyle('Canal')} 1:
+┃ https://whatsapp.com/channel/0029Vb8kvXUBfxnzYWsbS81I
+┃
+┃ 🚀 ${toStyle('Canal')} 2:
+┃ https://whatsapp.com/channel/0029VbBbaFCAO7RL7UEhBD2F
 ╰━━━━━━━━━━━━━━━⬣
 `.trim();
 
+    const menuBody = Object.entries(categorizedCommands).map(([title, cmds]) => {
+      const styledTitle = toStyle(title.toUpperCase());
+      const list = [...cmds].map(cmd => `┃  » ⚡ ${cmd}`).join('\n');
+      return `╭━━〔 📂 ${styledTitle} 〕━━⊷\n${list}\n${sectionDivider}`;
+    }).join('\n\n');
+
     const fullMenu = `${header}\n\n${menuBody}`;
 
-    // --- CONFIGURACIÓN DE BOTONES CON ENLACE DIRECTO ---
-    const buttonParamsJson = JSON.stringify({
-      title: "𝖴𝗇𝗂𝗋𝗌𝖾 𝖺 𝗅𝗈𝗌 𝖢𝖺𝗇𝖺𝗅𝖾𝗌 ⚡",
-      sections: [
-        {
-          title: "𝖮𝖯𝖢𝖨𝖮𝖭𝖤𝖲 𝖣𝖤 𝖢𝖠𝖭𝖠𝖫",
-          rows: [
-            { title: "📢 𝖢𝖺𝗇𝖺𝗅 1", description: "𝖴𝗇𝗂𝗋𝗌𝖾 𝖺𝗅 𝖢𝖺𝗇𝖺𝗅 principal", id: "canal1" },
-            { title: "📢 𝖢𝖺𝗇𝖺𝗅 2", description: "𝖴𝗇𝗂𝗋𝗌𝖾 𝖺𝗅 𝖢𝖺𝗇𝖺𝗅 secundario", id: "canal2" }
-          ]
-        }
-      ]
-    });
+    const botones = [
+      { buttonId: `${usedPrefix}ping`, buttonText: { displayText: "🚀 𝖵𝖾𝗅𝗈𝖼𝗂𝖽𝖺𝖽" }, type: 1 },
+      { buttonId: `${usedPrefix}owner`, buttonText: { displayText: "👤 𝖢𝗋𝖾𝖺𝖽𝗈𝗋" }, type: 1 }
+    ]
 
-    // Esta es la forma en que los botones abren links hoy en día:
-    const buttons = [
-      {
-        name: "cta_url",
-        buttonParamsJson: JSON.stringify({
-          display_text: "📢 𝖢𝖺𝗇𝖺𝗅 1",
-          url: "https://whatsapp.com/channel/0029Vb8kvXUBfxnzYWsbS81I",
-          merchant_url: "https://whatsapp.com/channel/0029Vb8kvXUBfxnzYWsbS81I"
-        })
-      },
-      {
-        name: "cta_url",
-        buttonParamsJson: JSON.stringify({
-          display_text: "📢 𝖢𝖺𝗇𝖺𝗅 2",
-          url: "https://whatsapp.com/channel/0029VbBbaFCAO7RL7UEhBD2F",
-          merchant_url: "https://whatsapp.com/channel/0029VbBbaFCAO7RL7UEhBD2F"
-        })
-      }
-    ];
-
-    await conn.sendMessage(m.chat, {
+    const buttonMessage = {
       image: { url: imgRandom },
       caption: fullMenu,
-      footer: "𝖯𝗈𝗐𝖾𝗋𝖾𝖽 𝖡𝗒 𝖡𝖺𝗋𝖻𝗈𝗓𝖺-𝖳𝖾𝖺𝗆 ⚡",
-      buttons: buttons,
-      headerType: 4,
-      viewOnce: true
-    }, { quoted: m });
+      footer: "𝖡𝗒 𝖡𝖺𝗋𝖻𝗈𝗓𝖺-𝖳𝖾𝖺𝗆 ⚡",
+      buttons: botones,
+      headerType: 4
+    }
+
+    return await conn.sendMessage(m.chat, buttonMessage, { quoted: m })
 
   } catch (e) {
     console.error(e);
