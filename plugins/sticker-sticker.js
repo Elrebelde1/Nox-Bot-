@@ -16,16 +16,6 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     catalogoImg = { url: 'https://files.catbox.moe/t7uytz.png' }
   }
 
-  // --- FUNCIÓN PARA ENVIAR LOS CANALES ---
-  // Se activa si el usuario escribe o presiona el botón que mande "ver_canales"
-  if (m.text === 'ver_canales') {
-    let txtCanales = `✨ *¡Hola! Me harías muy feliz si sigues nuestros canales oficiales.* 👤⚡\n\n`
-    txtCanales += `📢 *Canal 1:* https://whatsapp.com/channel/0029Vb8kvXUBfxnzYWsbS81I\n\n`
-    txtCanales += `🚀 *Canal 2:* https://whatsapp.com/channel/0029VbBbaFCAO7RL7UEhBD2F\n\n`
-    txtCanales += `*By Barboza-Team* ⚡`
-    return await conn.reply(m.chat, txtCanales, m)
-  }
-
   try {
     let q = m.quoted ? m.quoted : m
     let mime = (q.msg || q).mimetype || q.mediaType || ''
@@ -72,9 +62,9 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
       txt += `│ 🌑 "ʟᴀ ᴏsᴄᴜʀɪᴅᴀᴅ ᴇs ᴍɪ ɢᴜɪᴀ"\n`
       txt += `╰────────────────────────────╯`
 
-      // --- BOTÓN QUE MANDA EL MENSAJE DE CANALES ---
+      // --- BOTÓN "Ver Canales" ---
       const botones = [
-        { buttonId: `ver_canales`, buttonText: { displayText: "📢 Sigue mis Canales" }, type: 1 }
+        { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
       ]
 
       await conn.sendMessage(m.chat, {
@@ -90,8 +80,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 
 handler.help = ['stiker <img>', 'sticker <url>']
 handler.tags = ['sticker']
-handler.command = ['s', 'sticker', 'stiker', 'ver_canales'] // Añadimos 'ver_canales' a los comandos permitidos
-
+handler.command = ['s', 'sticker', 'stiker']
 export default handler
 
 const isUrl = (text) => {
