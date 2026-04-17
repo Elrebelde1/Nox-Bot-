@@ -14,15 +14,15 @@ let handler = async (m, { conn, usedPrefix, command, text }) => {
     // Estética Brat (Mayúsculas automáticas)
     textoFinal = textoFinal.toUpperCase().trim()
 
-    // Menú de selección con estilo Uchiha
+    // Menú de selección con el formato solicitado
     if (!color) {
         const colores = [
-            { buttonId: `${usedPrefix + command} ${textoFinal}|Blanco`, buttonText: { displayText: "Pergamino Blanco ⚪" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|Verde`, buttonText: { displayText: "Bosque de la Muerte 🟢" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|Rojo`, buttonText: { displayText: "Sharingan Eterno 🔴" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|Azul`, buttonText: { displayText: "Chidori Negro 🔵" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|Amarillo`, buttonText: { displayText: "Destello Relámpago 🟡" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|Rosa`, buttonText: { displayText: "Flor de Cerezo 🌸" }, type: 1 }
+            { buttonId: `${usedPrefix + command} ${textoFinal}|Blanco`, buttonText: { displayText: "Sasuke - Blanco ⚪" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|Verde`, buttonText: { displayText: "Sasuke - Verde 🟢" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|Rojo`, buttonText: { displayText: "Sasuke - Rojo 🔴" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|Azul`, buttonText: { displayText: "Sasuke - Azul 🔵" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|Amarillo`, buttonText: { displayText: "Sasuke - Amarillo 🟡" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|Rosa`, buttonText: { displayText: "Sasuke - Rosa 🌸" }, type: 1 }
         ]
 
         const buttonMessage = {
@@ -35,9 +35,9 @@ let handler = async (m, { conn, usedPrefix, command, text }) => {
         return await conn.sendMessage(m.chat, buttonMessage, { quoted: m })
     }
 
-    let key // Para editar el mensaje
+    let key 
     try {
-        // Fase 1: Inicio del Jutsu
+        // Fase 1: Inicio del Jutsu (Mensaje que no se borra)
         const { key: msgKey } = await conn.sendMessage(m.chat, { text: '👁️‍🗨️ *Activando el Sharingan... Analizando tu texto.*' }, { quoted: m })
         key = msgKey
 
@@ -63,7 +63,6 @@ let handler = async (m, { conn, usedPrefix, command, text }) => {
         let stiker = await sticker(buffer, false, pack, author)
 
         if (stiker) {
-            // Enviamos el sticker y dejamos el mensaje anterior como testigo del poder
             await conn.sendFile(m.chat, stiker, 'bratv.webp', '', m)
             if (m.react) await m.react('🐍')
         }
@@ -75,7 +74,6 @@ let handler = async (m, { conn, usedPrefix, command, text }) => {
     }
 }
 
-// Captura de botones
 handler.before = async function (m, { conn }) {
     if (!m.message?.buttonsResponseMessage) return 
     let id = m.message.buttonsResponseMessage.selectedButtonId
