@@ -3,7 +3,6 @@ import { join } from 'path';
 import { xpRange } from '../lib/levelling.js';
 import axios from 'axios';
 
-// --- FUNCIÓN PARA EL ESTILO DE LETRA ---
 const toStyle = (text) => {
   if (!text) return '';
   const normal = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.<>!¡-';
@@ -28,20 +27,7 @@ const saludarSegunHora = () => {
   return `🌙 ${toStyle('¡Buenas noches!')}`;
 };
 
-const imgDefault = 'https://files.catbox.moe/t7uytz.png';
 const sectionDivider = '╰━━━━━━━━━━━━━━━⬣';
-
-const menuFooter = `
-╭━━〔 💻 ${toStyle('INFO SISTEMA')} 〕━━⊷
-┃ 🛠️ ${toStyle('Uso')}: ${String.fromCharCode(8203)}.comando
-┃ ⚡ ${toStyle('Estado')}: ${toStyle('Stable')}
-┃ 🦾 ${toStyle('Dev')}: ${toStyle('Barboza-Team')}
-╰━━━━━━━━━━━━━━━⬣
-`.trim();
-
-Array.prototype.getRandom = function () {
-  return this[Math.floor(Math.random() * this.length)];
-};
 
 const handler = async (m, { conn, usedPrefix }) => {
   try {
@@ -55,29 +41,7 @@ const handler = async (m, { conn, usedPrefix }) => {
     const tagUsuario = `@${m.sender.split('@')[0]}`;
     const userName = (await conn.getName?.(m.sender)) || tagUsuario;
 
-    const fakeText = toStyle("by Barboza - Sasuke");
     const imgRandom = ["https://iili.io/FKVDVAN.jpg", "https://iili.io/FKVbUrJ.jpg"].getRandom();
-
-    let thumbnailBuffer;
-    try {
-      const response = await axios.get(imgRandom, { responseType: 'arraybuffer' });
-      thumbnailBuffer = Buffer.from(response.data);
-    } catch (e) {
-      const fallback = await axios.get(imgDefault, { responseType: 'arraybuffer' });
-      thumbnailBuffer = Buffer.from(fallback.data);
-    }
-
-    const izumi = {
-      key: { participants: "0@s.whatsapp.net", fromMe: false, id: "Interface" },
-      message: {
-        locationMessage: {
-          name: fakeText,
-          jpegThumbnail: thumbnailBuffer,
-          vcard: "BEGIN:VCARD\nVERSION:3.0\nN:;User;;;\nFN:User\nEND:VCARD"
-        }
-      },
-      participant: "0@s.whatsapp.net"
-    };
 
     let categorizedCommands = {};
     Object.values(global.plugins)
@@ -116,41 +80,26 @@ ${saludo} ${tagUsuario} 👋
 ╰━━━━━━━━━━━━━━━⬣
 `.trim();
 
-    const fullMenu = `${header}\n\n${menuBody}\n\n${menuFooter}`;
+    const fullMenu = `${header}\n\n${menuBody}`;
 
-    // --- CONFIGURACIÓN DE BOTONES ---
-    const buttons = [
-      {
-        name: "cta_url",
-        buttonParamsJson: JSON.stringify({
-          display_text: "📢 𝖢𝖺𝗇𝖺𝗅 1",
-          url: "https://whatsapp.com/channel/0029Vb8kvXUBfxnzYWsbS81I",
-          merchant_url: "https://whatsapp.com/channel/0029Vb8kvXUBfxnzYWsbS81I"
-        })
-      },
-      {
-        name: "cta_url",
-        buttonParamsJson: JSON.stringify({
-          display_text: "📢 𝖢𝖺𝗇𝖺𝗅 2",
-          url: "https://whatsapp.com/channel/0029VbBbaFCAO7RL7UEhBD2F",
-          merchant_url: "https://whatsapp.com/channel/0029VbBbaFCAO7RL7UEhBD2F"
-        })
-      }
-    ];
+    // --- ESTRUCTURA DE BOTONES ESTILO JOTA ---
+    const botones = [
+      { buttonId: `.canal1`, buttonText: { displayText: "📢 𝖢𝖺𝗇𝖺𝗅 1" }, type: 1 },
+      { buttonId: `.canal2`, buttonText: { displayText: "📢 𝖢𝖺𝗇𝖺𝗅 2" }, type: 1 }
+    ]
 
-    await conn.sendMessage(m.chat, {
-      image: { url: imgRandom }, // Usando la imagen random para el menú
+    const buttonMessage = {
+      image: { url: imgRandom },
       caption: fullMenu,
-      footer: "𝖯𝗈𝗐𝖾𝗋𝖾𝖽 𝖡𝗒 𝖡𝖺𝗋𝖻𝗈𝗓𝖺-𝖳𝖾𝖺𝗆",
-      buttons: buttons,
-      headerType: 4,
-      viewOnce: true,
-      mentions: [m.sender]
-    }, { quoted: izumi });
+      footer: "𝖯𝗈𝗐𝖾𝗋𝖾𝖽 𝖡𝗒 𝖡𝖺𝗋𝖻𝗈𝗓𝖺-𝖳𝖾𝖺𝗆 ⚡",
+      buttons: botones,
+      headerType: 4
+    }
+
+    return await conn.sendMessage(m.chat, buttonMessage, { quoted: m })
 
   } catch (e) {
     console.error(e);
-    await conn.reply(m.chat, `⚠️ ${toStyle('Error en la interfaz')}.\n> ${toStyle(e.message)}`, m);
   }
 };
 
