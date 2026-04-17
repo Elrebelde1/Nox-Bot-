@@ -1,4 +1,3 @@
-
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { xpRange } from '../lib/levelling.js';
@@ -100,7 +99,6 @@ const handler = async (m, { conn, usedPrefix }) => {
     const menuBody = Object.entries(categorizedCommands).map(([title, cmds]) => {
       const emoji = categoryEmojis[title.toLowerCase()] || '📂';
       const styledTitle = toStyle(title.toUpperCase());
-      // Aquí quitamos la descripción y dejamos solo el comando con el rayo
       const list = [...cmds].map(cmd => `┃  » ⚡ ${cmd}`).join('\n');
       return `╭━━〔 ${emoji} ${styledTitle} 〕━━⊷\n${list}\n${sectionDivider}`;
     }).join('\n\n');
@@ -120,16 +118,33 @@ ${saludo} ${tagUsuario} 👋
 
     const fullMenu = `${header}\n\n${menuBody}\n\n${menuFooter}`;
 
-    let finalImage;
-    try {
-        finalImage = readFileSync(join(process.cwd(), 'storage', 'img', 'miniurl.jpg'));
-    } catch {
-        finalImage = { url: imgDefault };
-    }
+    // --- CONFIGURACIÓN DE BOTONES ---
+    const buttons = [
+      {
+        name: "cta_url",
+        buttonParamsJson: JSON.stringify({
+          display_text: "📢 𝖢𝖺𝗇𝖺𝗅 1",
+          url: "https://whatsapp.com/channel/0029Vb8kvXUBfxnzYWsbS81I",
+          merchant_url: "https://whatsapp.com/channel/0029Vb8kvXUBfxnzYWsbS81I"
+        })
+      },
+      {
+        name: "cta_url",
+        buttonParamsJson: JSON.stringify({
+          display_text: "📢 𝖢𝖺𝗇𝖺𝗅 2",
+          url: "https://whatsapp.com/channel/0029VbBbaFCAO7RL7UEhBD2F",
+          merchant_url: "https://whatsapp.com/channel/0029VbBbaFCAO7RL7UEhBD2F"
+        })
+      }
+    ];
 
     await conn.sendMessage(m.chat, {
-      image: finalImage,
+      image: { url: imgRandom }, // Usando la imagen random para el menú
       caption: fullMenu,
+      footer: "𝖯𝗈𝗐𝖾𝗋𝖾𝖽 𝖡𝗒 𝖡𝖺𝗋𝖻𝗈𝗓𝖺-𝖳𝖾𝖺𝗆",
+      buttons: buttons,
+      headerType: 4,
+      viewOnce: true,
       mentions: [m.sender]
     }, { quoted: izumi });
 
