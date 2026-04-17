@@ -37,7 +37,7 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
     if (!textoFinal) return conn.reply(m.chat, '⚡ *Escribe el texto para tu sticker brat*\n> Ejemplo: .brat Sasuke Bot', m)
 
     if (textoFinal.length > 35) {
-        return conn.reply(m.chat, `⚠️ *Texto muy largo.*\n\n📌 Máximo: *35 letras*\n❌ Llevas: *${textoFinal.length}*`, m)
+        return conn.reply(m.chat, `⚠️ *Texto muy largo.*\n\n📌 Máximo: *35 letras*`, m)
     }
 
     textoFinal = wrapText(textoFinal.trim(), 28)
@@ -65,21 +65,20 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
         return await conn.sendMessage(m.chat, buttonMessage, { quoted: m })
     }
 
+    // --- SISTEMA DE LOADING ---
+    let { key } = await conn.sendMessage(m.chat, { text: '⏳ *Procesando su sticker...*' }, { quoted: m })
+    
     try {
-        await m.react('🪄')
+        await conn.sendMessage(m.chat, { text: '🪄 *Aplicando estilo Brat...*', edit: key })
 
-        // Configuración de la nueva API
         const apiKey = "sylphy-6f150d"
         const colorFondo = color.trim().toLowerCase()
-        // La API pide color de letra y fondo. Por defecto: Letra Negra para fondos claros.
-        const colorLetra = (colorFondo === 'negro' || colorFondo === 'azul' || colorFondo === 'rojo') ? 'Blanco' : 'Negro'
+        const colorLetra = (colorFondo === 'negro' || colorFondo === 'azul' || colorFondo === 'rojo' || colorFondo === 'morado') ? 'Blanco' : 'Negro'
         
         const apiUrl = `https://sylphyy.xyz/tools/brat?text=${encodeURIComponent(textoFinal)}&color=${colorLetra}&fondo=${colorFondo}&type=José&api_key=${apiKey}`
 
         const response = await axios.get(apiUrl, { responseType: 'arraybuffer' })
 
-        let user = global.db.data.users[m.sender] || {}
-        let name = user.name || m.sender.split('@')[0]
         let pack = "𝖲𝖺𝗌𝗎𝗄𝖾 𝖡𝗈𝗍 𝖬𝖣 👤"
         let auth = "𝖡𝗒 𝖡𝖺𝗋𝖻𝗈𝗓𝖺-𝖳𝖾𝖺𝗆 ⚡"
 
@@ -88,12 +87,15 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
 
         fs.writeFileSync(img, response.data)
 
+        // Conversión optimizada
         await new Promise((resolve, reject) => {
-            exec(`ffmpeg -i ${img} -vcodec libwebp -filter:v "scale=512:512:force_original_aspect_ratio=decrease,format=rgba,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=#00000000" ${webp}`, (err) => {
+            exec(`ffmpeg -i ${img} -vcodec libwebp -filter:v "scale=512:512:force_original_aspect_ratio=increase,fps=fps=20" ${webp}`, (err) => {
                 if (err) reject(err)
                 else resolve()
             })
         })
+
+        await conn.sendMessage(m.chat, { text: '✅ *¡Listo! Enviando...*', edit: key })
 
         await conn.sendMessage(m.chat, { 
             sticker: fs.readFileSync(webp), 
@@ -101,12 +103,13 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
             author: auth 
         }, { quoted: m })
 
+        // Borrar mensaje de loading y archivos temporales
+        await conn.sendMessage(m.chat, { delete: key })
         fs.unlinkSync(img)
         fs.unlinkSync(webp)
-        await m.react('✅')
 
     } catch (e) {
-        await m.react('❌')
+        await conn.sendMessage(m.chat, { text: '❌ *Ocurrió un error al generar el sticker.*', edit: key })
         console.error(e)
     }
 }
