@@ -1,9 +1,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { xpRange } from '../lib/levelling.js';
 import axios from 'axios';
 
-// --- FUNCIÓN PARA EL ESTILO DE LETRA ---
 const toStyle = (text) => {
   if (!text) return '';
   const normal = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.<>!¡-';
@@ -28,8 +26,6 @@ const saludarSegunHora = () => {
   return `🌙 ${toStyle('¡Buenas noches!')}`;
 };
 
-const sectionDivider = '╰━━━━━━━━━━━━━━━⬣';
-
 const handler = async (m, { conn, usedPrefix }) => {
   try {
     const saludo = saludarSegunHora();
@@ -38,7 +34,6 @@ const handler = async (m, { conn, usedPrefix }) => {
     const totalUsers = Object.keys(global.db.data.users).length;
     const mode = global.opts?.self ? toStyle('Privado 🔒') : toStyle('Público 🌍');
     const uptime = clockString(process.uptime() * 1000);
-
     const tagUsuario = `@${m.sender.split('@')[0]}`;
     const userName = (await conn.getName?.(m.sender)) || tagUsuario;
 
@@ -64,27 +59,20 @@ ${saludo} ${tagUsuario} 👋
 ┃ ⏲️ ${toStyle('Uptime')}: ${uptime}
 ┃ 🔐 ${toStyle('Modo')}: ${mode}
 ╰━━━━━━━━━━━━━━━⬣
-
-╭━━〔 📢 ${toStyle('CANALES OFICIALES')} 〕━━⊷
-┃ 🌟 ${toStyle('Canal')} 1:
-┃ https://whatsapp.com/channel/0029Vb8kvXUBfxnzYWsbS81I
-┃
-┃ 🚀 ${toStyle('Canal')} 2:
-┃ https://whatsapp.com/channel/0029VbBbaFCAO7RL7UEhBD2F
-╰━━━━━━━━━━━━━━━⬣
 `.trim();
 
     const menuBody = Object.entries(categorizedCommands).map(([title, cmds]) => {
       const styledTitle = toStyle(title.toUpperCase());
       const list = [...cmds].map(cmd => `┃  » ⚡ ${cmd}`).join('\n');
-      return `╭━━〔 📂 ${styledTitle} 〕━━⊷\n${list}\n${sectionDivider}`;
+      return `╭━━〔 📂 ${styledTitle} 〕━━⊷\n${list}\n╰━━━━━━━━━━━━━━━⬣`;
     }).join('\n\n');
 
     const fullMenu = `${header}\n\n${menuBody}`;
 
+    // --- BOTONES DE CANALES ---
     const botones = [
-      { buttonId: `${usedPrefix}ping`, buttonText: { displayText: "🚀 𝖵𝖾𝗅𝗈𝖼𝗂𝖽𝖺𝖽" }, type: 1 },
-      { buttonId: `${usedPrefix}owner`, buttonText: { displayText: "👤 𝖢𝗋𝖾𝖺𝖽𝗈𝗋" }, type: 1 }
+      { buttonId: `${usedPrefix}c1`, buttonText: { displayText: "📢 𝖢𝖺𝗇𝖺𝗅 1" }, type: 1 },
+      { buttonId: `${usedPrefix}c2`, buttonText: { displayText: "📢 𝖢𝖺𝗇𝖺𝗅 2" }, type: 1 }
     ]
 
     const buttonMessage = {
