@@ -4,12 +4,10 @@ import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    // Botón global para usar en todas las respuestas
     const botonesCanal = [
         { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
     ]
 
-    // Si no hay texto, envía ayuda con el botón
     if (!text.trim()) {
         const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
         let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
@@ -47,7 +45,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         let downloadUrl = null
         let selectedServer = ""
 
-        // --- LÓGICA DE DESCARGA ---
         if (isAudio) {
             try {
                 const res = await fetch(`https://api.delirius.store/download/ytmp3?url=${encodeURIComponent(videoUrl)}`)
@@ -83,7 +80,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             return conn.reply(m.chat, `🛑 ᴇʀʀᴏʀ ᴀʟ ᴏʙᴛᴇɴᴇʀ ᴅᴇsᴄᴀʀɢᴀ.`, m)
         }
 
-        // --- 1. ENVIAR INFORMACIÓN (CON BOTÓN) ---
+        // --- 1. INFO CON BOTÓN ---
         let info = `╭─〔 ♆ *ᴜᴄʜɪʜᴀ ʏᴏᴜᴛᴜʙᴇ* ♆ 〕─╮\n│\n│ 🎬 *ᴛɪᴛᴜʟᴏ:* ${title}\n│ ⏱️ *ᴅᴜʀᴀᴄɪᴏɴ:* ${timestamp}\n│ 📡 *sᴇʀᴠɪᴅᴏʀ:* ${selectedServer}\n│\n│ 🌑 "ʟᴀ ᴏsᴄᴜʀɪᴅᴀᴅ ᴇs ᴍɪ ɢᴜɪᴀ"\n╰────────────────────────────╯`
 
         await conn.sendMessage(m.chat, { 
@@ -94,20 +91,22 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             headerType: 4
         }, { quoted: m })
 
-        // --- 2. ENVIAR MEDIA (CON BOTÓN EN EL FOOTER/CAPTION) ---
+        // --- 2. AUDIO/VIDEO CON BOTÓN ---
         if (isAudio) {
-            // Nota: En audios directos los botones no siempre se ven según la versión de WA, 
-            // pero lo incluimos en el envío del mensaje de audio si el servidor lo permite.
             await conn.sendMessage(m.chat, { 
-                audio: { url: downloadUrl }, 
+                document: { url: downloadUrl }, 
                 mimetype: 'audio/mpeg', 
-                fileName: `${title}.mp3` 
+                fileName: `${title}.mp3`,
+                caption: `✅ *ᴀᴜᴅɪᴏ ʟɪsᴛᴏ:* ${title}`,
+                footer: "By Barboza-Team ⚡",
+                buttons: botonesCanal,
+                headerType: 1
             }, { quoted: m })
         } else {
             await conn.sendMessage(m.chat, { 
                 video: { url: downloadUrl }, 
                 mimetype: 'video/mp4', 
-                caption: `✅ *ʀᴇᴘʀᴏᴅᴜᴄᴄɪᴏ́ɴ ʟɪsᴛᴀ*\n🎬 ${title}`,
+                caption: `✅ *ᴠɪᴅᴇᴏ ʟɪsᴛᴏ:* ${title}`,
                 footer: "By Barboza-Team ⚡",
                 buttons: botonesCanal,
                 headerType: 4
