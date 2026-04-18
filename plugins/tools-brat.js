@@ -9,12 +9,12 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
 
     if (!textoFinal) return conn.reply(m.chat, '⚡ *Escribe el texto para tu sticker brat*\n> Ejemplo: .brat Sasuke Bot', m)
 
-    // Validación de longitud según la API de Jotaa
+    // Validación de longitud
     if (textoFinal.length > 35) {
         return conn.reply(m.chat, `⚠️ *Texto muy largo.*\n\n📌 Máximo: *35 letras*`, m)
     }
 
-    // Si no hay color, mandamos los botones con los nombres que acepta la API
+    // Si no hay color, mandamos los botones con tu marca
     if (!color) {
         const colores = [
             { buttonId: `${usedPrefix + command} ${textoFinal}|blanco`, buttonText: { displayText: "Blanco 🤍" }, type: 1 },
@@ -29,7 +29,7 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
         ]
 
         const buttonMessage = {
-            text: `👤 *𝖲𝖺𝗌𝗎𝗄𝖾 𝖡𝗈𝗍 𝖬𝖣 — 𝖡𝗋𝖺𝗍 𝖢𝗈𝗅𝗈𝗋*\n\n📝 *Texto:* ${textoFinal}\n\n*Elija un color de la lista:*`,
+            text: `👤 *𝖲𝖺𝗌𝗎𝗄𝖾 𝖡𝗈𝗍 𝖬𝖣 — 𝖡𝗋𝖺𝗍 𝖢𝗈𝗅𝗈𝗋*\n\n📝 *Texto:* ${textoFinal}\n\n*Seleccione el color de fondo:*`,
             footer: "𝖡𝗒 𝖡𝖺𝗋𝖻𝗈𝗓𝖺-𝖳𝖾𝖺𝗆 ⚡",
             buttons: colores,
             headerType: 1
@@ -37,10 +37,12 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
         return await conn.sendMessage(m.chat, buttonMessage, { quoted: m })
     }
 
-    let { key } = await conn.sendMessage(m.chat, { text: '⏳ *Procesando su sticker con la nueva API...*' }, { quoted: m })
+    let { key } = await conn.sendMessage(m.chat, { text: '⏳ *Procesando con la tecnología de Sasuke Bot...*' }, { quoted: m })
 
     try {
-        // --- INTEGRACIÓN DE LA API DE JOTAA ---
+        await m.react('🕒')
+
+        // API configurada para Sasuke Bot
         const apiKey = "yosoyyo_sk_u8qjoidy"
         const colorFondo = color.trim().toLowerCase()
         const textoFormateado = wrapText(textoFinal, 28)
@@ -53,7 +55,7 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
         const webp = `./tmp-${Date.now()}.webp`
         fs.writeFileSync(img, response.data)
 
-        // Conversión FFmpeg (usando el filtro de transparencia que prefiere esta API)
+        // Conversión FFmpeg optimizada
         await new Promise((resolve, reject) => {
             exec(`ffmpeg -i ${img} -vcodec libwebp -vf "scale=512:512:force_original_aspect_ratio=decrease,format=rgba,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=#00000000" ${webp}`, (err) => {
                 if (err) reject(err)
@@ -61,21 +63,23 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
             })
         })
 
-        // Metadatos de tu bot
+        // Envío con tus créditos exclusivos
         await conn.sendMessage(m.chat, { 
             sticker: fs.readFileSync(webp), 
             packname: "𝖲𝖺𝗌𝗎𝗄𝖾 𝖡𝗈𝗍 𝖬𝖣 👤", 
             author: "𝖡𝗒 𝖡𝖺𝗋𝖻𝗈𝗓𝖺-𝖳𝖾𝖺𝗆 ⚡" 
         }, { quoted: m })
 
-        await conn.sendMessage(m.chat, { text: '✅ *¡Sticker enviado con éxito!*', edit: key })
+        await conn.sendMessage(m.chat, { text: '✅ *Sticker generado por Barboza-Team!*', edit: key })
+        await m.react('✔️')
 
         if (fs.existsSync(img)) fs.unlinkSync(img)
         if (fs.existsSync(webp)) fs.unlinkSync(webp)
 
     } catch (e) {
         console.error(e)
-        await conn.sendMessage(m.chat, { text: '❌ *Error al conectar con la API de Jotaa.*', edit: key })
+        await m.react('✖️')
+        await conn.sendMessage(m.chat, { text: '❌ *Error en Sasuke Bot API.*', edit: key })
     }
 }
 
