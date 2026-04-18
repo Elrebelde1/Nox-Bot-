@@ -3,29 +3,29 @@ import fs from 'fs'
 import { exec } from 'child_process'
 
 var handler = async (m, { conn, usedPrefix, command, text }) => {
-    // Separamos el texto y el color. 
-    // Usamos un split más robusto por si el texto tiene espacios
+    // Separamos el texto y el color
     let [txt, color] = text.split('|')
     let textoFinal = txt ? txt.trim() : (m.quoted?.text || null)
 
     if (!textoFinal) return conn.reply(m.chat, '⚡ *Escribe el texto para tu sticker brat*\n> Ejemplo: .brat Sasuke Bot', m)
 
+    // Validación de longitud según la API de Jotaa
     if (textoFinal.length > 35) {
         return conn.reply(m.chat, `⚠️ *Texto muy largo.*\n\n📌 Máximo: *35 letras*`, m)
     }
 
-    // Si no hay color, mandamos los botones
+    // Si no hay color, mandamos los botones con los nombres que acepta la API
     if (!color) {
         const colores = [
-            { buttonId: `${usedPrefix + command} ${textoFinal}|white`, buttonText: { displayText: "Blanco 🤍" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|green`, buttonText: { displayText: "Verde 💚" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|red`, buttonText: { displayText: "Rojo ❤️" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|blue`, buttonText: { displayText: "Azul 💙" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|yellow`, buttonText: { displayText: "Amarillo 💛" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|pink`, buttonText: { displayText: "Rosa 🩷" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|cyan`, buttonText: { displayText: "Cian 🩵" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|orange`, buttonText: { displayText: "Naranja 🧡" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|purple`, buttonText: { displayText: "Morado 💜" }, type: 1 }
+            { buttonId: `${usedPrefix + command} ${textoFinal}|blanco`, buttonText: { displayText: "Blanco 🤍" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|verde`, buttonText: { displayText: "Verde 💚" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|rojo`, buttonText: { displayText: "Rojo ❤️" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|azul`, buttonText: { displayText: "Azul 💙" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|amarillo`, buttonText: { displayText: "Amarillo 💛" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|rosa`, buttonText: { displayText: "Rosa 🩷" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|cian`, buttonText: { displayText: "Cian 🩵" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|naranja`, buttonText: { displayText: "Naranja 🧡" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|morado`, buttonText: { displayText: "Morado 💜" }, type: 1 }
         ]
 
         const buttonMessage = {
@@ -37,22 +37,15 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
         return await conn.sendMessage(m.chat, buttonMessage, { quoted: m })
     }
 
-    let { key } = await conn.sendMessage(m.chat, { text: '⏳ *Procesando su sticker...*' }, { quoted: m })
+    let { key } = await conn.sendMessage(m.chat, { text: '⏳ *Procesando su sticker con la nueva API...*' }, { quoted: m })
 
     try {
-        const apiKey = "sylphy-6f150d"
+        // --- INTEGRACIÓN DE LA API DE JOTAA ---
+        const apiKey = "yosoyyo_sk_u8qjoidy"
         const colorFondo = color.trim().toLowerCase()
-        
-        // Ajustamos el texto para la imagen (el wrapText solo se aplica aquí)
-        let textoFormateado = wrapText(textoFinal, 20)
+        const textoFormateado = wrapText(textoFinal, 28)
 
-        // IMPORTANTE: Definir color de letra basado en el fondo para que se vea
-        const oscuros = ['black', 'blue', 'red', 'purple', 'morado', 'rojo', 'azul']
-        const colorLetra = oscuros.includes(colorFondo) ? 'white' : 'black'
-
-        // Construcción de la URL corregida
-        // Cambié "fondo" por el parámetro correcto que espera la API para el color del bloque
-        const apiUrl = `https://sylphyy.xyz/tools/brat?text=${encodeURIComponent(textoFormateado)}&color=${colorLetra}&fondo=${colorFondo}&api_key=${apiKey}`
+        const apiUrl = `https://yosoyyo-api-ofc.onrender.com/api/brat?text=${encodeURIComponent(textoFormateado)}&color=${colorFondo}&apiKey=${apiKey}`
 
         const response = await axios.get(apiUrl, { responseType: 'arraybuffer' })
 
@@ -60,14 +53,15 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
         const webp = `./tmp-${Date.now()}.webp`
         fs.writeFileSync(img, response.data)
 
-        // Conversión optimizada para stickers
+        // Conversión FFmpeg (usando el filtro de transparencia que prefiere esta API)
         await new Promise((resolve, reject) => {
-            exec(`ffmpeg -i ${img} -vcodec libwebp -vf "scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=white@0.0,setsar=1" ${webp}`, (err) => {
+            exec(`ffmpeg -i ${img} -vcodec libwebp -vf "scale=512:512:force_original_aspect_ratio=decrease,format=rgba,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=#00000000" ${webp}`, (err) => {
                 if (err) reject(err)
                 else resolve()
             })
         })
 
+        // Metadatos de tu bot
         await conn.sendMessage(m.chat, { 
             sticker: fs.readFileSync(webp), 
             packname: "𝖲𝖺𝗌𝗎𝗄𝖾 𝖡𝗈𝗍 𝖬𝖣 👤", 
@@ -81,7 +75,7 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
 
     } catch (e) {
         console.error(e)
-        await conn.sendMessage(m.chat, { text: '❌ *Error al generar el sticker.*', edit: key })
+        await conn.sendMessage(m.chat, { text: '❌ *Error al conectar con la API de Jotaa.*', edit: key })
     }
 }
 
