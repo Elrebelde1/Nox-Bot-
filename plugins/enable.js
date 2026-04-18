@@ -3,10 +3,13 @@ let isEnable = /true|enable|(turn)?on|1/i.test(args[0])
 let chat = global.db.data.chats[m.chat]
 let bot = global.db.data.settings[conn.user.jid] || {}
 let type = command.toLowerCase()
+
 if (m.isGroup) {
 if (!('antiLag' in chat)) chat.antiLag = false
 }
+
 if (!args[0]) return m.reply(`⚠️ *Formato incorrecto*\n\n📌 Uso: *${usedPrefix + command} on* o *${usedPrefix + command} off*`)
+
 let fail = false
 switch (type) {
 case 'welcome': case 'bienvenida':
@@ -54,7 +57,9 @@ break
 default:
 return
 }
+
 if (fail) return
+
 let statusTxt = `
 ┏━━━━━━━━━━━━━━━━━━┓
 ✨ *AJUSTE ACTUALIZADO* ✨
@@ -62,18 +67,39 @@ let statusTxt = `
 ⚙️ *Función:* ${type}
 📊 *Estado:* ${isEnable ? 'Activado ✅' : 'Desactivado ❌'}
 ┗━━━━━━━━━━━━━━━━━━┛`.trim()
+
 await conn.sendMessage(m.chat, {
 text: statusTxt,
+footer: "𝖡𝗒 𝖡𝖺𝗋𝖻𝗈𝗓𝖺-𝖳𝖾𝖺𝗆 ⚡",
 contextInfo: {
 externalAdReply: {
-title: 'SASUKE BOT — CONFIG',
+title: '𝖲𝖠𝖲𝖴𝖪𝖤 𝖡𝖮𝖳 — 𝖢𝖮𝖭𝖥𝖨𝖦',
 body: 'Panel de Control Actualizado',
 thumbnailUrl: 'https://files.catbox.moe/t7uytz.png',
 mediaType: 1,
 showAdAttribution: true
-}}}, { quoted: m })
+}},
+buttons: [
+{
+name: "single_select",
+buttonParamsJson: JSON.stringify({
+title: "Nuestros Canales 📢",
+sections: [
+{
+title: "Oficiales",
+rows: [
+{ title: "Canal Principal 👤", description: "Updates de Sasuke Bot", id: `sask_c1` },
+{ title: "Canal de Soporte ⚡", description: "Ayuda y Comunidad", id: `sask_c2` }
+]
 }
+]
+})
+}
+]}, { quoted: m })
+}
+
 handler.help = ['welcome', 'antilag', 'antilink', 'antibot', 'modoadmin', 'subbots'].map(v => v + ' on/off')
 handler.tags = ['config']
 handler.command = ['welcome', 'bienvenida', 'antilag', 'subbots', 'serbot', 'antispam', 'antilink', 'antibot', 'modoadmin', 'nsfw', 'antinopor', 'audios', 'autoleer', 'autoread', 'antiprivado']
+
 export default handler
