@@ -1,34 +1,30 @@
+import chalk from 'chalk';
 
 const targetChannels = [
-    '120363414007802886@newsletter', 
-    '120363423619689248@newsletter'
+    '120363423619689248@newsletter', 
+    '120363414007802886@newsletter'
 ];
 
-const reactionEmoji = '🔥'; // El emoji que usarán tus clones
+const reactionEmoji = '🔥';
 
 let handler = m => m;
 
 handler.before = async function (m, { conn }) {
-    // 1. Verificamos si el mensaje proviene de uno de los canales objetivo
-    // En Baileys, los mensajes de canales suelen venir con el JID en m.chat
+    // Log para debug: te dirá en consola qué chat está recibiendo mensajes
+    // console.log(chalk.blue(`[DEBUG] Mensaje recibido de: ${m.chat}`));
+
     if (targetChannels.includes(m.chat)) {
         try {
-            // 2. Retraso aleatorio para que no baneen los subbots por actividad simultánea
-            const delay = Math.floor(Math.random() * 3000) + 1000;
-
-            setTimeout(async () => {
-                await conn.sendMessage(m.chat, {
-                    react: {
-                        text: reactionEmoji,
-                        key: m.key
-                    }
-                });
-                console.log(chalk.greenBright(`[Sasuke-Reaction] Reaccionando en canal: ${m.chat}`));
-            }, delay);
-
+            // En canales, a veces m.key.id es necesario para la reacción
+            await conn.sendMessage(m.chat, {
+                react: {
+                    text: reactionEmoji,
+                    key: m.key
+                }
+            });
+            console.log(chalk.bgGreen.black(`[ OK ] Reacción enviada por ${conn.user.name || 'Subbot'}`));
         } catch (e) {
-            // Silenciamos errores si el subbot no sigue al canal (no puede reaccionar si no es seguidor)
-            return !0;
+            console.log(chalk.bgRed.white(`[ ERROR ] No se pudo reaccionar: ${e.message}`));
         }
     }
     return !0;
