@@ -63,6 +63,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
 
     if (fail) return
 
+    // Configuración de imagen
     const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
     let catalogoImg
     if (existsSync(pathImg)) {
@@ -78,7 +79,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
     statusTxt += `📊 *Estado:* ${isEnable ? 'Activado ✅' : 'Desactivado ❌'}\n`
     statusTxt += `┗━━━━━━━━━━━━━━━━━━┛`
 
-    // --- UN SOLO BOTÓN ---
+    // --- BOTÓN ÚNICO QUE ACTIVA TU ARCHIVO btns_canales.js ---
     const botones = [
         { buttonId: `ver_canales`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
     ]
@@ -92,5 +93,8 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
     }, { quoted: m })
 }
 
+handler.help = ['welcome', 'antilag', 'antilink', 'antibot', 'modoadmin', 'subbots', 'nsfw', 'audios', 'antiprivado'].map(v => v + ' on/off')
+handler.tags = ['config']
 handler.command = ['welcome', 'bienvenida', 'antilag', 'subbots', 'serbot', 'antispam', 'antilink', 'antibot', 'modoadmin', 'nsfw', 'antinopor', 'audios', 'autoleer', 'autoread', 'antiprivado']
+
 export default handler
