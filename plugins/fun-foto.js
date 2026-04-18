@@ -1,57 +1,71 @@
 import fetch from 'node-fetch'
+import { Sticker } from 'wa-sticker-formatter'
 
 let handler = async (m, { conn, text, command }) => {
-  if (!text) return m.reply(`✨ *¿Qué pack buscamos hoy?*\nEjemplo: .${command} Messi`)
+  // Diseño y decoración de fuentes
+  const d_title = (t) => `『 ⚡ *${t.toUpperCase()}* ⚡ 』`
+  const d_body = (t) => ` ✨ _${t}_`
+
+  if (!text) return m.reply(`✨ ${d_title('Buscador de Packs')}\n\n📌 *Ejemplo:* .${command} My Melody`)
 
   try {
-    // 1. Buscamos el pack
-    const res = await fetch(`https://api.delirius.store/search/stickerly?query=${encodeURIComponent(text)}`)
-    const json = await res.json()
+    // Buscar packs en la API
+    const searchRes = await fetch(`https://api.delirius.store/search/stickerly?query=${encodeURIComponent(text)}`)
+    const searchJson = await searchRes.json()
 
-    if (!json.status || !json.data.length) return m.reply('❌ No encontré ese pack.')
+    if (!searchJson.status || !Array.isArray(searchJson.data) || searchJson.data.length === 0) {
+      return m.reply('🌀 *No se encontraron stickers para tu búsqueda.*')
+    }
 
-    // 2. Tomamos el primer pack encontrado
-    const pack = json.data[0]
-    const packUrl = pack.url // Esta es la URL de sticker.ly
+    // Elegir un pack aleatorio
+    const pick = searchJson.data[Math.floor(Math.random() * searchJson.data.length)]
+    const packName = pick.name || 'Premium Pack'
+    const authorName = pick.author || 'AI Bot'
 
-    // 3. ENVIAR EL PACK (Esto genera el botón "Ver paquete de stickers")
-    // Enviamos el link con un "adReply" para que se vea profesional y con diseño
-    await conn.sendMessage(m.chat, {
-      text: packUrl, // Al enviar el link directo, WA genera el botón
-      contextInfo: {
-        externalAdReply: {
-          title: `🎁 PACK: ${pack.name}`,
-          body: `Autor: ${pack.author} • 8 Stickers`,
-          thumbnailUrl: pack.stickers[0] || '', 
-          sourceUrl: packUrl,
-          mediaType: 1,
-          showAdAttribution: false,
-          renderLargerThumbnail: true
-        }
-      }
-    }, { quoted: m })
+    // Mensaje decorado de aviso
+    let info = `${d_title('Cargamento Localizado')}\n\n`
+    info += `📦 *Pack:* ${packName}\n`
+    info += `🎨 *Autor:* ${authorName}\n`
+    info += `💎 *Cantidad:* 8 Stickers\n\n`
+    info += `> ${d_body('Enviando paquete completo...')}`
 
-    // 4. Enviamos los 8 stickers sueltos por si el usuario no quiere abrir el link
-    m.reply('🚀 *Cargando 8 stickers del pack...*')
-    
-    const dlRes = await fetch(`https://api.delirius.store/download/stickerly?url=${encodeURIComponent(packUrl)}`)
-    const dlJson = await dlRes.json()
-    const stickers = dlJson.data.stickers.slice(0, 8)
+    await m.reply(info)
 
-    for (let st of stickers) {
-      await conn.sendMessage(m.chat, { 
-        sticker: { url: st },
-        contextInfo: { forwardedNewsletterMessageInfo: { newsletterJid: '120363232745145711@newsletter', newsletterName: 'Pack Sender' }} 
-      }, { quoted: m })
+    // Descargar stickers del pack
+    const downloadRes = await fetch(`https://api.delirius.store/download/stickerly?url=${encodeURIComponent(pick.url)}`)
+    const downloadJson = await downloadRes.json()
+
+    if (!downloadJson.status || !downloadJson.data || !Array.isArray(downloadJson.data.stickers)) {
+      return m.reply('⚠️ *No se pudo extraer el paquete.*')
+    }
+
+    // Seleccionamos 8 stickers
+    const stickersToSend = downloadJson.data.stickers.slice(0, 8)
+
+    // Envío del pack (uno tras otro rápidamente)
+    for (let i = 0; i < stickersToSend.length; i++) {
+      const sticker = new Sticker(stickersToSend[i], {
+        pack: packName,
+        author: authorName,
+        type: 'full',
+        categories: ['🔥', '✨'],
+        id: `pack-${i}`
+      })
+      
+      const buffer = await sticker.toBuffer()
+      await conn.sendMessage(m.chat, { sticker: buffer }, { quoted: m })
+      
+      // Delay mínimo para que se sientan como un pack unido
+      await new Promise(resolve => setTimeout(resolve, 300))
     }
 
   } catch (e) {
     console.error(e)
-    m.reply('⚠️ Error al obtener el paquete.')
+    m.reply('⚠️ *Hubo un error al procesar el pack de stickers.*')
   }
 }
 
-handler.help = ['stikerly']
+handler.help = ['stikerly <consulta>']
 handler.tags = ['sticker']
 handler.command = /^(stikerly|sp|pack)$/i
 
