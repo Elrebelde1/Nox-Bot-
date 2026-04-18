@@ -1,23 +1,23 @@
-import { downloadMedia } from '../lib/scrapers.js';
+import { downloadMedia } from '../lib/scrapers.js'; // Tu nuevo scraper
 import { unlinkSync } from 'fs';
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) return conn.reply(m.chat, `⚠️ *Uso correcto:* ${usedPrefix + command} [nombre o link]`, m);
+    if (!text) return conn.reply(m.chat, `⚠️ *Uso:* ${usedPrefix + command} [nombre]`, m);
 
     await m.react('⏳');
     
-    // Verificamos si es audio o video según el comando
+    // Definimos si es audio (true) o video (false)
     const isAudio = /^(play|yta|ytmp3|playaudio)$/i.test(command);
     
+    // Llamamos a TU scraper local (sin fetch, sin apis)
     const res = await downloadMedia(text, isAudio);
     
     if (!res) {
         await m.react('❌');
-        return conn.reply(m.chat, '❌ No se pudo descargar el contenido. Intenta con otro nombre.', m);
+        return conn.reply(m.chat, '❌ No se pudo descargar el contenido.', m);
     }
 
     try {
-        // Enviar según corresponda
         if (isAudio) {
             await conn.sendMessage(m.chat, { 
                 audio: { url: res.path }, 
@@ -28,7 +28,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             await conn.sendMessage(m.chat, { 
                 video: { url: res.path }, 
                 mimetype: 'video/mp4', 
-                caption: `✅ *Descarga lista*\n🎬 ${res.title}`,
+                caption: `✅ ${res.title}`,
                 fileName: `${res.title}.mp4`
             }, { quoted: m });
         }
@@ -38,7 +38,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         console.error(e);
         await m.react('❌');
     } finally {
-        // Limpiamos el archivo del servidor
+        // Borramos el archivo del servidor
         try { if (res.path) unlinkSync(res.path); } catch (e) {}
     }
 }
