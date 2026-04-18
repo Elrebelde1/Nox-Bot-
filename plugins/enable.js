@@ -63,7 +63,6 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
 
     if (fail) return
 
-    // Configuración de imagen (igual que el comando sticker)
     const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
     let catalogoImg
     if (existsSync(pathImg)) {
@@ -79,10 +78,9 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
     statusTxt += `📊 *Estado:* ${isEnable ? 'Activado ✅' : 'Desactivado ❌'}\n`
     statusTxt += `┗━━━━━━━━━━━━━━━━━━┛`
 
-    // --- BOTONES (Copiando el estilo de tu código de sticker) ---
+    // --- UN SOLO BOTÓN ---
     const botones = [
-        { buttonId: `sask_c1`, buttonText: { displayText: "👤 Canal Principal" }, type: 1 },
-        { buttonId: `sask_c2`, buttonText: { displayText: "⚡ Canal Soporte" }, type: 1 }
+        { buttonId: `ver_canales`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
     ]
 
     await conn.sendMessage(m.chat, {
@@ -94,8 +92,5 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
     }, { quoted: m })
 }
 
-handler.help = ['welcome', 'antilag', 'antilink', 'antibot', 'modoadmin', 'subbots'].map(v => v + ' on/off')
-handler.tags = ['config']
 handler.command = ['welcome', 'bienvenida', 'antilag', 'subbots', 'serbot', 'antispam', 'antilink', 'antibot', 'modoadmin', 'nsfw', 'antinopor', 'audios', 'autoleer', 'autoread', 'antiprivado']
-
 export default handler
