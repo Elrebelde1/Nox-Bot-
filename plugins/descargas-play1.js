@@ -1,10 +1,7 @@
-//aquí tiene play solo con scraper 
+import fetch from "node-fetch"
 import yts from 'yt-search'
 import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
-import axios from 'axios'
-import { CookieJar } from 'tough-cookie'
-import { wrapper } from 'axios-cookiejar-support'
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
     const botonesCanal = [
@@ -45,20 +42,43 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const { title, thumbnail, timestamp, videoId } = result
         const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
         const isAudio = /play$|yta|ytmp3|playaudio/.test(command)
-        
-        let downloadUrl = null;
-        let selectedServer = "Ytdown (Scraper Nativo)";
+        let downloadUrl = null
+        let selectedServer = ""
 
-        // 🔥 ÚNICO MÉTODO: Scraper Ytdown
-        try {
-            downloadUrl = await getYtdownLink(videoUrl, isAudio);
-        } catch (errScraper) {
-            console.error("Error en el Scraper Ytdown:", errScraper.message);
+        // LÓGICA DE APIS (Tal como la tenías)
+        if (isAudio) {
+            try {
+                const res = await fetch(`https://api.delirius.store/download/ytmp3?url=${encodeURIComponent(videoUrl)}`)
+                const json = await res.json()
+                if (json.status && json.data?.download) {
+                    downloadUrl = json.data.download
+                    selectedServer = "Delirius V1"
+                }
+            } catch {
+                try {
+                    const res = await fetch(`https://api.delirius.store/download/ytmp3v2?url=${encodeURIComponent(videoUrl)}`)
+                    const json = await res.json()
+                    if (json.success && json.data?.download) {
+                        downloadUrl = json.data.download
+                        selectedServer = "Delirius V2"
+                    }
+                } catch (e) { console.error(e) }
+            }
+        } else {
+            try {
+                const apiKey = 'sylphy-6f150d'
+                const res = await fetch(`https://sylphyy.xyz/download/v2/ytmp4?url=${encodeURIComponent(videoUrl)}&api_key=${apiKey}`)
+                const json = await res.json()
+                if (json.status && json.result?.dl_url) {
+                    downloadUrl = json.result.dl_url
+                    selectedServer = "Sylphy V2"
+                }
+            } catch (e) { console.error(e) }
         }
 
         if (!downloadUrl) {
             if (m.react) await m.react('❌')
-            return conn.reply(m.chat, `🛑 ᴇʀʀᴏʀ ᴀʟ ᴏʙᴛᴇɴᴇʀ ᴅᴇsᴄᴀʀɢᴀ. (Los servidores podrían estar saturados, intenta de nuevo)`, m)
+            return conn.reply(m.chat, `🛑 ᴇʀʀᴏʀ ᴀʟ ᴏʙᴛᴇɴᴇʀ ᴅᴇsᴄᴀʀɢᴀ.`, m)
         }
 
         let info = `╭─〔 ♆ *ᴜᴄʜɪʜᴀ ʏᴏᴜᴛᴜʙᴇ* ♆ 〕─╮\n│\n│ 🎬 *ᴛɪᴛᴜʟᴏ:* ${title}\n│ ⏱️ *ᴅᴜʀᴀᴄɪᴏɴ:* ${timestamp}\n│ 📡 *sᴇʀᴠɪᴅᴏʀ:* ${selectedServer}\n│\n│ 🌑 "ʟᴀ ᴏsᴄᴜʀɪᴅᴀᴅ ᴇs ᴍɪ ɢᴜɪᴀ"\n╰────────────────────────────╯`
@@ -97,59 +117,3 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
 handler.command = /^(play|yta|ytmp3|play2|ytv|playaudio|mp4|ytmp4)$/i
 export default handler
-
-// ==========================================
-// 🔥 FUNCION DEL SCRAPER (YTDOWN)
-// ==========================================
-async function getYtdownLink(ytUrl, isAudio) {
-    const BASE = 'https://app.ytdown.to';
-    const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
-    const sleep = ms => new Promise(r => setTimeout(r, ms));
-  
-    const HEADERS = {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'x-requested-with': 'XMLHttpRequest',
-      'Origin': BASE, 
-      'Referer': BASE + '/en23/',
-    };
-  
-    const postProxy = async (clientProxy, urlQuery) => {
-      const body = new URLSearchParams({ url: urlQuery }).toString();
-      const { data } = await clientProxy.post(BASE + '/proxy.php', body, { headers: HEADERS });
-      return (typeof data === 'object' ? data : JSON.parse(data))?.api;
-    }
-  
-    const poll = async (clientProxy, workerUrl) => {
-      for (let i = 1; i <= 40; i++) {
-        const api = await postProxy(clientProxy, workerUrl);
-        if (api?.status === 'completed' && api.fileUrl) return api.fileUrl;
-        if (api?.status === 'error') throw new Error('Error en el worker del servidor');
-        if (i < 40) await sleep(3000); 
-      }
-      throw new Error('Tiempo agotado al convertir el archivo');
-    }
-  
-    const jar = new CookieJar();
-    const client = wrapper(axios.create({ jar, withCredentials: true, timeout: 30000, headers: { 'User-Agent': UA } }));
-  
-    await client.get(BASE + '/');
-  
-    const api = await postProxy(client, ytUrl);
-    if (!api || api.status === 'error') throw new Error(`API error: ${api?.code || 'Desconocido'}`);
-  
-    const formatFilter = isAudio ? 'mp3' : 'mp4';
-    const opciones = api.mediaItems.filter(m => m.mediaExtension?.toLowerCase() === formatFilter);
-    if (!opciones.length) throw new Error(`No se encontraron resoluciones en ${formatFilter.toUpperCase()}`);
-  
-    let elegido;
-    if (isAudio) {
-        elegido = opciones[0];
-    } else {
-        elegido = opciones.find(m => String(m.mediaRes).includes('480'));
-        if (!elegido) elegido = opciones.find(m => String(m.mediaRes).includes('360'));
-        if (!elegido) elegido = opciones[opciones.length - 1]; 
-    }
-  
-    const downloadUrl = await poll(client, elegido.mediaUrl);
-    return downloadUrl;
-}
