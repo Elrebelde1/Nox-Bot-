@@ -1,5 +1,5 @@
-import baileys from "@whiskeysockets/baileys"
-const { proto, generateWAMessageFromContent } = baileys
+import { readFileSync, existsSync } from 'fs'
+import { join } from 'path'
 
 let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isROwner }) => {
     let isEnable = /true|enable|(turn)?on|1/i.test(args[0])
@@ -63,55 +63,35 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
 
     if (fail) return
 
-    let statusTxt = `
-┏━━━━━━━━━━━━━━━━━━┓
-✨ *AJUSTE ACTUALIZADO* ✨
-┠━━━━━━━━━━━━━━━━━━┫
-⚙️ *Función:* ${type}
-📊 *Estado:* ${isEnable ? 'Activado ✅' : 'Desactivado ❌'}
-┗━━━━━━━━━━━━━━━━━━┛`.trim()
+    // Configuración de imagen (igual que el comando sticker)
+    const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
+    let catalogoImg
+    if (existsSync(pathImg)) {
+        catalogoImg = readFileSync(pathImg)
+    } else {
+        catalogoImg = { url: 'https://files.catbox.moe/t7uytz.png' }
+    }
 
-    // Generación del mensaje interactivo con botones (Native Flow)
-    let msg = generateWAMessageFromContent(m.chat, {
-        viewOnceMessage: {
-            message: {
-                interactiveMessage: proto.Message.InteractiveMessage.fromObject({
-                    body: proto.Message.InteractiveMessage.Body.fromObject({
-                        text: statusTxt
-                    }),
-                    footer: proto.Message.InteractiveMessage.Footer.fromObject({
-                        text: "𝖡𝗒 𝖡𝖺𝗋𝖻𝗈𝗓𝖺-𝖳𝖾𝖺𝗆 ⚡"
-                    }),
-                    header: proto.Message.InteractiveMessage.Header.fromObject({
-                        title: "𝖲𝖠𝖲𝖴𝖪𝖤 𝖡𝖮𝖳 — 𝖢𝖮𝖭𝖥𝖨𝖦",
-                        hasMediaAttachment: true,
-                        ...(await conn.getFile('https://files.catbox.moe/t7uytz.png') ? { imageMessage: (await conn.getFile('https://files.catbox.moe/t7uytz.png')).data } : {})
-                    }),
-                    nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.fromObject({
-                        buttons: [
-                            {
-                                name: "single_select",
-                                buttonParamsJson: JSON.stringify({
-                                    title: "Nuestros Canales 📢",
-                                    sections: [
-                                        {
-                                            title: "Oficiales",
-                                            rows: [
-                                                { title: "Canal Principal 👤", description: "Updates de Sasuke Bot", id: `sask_c1` },
-                                                { title: "Canal de Soporte ⚡", description: "Ayuda y Comunidad", id: `sask_c2` }
-                                            ]
-                                        }
-                                    ]
-                                })
-                            }
-                        ]
-                    })
-                })
-            }
-        }
+    let statusTxt = `┏━━━━━━━━━━━━━━━━━━┓\n`
+    statusTxt += `✨ *AJUSTE ACTUALIZADO* ✨\n`
+    statusTxt += `┠━━━━━━━━━━━━━━━━━━┫\n`
+    statusTxt += `⚙️ *Función:* ${type}\n`
+    statusTxt += `📊 *Estado:* ${isEnable ? 'Activado ✅' : 'Desactivado ❌'}\n`
+    statusTxt += `┗━━━━━━━━━━━━━━━━━━┛`
+
+    // --- BOTONES (Copiando el estilo de tu código de sticker) ---
+    const botones = [
+        { buttonId: `sask_c1`, buttonText: { displayText: "👤 Canal Principal" }, type: 1 },
+        { buttonId: `sask_c2`, buttonText: { displayText: "⚡ Canal Soporte" }, type: 1 }
+    ]
+
+    await conn.sendMessage(m.chat, {
+        image: catalogoImg.byteLength ? catalogoImg : { url: catalogoImg.url },
+        caption: statusTxt,
+        footer: "By Barboza-Team ⚡",
+        buttons: botones,
+        headerType: 4
     }, { quoted: m })
-
-    await conn.relayMessage(m.chat, msg.message, { messageId: msg.key.id })
 }
 
 handler.help = ['welcome', 'antilag', 'antilink', 'antibot', 'modoadmin', 'subbots'].map(v => v + ' on/off')
