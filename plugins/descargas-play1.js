@@ -1,8 +1,46 @@
 import fetch from "node-fetch"
 import yts from 'yt-search'
-import { readFileSync, existsSync } from 'fs'
+import ytdl from '@distube/ytdl-core'
+import { readFileSync, existsSync, createWriteStream, unlinkSync } from 'fs'
 import { join } from 'path'
+import { tmpdir } from 'os'
 
+// --- FUNCIÓN SCRAPER (Integrada) ---
+async function ytScraper(query, isAudio = true) {
+    const search = await yts(query);
+    const video = search.videos[0];
+    if (!video) return null;
+
+    const path = join(tmpdir(), `${video.videoId}.${isAudio ? 'mp3' : 'mp4'}`);
+    const stream = ytdl(video.url, { 
+        filter: isAudio ? 'audioonly' : 'audioandvideo',
+        quality: isAudio ? 'highestaudio' : 'highest',
+        // Optimización para evitar bloqueos
+        requestOptions: {
+            headers: {
+                cookie: 'TU_COOKIE_AQUI' // Opcional: ayuda si YouTube bloquea la IP
+            }
+        }
+    });
+
+    return new Promise((resolve, reject) => {
+        const file = createWriteStream(path);
+        stream.pipe(file);
+        file.on('finish', () => resolve({ 
+            title: video.title, 
+            path, 
+            thumbnail: video.thumbnail, 
+            timestamp: video.timestamp,
+            url: video.url 
+        }));
+        file.on('error', (err) => {
+            if (existsSync(path)) unlinkSync(path);
+            reject(err);
+        });
+    });
+}
+
+// --- HANDLER PRINCIPAL ---
 const handler = async (m, { conn, text, usedPrefix, command }) => {
     const botonesCanal = [
         { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
@@ -32,57 +70,28 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     try {
         if (m.react) await m.react('⏳')
 
-        const search = await yts(text)
-        if (!search || !search.all || search.all.length === 0) {
+        const isAudio = /play$|yta|ytmp3|playaudio/.test(command)
+        
+        // Llamada al Scraper
+        const result = await ytScraper(text, isAudio)
+
+        if (!result) {
             if (m.react) await m.react('❌')
             return conn.reply(m.chat, '❌ ɴᴏ sᴇ ᴇɴᴄᴏɴᴛʀᴀʀᴏɴ ʀᴇsᴜʟᴛᴀᴅᴏs.', m)
         }
 
-        const result = search.videos[0]
-        const { title, thumbnail, timestamp, videoId } = result
-        const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
-        const isAudio = /play$|yta|ytmp3|playaudio/.test(command)
-        let downloadUrl = null
-        let selectedServer = ""
+        const { title, thumbnail, timestamp, path } = result
 
-        // LÓGICA DE APIS (Tal como la tenías)
-        if (isAudio) {
-            try {
-                const res = await fetch(`https://api.delirius.store/download/ytmp3?url=${encodeURIComponent(videoUrl)}`)
-                const json = await res.json()
-                if (json.status && json.data?.download) {
-                    downloadUrl = json.data.download
-                    selectedServer = "Delirius V1"
-                }
-            } catch {
-                try {
-                    const res = await fetch(`https://api.delirius.store/download/ytmp3v2?url=${encodeURIComponent(videoUrl)}`)
-                    const json = await res.json()
-                    if (json.success && json.data?.download) {
-                        downloadUrl = json.data.download
-                        selectedServer = "Delirius V2"
-                    }
-                } catch (e) { console.error(e) }
-            }
-        } else {
-            try {
-                const apiKey = 'sylphy-6f150d'
-                const res = await fetch(`https://sylphyy.xyz/download/v2/ytmp4?url=${encodeURIComponent(videoUrl)}&api_key=${apiKey}`)
-                const json = await res.json()
-                if (json.status && json.result?.dl_url) {
-                    downloadUrl = json.result.dl_url
-                    selectedServer = "Sylphy V2"
-                }
-            } catch (e) { console.error(e) }
-        }
+        let info = `╭─〔 ♆ *ᴜᴄʜɪʜᴀ ʏᴏᴜᴛᴜʙᴇ* ♆ 〕─╮\n`
+        info += `│\n`
+        info += `│ 🎬 *ᴛɪᴛᴜʟᴏ:* ${title}\n`
+        info += `│ ⏱️ *ᴅᴜʀᴀᴄɪᴏɴ:* ${timestamp}\n`
+        info += `│ 📡 *sᴇʀᴠɪᴅᴏʀ:* Local Scraper 🛠️\n`
+        info += `│\n`
+        info += `│ 🌑 "ʟᴀ ᴏsᴄᴜʀɪᴅᴀᴅ ᴇs ᴍɪ ɢᴜɪᴀ"\n`
+        info += `╰────────────────────────────╯`
 
-        if (!downloadUrl) {
-            if (m.react) await m.react('❌')
-            return conn.reply(m.chat, `🛑 ᴇʀʀᴏʀ ᴀʟ ᴏʙᴛᴇɴᴇʀ ᴅᴇsᴄᴀʀɢᴀ.`, m)
-        }
-
-        let info = `╭─〔 ♆ *ᴜᴄʜɪʜᴀ ʏᴏᴜᴛᴜʙᴇ* ♆ 〕─╮\n│\n│ 🎬 *ᴛɪᴛᴜʟᴏ:* ${title}\n│ ⏱️ *ᴅᴜʀᴀᴄɪᴏɴ:* ${timestamp}\n│ 📡 *sᴇʀᴠɪᴅᴏʀ:* ${selectedServer}\n│\n│ 🌑 "ʟᴀ ᴏsᴄᴜʀɪᴅᴀᴅ ᴇs ᴍɪ ɢᴜɪᴀ"\n╰────────────────────────────╯`
-
+        // Enviar Miniatura e Info
         await conn.sendMessage(m.chat, { 
             image: { url: thumbnail }, 
             caption: info,
@@ -91,27 +100,31 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             headerType: 4
         }, { quoted: m })
 
+        // Enviar Archivo Descargado
         if (isAudio) {
             await conn.sendMessage(m.chat, { 
-                audio: { url: downloadUrl }, 
+                audio: readFileSync(path), 
                 mimetype: 'audio/mpeg', 
                 fileName: `${title}.mp3` 
             }, { quoted: m })
         } else {
             await conn.sendMessage(m.chat, { 
-                video: { url: downloadUrl }, 
+                video: readFileSync(path), 
                 mimetype: 'video/mp4', 
                 caption: `✅ *ʀᴇᴘʀᴏᴅᴜᴄᴄɪᴏ́ɴ ʟɪsᴛᴀ*\n🎬 ${title}`,
-                footer: "By Barboza-Team ⚡",
-                buttons: botonesCanal,
-                headerType: 4
+                footer: "By Barboza-Team ⚡"
             }, { quoted: m })
         }
 
+        // Limpiar archivo temporal para no llenar el VPS/Hosting
+        if (existsSync(path)) unlinkSync(path)
+        
         if (m.react) await m.react('✅')
+
     } catch (e) {
         console.error(e)
         if (m.react) await m.react('❌')
+        conn.reply(m.chat, `🛑 ᴇʀʀᴏʀ ɪɴᴛᴇʀɴᴏ: ${e.message}`, m)
     }
 }
 
