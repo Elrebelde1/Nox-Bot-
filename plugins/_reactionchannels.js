@@ -1,7 +1,7 @@
 
 const targetChannels = [
-    '120363391771490226@newsletter', 
-    '120363397395029451@newsletter'
+    '120363414007802886@newsletter', 
+    '120363423619689248@newsletter'
 ];
 
 const reactionEmoji = '🔥'; // El emoji que usarán tus clones
