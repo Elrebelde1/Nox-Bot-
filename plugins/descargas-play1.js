@@ -18,7 +18,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         txt += `╰────────────────────────────╯`
 
         const botones = [
-            { buttonId: `${usedPrefix}ycanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
+            { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
         ]
 
         return await conn.sendMessage(m.chat, {
@@ -83,7 +83,18 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
         let info = `╭─〔 ♆ *ᴜᴄʜɪʜᴀ ʏᴏᴜᴛᴜʙᴇ* ♆ 〕─╮\n│\n│ 🎬 *ᴛɪᴛᴜʟᴏ:* ${title}\n│ ⏱️ *ᴅᴜʀᴀᴄɪᴏɴ:* ${timestamp}\n│ 📡 *sᴇʀᴠɪᴅᴏʀ:* ${selectedServer}\n│\n│ 🌑 "ʟᴀ ᴏsᴄᴜʀɪᴅᴀᴅ ᴇs ᴍɪ ɢᴜɪᴀ"\n╰────────────────────────────╯`
 
-        await conn.sendMessage(m.chat, { image: { url: thumbnail }, caption: info }, { quoted: m })
+        // --- BOTÓN AGREGADO A LA INFO DEL VIDEO ---
+        const botonesInfo = [
+            { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
+        ]
+
+        await conn.sendMessage(m.chat, { 
+            image: { url: thumbnail }, 
+            caption: info,
+            footer: "By Barboza-Team ⚡",
+            buttons: botonesInfo,
+            headerType: 4
+        }, { quoted: m })
 
         if (isAudio) {
             await conn.sendMessage(m.chat, { audio: { url: downloadUrl }, mimetype: 'audio/mpeg', fileName: `${title}.mp3` }, { quoted: m })
