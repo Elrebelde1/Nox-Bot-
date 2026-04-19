@@ -1,3 +1,6 @@
+
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import fetch from "node-fetch";
 
 const handler = async (m, { isOwner, isAdmin, conn, text, participants, args, usedPrefix }) => {
@@ -9,6 +12,9 @@ const handler = async (m, { isOwner, isAdmin, conn, text, participants, args, us
     throw new Error('No tienes permisos para usar este comando.');
   }
 
+  // Carga de la imagen local miniurl
+  const imgLocal = readFileSync(join(process.cwd(), 'storage', 'img', 'miniurl.jpg'));
+
   const customMessage = args.join(' ');
   const groupMetadata = await conn.groupMetadata(m.chat);
   const groupName = groupMetadata.subject;
@@ -18,7 +24,7 @@ const handler = async (m, { isOwner, isAdmin, conn, text, participants, args, us
     '82': '🇰🇷', '86': '🇨🇳', '7': '🇷🇺', '91': '🇮🇳', '61': '🇦🇺', '64': '🇳🇿',
     '34': '🇪🇸', '55': '🇧🇷', '52': '🇲🇽', '54': '🇦🇷', '57': '🇨🇴', '51': '🇵🇪',
     '56': '🇨🇱', '58': '🇻🇪', '502': '🇬🇹', '503': '🇸🇻', '504': '🇭🇳', '505': '🇳🇮',
-    '506': '🇨🇷', '507': '🇵🇦', '591': '🇧🇴', '592': '🇬🇾', '593': '🇪🇨', '595': '🇵🇾',
+    '506': '🇨🇷', '507': '🇵🇦', '591': '🇧🇴', '592': '🇬🇾', '593': '🇪𝙘', '595': '🇵🇾',
     '596': '🇲🇶', '597': '🇸🇷', '598': '🇺🇾', '53': '🇨🇺', '20': '🇪🇬', '972': '🇮🇱',
     '90': '🇹🇷', '63': '🇵🇭', '62': '🇮🇩', '60': '🇲🇾', '65': '🇸🇬', '66': '🇹🇭',
     '31': '🇳🇱', '32': '🇧🇪', '30': '🇬🇷', '36': '🇭🇺', '46': '🇸🇪', '47': '🇳🇴',
@@ -41,8 +47,6 @@ const handler = async (m, { isOwner, isAdmin, conn, text, participants, args, us
   }
   messageText += `└───────⭓\n\n𝘚𝘶𝘱𝘦𝘳 𝘉𝘰𝘵 𝘞𝘩𝘢𝘵𝘴𝘈𝘱𝘱 🚩`;
 
-  const imageUrl = 'https://qu.ax/Ny958';
-
   const fkontak = {
     key: {
       participants: "0@s.whatsapp.net",
@@ -53,7 +57,7 @@ const handler = async (m, { isOwner, isAdmin, conn, text, participants, args, us
     message: {
       locationMessage: {
         name: "*Sasuke Bot MD 🌀*",
-        jpegThumbnail: await (await fetch('https://cdn-sunflareteam.vercel.app/images/fa68a035ca.jpg')).buffer(),
+        jpegThumbnail: imgLocal, // Usamos la imagen local aquí también
         vcard:
           "BEGIN:VCARD\n" +
           "VERSION:3.0\n" +
@@ -71,13 +75,12 @@ const handler = async (m, { isOwner, isAdmin, conn, text, participants, args, us
     participant: "0@s.whatsapp.net"
   };
 
-  // Definición del botón
   const buttons = [
     { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: '📢 Ver canales' }, type: 1 }
   ];
 
   const buttonMessage = {
-    image: { url: imageUrl },
+    image: imgLocal, // Imagen principal ahora es la miniurl local
     caption: messageText,
     footer: 'By Barboza-Team ⚡',
     buttons: buttons,
@@ -85,7 +88,6 @@ const handler = async (m, { isOwner, isAdmin, conn, text, participants, args, us
     mentions: participants.map(a => a.id)
   };
 
-  // Envío del mensaje con botones
   await conn.sendMessage(m.chat, buttonMessage, { quoted: fkontak });
 };
 
