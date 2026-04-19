@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-// Caché de imagen y cooldown global
+// Cargamos la imagen una sola vez para que responda al instante
 const menuImg = readFileSync(join(process.cwd(), 'storage', 'img', 'miniurl.jpg'));
 const cooldown = new Map();
 
@@ -16,35 +16,33 @@ const toStyle = (text) => {
 };
 
 const clockString = ms => {
-  const h = isNaN(ms) ? '--' : Math.floor(ms / 3600000);
-  const m = isNaN(ms) ? '--' : Math.floor(ms / 60000) % 60;
-  const s = isNaN(ms) ? '--' : Math.floor(ms / 1000) % 60;
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor(ms / 60000) % 60;
+  const s = Math.floor(ms / 1000) % 60;
   return [h, m, s].map(v => v.toString().padStart(2, '0')).join(':');
 };
 
 const saludarSegunHora = () => {
   const hora = new Date().getHours();
-  if (hora >= 5 && hora < 12) return `🌅 ${toStyle('¡Buen día!')}`;
-  if (hora >= 12 && hora < 19) return `☀️ ${toStyle('¡Linda tarde!')}`;
+  if (hora >= 5 && hora < 12) return `🌅 ${toStyle('¡Buenos días!')}`;
+  if (hora >= 12 && hora < 19) return `☀️ ${toStyle('¡Buenas tardes!')}`;
   return `🌙 ${toStyle('¡Buenas noches!')}`;
 };
 
 const handler = async (m, { conn, usedPrefix }) => {
-  // Anti-Spam (Evita que saturen el bot con el menú)
+  // Anti-Spam de 5 segundos
   if (cooldown.has(m.sender)) {
     const lastTime = cooldown.get(m.sender);
-    const diff = Date.now() - lastTime;
-    if (diff < 5000) return; // 5 segundos de espera
+    if (Date.now() - lastTime < 5000) return; 
   }
   cooldown.set(m.sender, Date.now());
 
   try {
     const saludo = saludarSegunHora();
-    const user = global.db.data.users[m.sender] || { level: 0, exp: 0, limit: 10 };
-    const totalReg = Object.keys(global.db.data.users).length;
+    const user = global.db.data.users[m.sender] || { level: 0, limit: 6 };
     const uptime = clockString(process.uptime() * 1000);
     const tagUsuario = `@${m.sender.split('@')[0]}`;
-    const userName = m.pushName || 'Usuario';
+    const userName = m.pushName || (await conn.getName(m.sender)) || 'Usuario';
 
     let categorizedCommands = {};
     Object.values(global.plugins)
@@ -56,30 +54,27 @@ const handler = async (m, { conn, usedPrefix }) => {
         cmds.forEach(cmd => categorizedCommands[tag].add(usedPrefix + cmd));
       });
 
-    // Encabezado con estadísticas reales
     const header = `
 ${saludo} ${tagUsuario} 👋
 
-┏━━〔 ⚡ ${toStyle('SASUKE BOT MD')} ⚡ 〕━━⊷
+╭━━〔 ⚡ ${toStyle('SASUKE BOT MD')} ⚡ 〕━━⊷
 ┃ 👤 ${toStyle('Usuario')}: ${toStyle(userName)}
-┃ 🏆 ${toStyle('Nivel')}: ${user.level}
-┃ ⚡ ${toStyle('XP')}: ${user.exp}
+┃ 📊 ${toStyle('Nivel')}: ${user.level}
 ┃ 💎 ${toStyle('Diamantes')}: ${user.limit}
-┃ 📊 ${toStyle('Usuarios')}: ${totalReg}
 ┃ ⏲️ ${toStyle('Uptime')}: ${uptime}
-┗━━━━━━━━━━━━━━━━━━━━⬣`.trim();
+╰━━━━━━━━━━━━━━━━━━━⬣`.trim();
 
     const menuBody = Object.entries(categorizedCommands).map(([title, cmds]) => {
       const styledTitle = toStyle(title.toUpperCase());
-      const list = [...cmds].map(cmd => `  ⚡ ${toStyle(cmd)}`).join('\n');
-      return `┏━━〔 📂 ${styledTitle} 〕━━⊷\n${list}\n┗━━━━━━━━━━━━━━━━━━⬣`;
+      const list = [...cmds].map(cmd => `┃  » ⚡ ${toStyle(cmd)}`).join('\n');
+      return `╭━━〔 📂 ${styledTitle} 〕━━⊷\n${list}\n╰━━━━━━━━━━━━━━━━━━━⬣`;
     }).join('\n\n');
 
-    const fullMenu = `${header}\n\n${menuBody}\n\n${toStyle('Sasuke Bot Sky Ultra Plus V2')}`;
+    const fullMenu = `${header}\n\n${menuBody}\n\n${toStyle('Barboza-Team ⚡')}`;
 
     const botones = [
-      { buttonId: `${usedPrefix}perfil`, buttonText: { displayText: "👤 Mi Perfil" }, type: 1 },
-      { buttonId: `${usedPrefix}owner`, buttonText: { displayText: "👑 Creador" }, type: 1 }
+      { buttonId: `${usedPrefix}canal1`, buttonText: { displayText: "📢 Canal 1" }, type: 1 },
+      { buttonId: `${usedPrefix}canal2`, buttonText: { displayText: "📢 Canal 2" }, type: 1 }
     ];
 
     const buttonMessage = {
@@ -91,14 +86,10 @@ ${saludo} ${tagUsuario} 👋
       mentions: [m.sender]
     };
 
-    // Enviar el menú
-    await conn.sendMessage(m.chat, buttonMessage, { quoted: m });
-    
-    // OPCIONAL: Enviar un pequeño audio para que el bot parezca más interactivo
-    // await conn.sendMessage(m.chat, { audio: { url: './storage/audio/menu.mp3' }, fileName: 'error.mp3', mimetype: 'audio/mp4', ptt: true }, { quoted: m });
+    return await conn.sendMessage(m.chat, buttonMessage, { quoted: m });
 
   } catch (e) {
-    console.error("Error en el menú mejorado:", e);
+    console.error("Error en el menú:", e);
   }
 };
 
