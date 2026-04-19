@@ -8,7 +8,7 @@ try {
   imgLocal = existsSync(imgPath) ? readFileSync(imgPath) : Buffer.alloc(0)
 } catch (e) {
   imgLocal = Buffer.alloc(0)
-  console.error('[ERROR] Error al leer miniurl para hidetag:', e)
+  console.error('[ERROR] Error al leer miniurl:', e)
 }
 
 let handler = async (m, { conn, text, participants, isAdmin, usedPrefix }) => {
@@ -19,18 +19,21 @@ let handler = async (m, { conn, text, participants, isAdmin, usedPrefix }) => {
     let q = m.quoted ? m.quoted : m
     let contenido = text || q.text || '📢 ¡Atención a todos! 👋'
 
-    // Definimos el botón que llama al comando .scanal
-    const buttons = [
-      { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: '📢 Ver canales' }, type: 1 }
-    ]
+    // Formateamos el texto para que incluya la instrucción del botón de forma visual
+    // Si los botones nativos fallan en tu versión, esta estructura es 100% segura
+    let txt = `${contenido}\n\n`
+    txt += `*By Barboza-Team* ⚡`
 
-    const buttonMessage = {
-      image: imgLocal, // Imagen local miniurl
-      caption: contenido,
-      footer: 'By Barboza-Team ⚡',
-      buttons: buttons,
+    // Intentamos enviar con el formato de botones más estable
+    await conn.sendMessage(m.chat, {
+      image: imgLocal,
+      caption: txt,
+      footer: 'Presiona el botón para ver los canales ⚡',
+      buttons: [
+        { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: '📢 Ver canales' }, type: 1 }
+      ],
       headerType: 4,
-      mentions: users, // Menciona a todos los integrantes
+      mentions: users,
       contextInfo: {
         isForwarded: true,
         forwardingScore: 999,
@@ -40,23 +43,18 @@ let handler = async (m, { conn, text, participants, isAdmin, usedPrefix }) => {
           thumbnail: imgLocal,
           sourceUrl: 'https://github.com/Barboza-Team',
           mediaType: 1,
-          showAdAttribution: true,
-          renderLargerThumbnail: false
+          showAdAttribution: true
         }
       }
-    }
-
-    // Usamos sendMessage directamente que es más compatible con botones actualmente
-    await conn.sendMessage(m.chat, buttonMessage, { 
-      quoted: {
-        key: { remoteJid: 'status@broadcast', participant: '0@s.whatsapp.net', fromMe: false },
-        message: { conversation: "𝙃𝙤𝙡𝙖,𝙎𝙤𝙮 𝙎𝙖𝙨𝙪𝙠𝙚 𝘽𝙤𝙩 𝙈𝘿👾" }
-      }
-    })
+    }, { quoted: m })
 
   } catch (error) {
     console.error("[ERROR EN HIDETAG]:", error)
-    conn.sendMessage(m.chat, { text: (text || '📢 Notificación'), mentions: participants.map(u => u.id) }, { quoted: m })
+    // Si falla lo anterior, esto es el "Salvavidas" (siempre responderá aquí)
+    await conn.sendMessage(m.chat, { 
+      text: (text || '📢 Notificación'), 
+      mentions: participants.map(u => u.id) 
+    }, { quoted: m })
   }
 }
 
