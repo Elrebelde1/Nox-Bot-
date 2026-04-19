@@ -1,4 +1,3 @@
-import { generateWAMessageFromContent } from '@whiskeysockets/baileys'
 import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 
@@ -20,49 +19,44 @@ let handler = async (m, { conn, text, participants, isAdmin, usedPrefix }) => {
     let q = m.quoted ? m.quoted : m
     let contenido = text || q.text || '📢 ¡Atención a todos! 👋'
 
-    // Generamos el mensaje con el estilo de Sasuke Bot
-    const msg = await generateWAMessageFromContent(m.chat, {
-      viewOnceMessage: {
-        message: {
-          buttonsMessage: {
-            contentText: contenido,
-            footerText: 'By Barboza-Team ⚡',
-            buttons: [
-              { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: '📢 Ver canales' }, type: 1 }
-            ],
-            headerType: 4,
-            imageMessage: (await conn.prepareWAMessageMedia({ image: imgLocal }, { upload: conn.waUploadToServer })).imageMessage,
-            contextInfo: {
-              mentionedJid: users,
-              isForwarded: true,
-              forwardingScore: 999,
-              externalAdReply: {
-                title: 'WhatsApp Business ✅',
-                body: '𝙃𝙤𝙡𝙖,𝙎𝙤𝙮 𝙎𝙖𝙨𝙪𝙠𝙚 𝘽𝙤𝙩 𝙈𝘿👾',
-                thumbnail: imgLocal,
-                sourceUrl: 'https://github.com/Barboza-Team',
-                mediaType: 1,
-                showAdAttribution: true,
-                renderLargerThumbnail: false
-              }
-            }
-          }
+    // Definimos el botón que llama al comando .scanal
+    const buttons = [
+      { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: '📢 Ver canales' }, type: 1 }
+    ]
+
+    const buttonMessage = {
+      image: imgLocal, // Imagen local miniurl
+      caption: contenido,
+      footer: 'By Barboza-Team ⚡',
+      buttons: buttons,
+      headerType: 4,
+      mentions: users, // Menciona a todos los integrantes
+      contextInfo: {
+        isForwarded: true,
+        forwardingScore: 999,
+        externalAdReply: {
+          title: 'WhatsApp Business ✅',
+          body: '𝙃𝙤𝙡𝙖,𝙎𝙤𝙮 𝙎𝙖𝙨𝙪𝙠𝙚 𝘽𝙤𝙩 𝙈𝘿👾',
+          thumbnail: imgLocal,
+          sourceUrl: 'https://github.com/Barboza-Team',
+          mediaType: 1,
+          showAdAttribution: true,
+          renderLargerThumbnail: false
         }
       }
-    }, { 
+    }
+
+    // Usamos sendMessage directamente que es más compatible con botones actualmente
+    await conn.sendMessage(m.chat, buttonMessage, { 
       quoted: {
         key: { remoteJid: 'status@broadcast', participant: '0@s.whatsapp.net', fromMe: false },
         message: { conversation: "𝙃𝙤𝙡𝙖,𝙎𝙤𝙮 𝙎𝙖𝙨𝙪𝙠𝙚 𝘽𝙤𝙩 𝙈𝘿👾" }
-      },
-      userJid: conn.user.id 
+      }
     })
-
-    await conn.relayMessage(m.chat, msg.message, { messageId: msg.key.id })
 
   } catch (error) {
     console.error("[ERROR EN HIDETAG]:", error)
-    // Fallback en caso de que relayMessage falle por incompatibilidad de botones
-    conn.sendMessage(m.chat, { text: text || '📢 Notificación a todos', mentions: participants.map(u => u.id) }, { quoted: m })
+    conn.sendMessage(m.chat, { text: (text || '📢 Notificación'), mentions: participants.map(u => u.id) }, { quoted: m })
   }
 }
 
