@@ -1,67 +1,53 @@
-import { readFileSync, existsSync } from 'fs'
-import { join } from 'path'
+import { generateWAMessageFromContent } from '@whiskeysockets/baileys'
 
-// Carga segura de la imagen local al iniciar
-const imgPath = join(process.cwd(), 'storage', 'img', 'miniurl.jpg')
-let imgLocal
-try {
-  imgLocal = existsSync(imgPath) ? readFileSync(imgPath) : Buffer.alloc(0)
-} catch (e) {
-  imgLocal = Buffer.alloc(0)
-  console.error('[ERROR] Error al leer miniurl:', e)
-}
+let handler = async (m, { conn, text, participants, isAdmin }) => {
+  if (!isAdmin) return m.reply('🚫 Este comando solo puede usarlo un administrador del grupo.')
 
-let handler = async (m, { conn, text, participants, isAdmin, usedPrefix }) => {
-  try {
-    if (!isAdmin) return m.reply('🚫 Este comando solo puede usarlo un administrador del grupo.')
+  // Obtenemos los JID de los participantes
+  let users = participants.map(u => u.id)
+  let q = m.quoted ? m.quoted : m
 
-    let users = participants.map(u => u.id)
-    let q = m.quoted ? m.quoted : m
-    let contenido = text || q.text || '📢 ¡Atención a todos! 👋'
+  // Texto final: Si hay texto del usuario lo usa, si no, el del mensaje citado, o el default
+  let contenido = text || q.text || '📢 ¡Atención a todos! 👋'
 
-    // Formateamos el texto para que incluya la instrucción del botón de forma visual
-    // Si los botones nativos fallan en tu versión, esta estructura es 100% segura
-    let txt = `${contenido}\n\n`
-    txt += `*By Barboza-Team* ⚡`
-
-    // Intentamos enviar con el formato de botones más estable
-    await conn.sendMessage(m.chat, {
-      image: imgLocal,
-      caption: txt,
-      footer: 'Presiona el botón para ver los canales ⚡',
-      buttons: [
-        { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: '📢 Ver canales' }, type: 1 }
-      ],
-      headerType: 4,
-      mentions: users,
+  // Generamos el mensaje con la estructura de Business Verificado estilo Sasuke Bot
+  const msg = await generateWAMessageFromContent(m.chat, {
+    extendedTextMessage: {
+      text: contenido,
       contextInfo: {
+        mentionedJid: users,
         isForwarded: true,
         forwardingScore: 999,
         externalAdReply: {
-          title: 'WhatsApp Business ✅',
-          body: '𝙃𝙤𝙡𝙖,𝙎𝙤𝙮 𝙎𝙖𝙨𝙪𝙠𝙚 𝘽𝙤𝙩 𝙈𝘿👾',
-          thumbnail: imgLocal,
-          sourceUrl: 'https://github.com/Barboza-Team',
+          title: 'WhatsApp Business ✅', // Estilo verificado
+          body: '𝙃𝙤𝙡𝙖,𝙎𝙤𝙮 𝙎𝙖𝙨𝙪𝙠𝙚 𝘽𝙤𝙩 𝙈𝘿👾', // El texto que pediste
+          thumbnailUrl: 'https://files.catbox.moe/t7uytz.png', // Imagen de Sasuke
+          sourceUrl: 'https://github.com/Barboza-Team', 
           mediaType: 1,
-          showAdAttribution: true
+          showAdAttribution: true,
+          renderLargerThumbnail: false 
         }
       }
-    }, { quoted: m })
+    }
+  }, { 
+    quoted: {
+      key: { remoteJid: 'status@broadcast', participant: '0@s.whatsapp.net' },
+      message: { 
+        conversation: "𝙃𝙤𝙡𝙖,𝙎𝙤𝙮 𝙎𝙖𝙨𝙪𝙠𝙚 𝘽𝙤𝙩 𝙈𝘿👾" // Firma en el quoted
+      }
+    },
+    userJid: conn.user.id 
+  })
 
-  } catch (error) {
-    console.error("[ERROR EN HIDETAG]:", error)
-    // Si falla lo anterior, esto es el "Salvavidas" (siempre responderá aquí)
-    await conn.sendMessage(m.chat, { 
-      text: (text || '📢 Notificación'), 
-      mentions: participants.map(u => u.id) 
-    }, { quoted: m })
-  }
+  await conn.relayMessage(m.chat, msg.message, { messageId: msg.key.id })
 }
 
 handler.help = ['hidetag']
 handler.tags = ['group']
+// He añadido 'b' a los comandos para que funcione como pediste antes
 handler.command = ['hidetag', 'notify', 'n', 'noti', 'b'] 
 handler.group = true
 handler.admin = true
+handler.botAdmin = true
 
 export default handler
