@@ -28,13 +28,14 @@ const saludarSegunHora = () => {
 
 const handler = async (m, { conn, usedPrefix }) => {
   try {
+    // Carga de imagen local
+    const img = readFileSync(join(process.cwd(), 'storage', 'img', 'miniurl.jpg'));
+    
     const saludo = saludarSegunHora();
     const user = global.db.data.users[m.sender] || { level: 1, exp: 0, limit: 5 };
     const uptime = clockString(process.uptime() * 1000);
     const tagUsuario = `@${m.sender.split('@')[0]}`;
-    const userName = (await conn.getName?.(m.sender)) || tagUsuario;
-
-    const imgRandom = ["https://iili.io/FKVDVAN.jpg", "https://iili.io/FKVbUrJ.jpg"].getRandom();
+    const userName = (await conn.getName(m.sender)) || tagUsuario;
 
     let categorizedCommands = {};
     Object.values(global.plugins)
@@ -46,16 +47,14 @@ const handler = async (m, { conn, usedPrefix }) => {
         cmds.forEach(cmd => categorizedCommands[tag].add(toStyle(usedPrefix + cmd)));
       });
 
-    const header = `
-${saludo} ${tagUsuario} 👋
+    const header = `${saludo} ${tagUsuario} 👋
 
 ╭━━〔 ⚡ ${toStyle('SASUKE BOT MD')} ⚡ 〕━━⊷
 ┃ 👤 ${toStyle('Usuario')}: ${toStyle(userName)}
 ┃ 📊 ${toStyle('Nivel')}: ${user.level}
 ┃ 💎 ${toStyle('Diamantes')}: ${user.limit}
 ┃ ⏲️ ${toStyle('Uptime')}: ${uptime}
-╰━━━━━━━━━━━━━━━⬣
-`.trim();
+╰━━━━━━━━━━━━━━━⬣`.trim();
 
     const menuBody = Object.entries(categorizedCommands).map(([title, cmds]) => {
       const styledTitle = toStyle(title.toUpperCase());
@@ -68,17 +67,18 @@ ${saludo} ${tagUsuario} 👋
     const botones = [
       { buttonId: `.canal1`, buttonText: { displayText: "📢 Canal 1" }, type: 1 },
       { buttonId: `.canal2`, buttonText: { displayText: "📢 Canal 2" }, type: 1 }
-    ]
+    ];
 
     const buttonMessage = {
-      image: { url: imgRandom },
+      image: img, // Usando la constante img cargada arriba
       caption: fullMenu,
       footer: "By Barboza-Team ⚡",
       buttons: botones,
-      headerType: 4
-    }
+      headerType: 4,
+      mentions: [m.sender] // Esto asegura que la mención @número funcione
+    };
 
-    return await conn.sendMessage(m.chat, buttonMessage, { quoted: m })
+    return await conn.sendMessage(m.chat, buttonMessage, { quoted: m });
 
   } catch (e) {
     console.error(e);
