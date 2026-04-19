@@ -1,6 +1,6 @@
 import fetch from "node-fetch";
 
-const handler = async (m, { isOwner, isAdmin, conn, text, participants, args}) => {
+const handler = async (m, { isOwner, isAdmin, conn, text, participants, args, usedPrefix }) => {
   const chat = global.db.data.chats[m.chat] || {};
   const emoji = chat.emojiTag || '🤖';
 
@@ -71,12 +71,22 @@ const handler = async (m, { isOwner, isAdmin, conn, text, participants, args}) =
     participant: "0@s.whatsapp.net"
   };
 
-  // Solo enviamos la imagen con el caption y menciones
-  await conn.sendMessage(m.chat, {
+  // Definición del botón
+  const buttons = [
+    { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: '📢 Ver canales' }, type: 1 }
+  ];
+
+  const buttonMessage = {
     image: { url: imageUrl },
     caption: messageText,
+    footer: 'By Barboza-Team ⚡',
+    buttons: buttons,
+    headerType: 4,
     mentions: participants.map(a => a.id)
-  }, { quoted: fkontak });
+  };
+
+  // Envío del mensaje con botones
+  await conn.sendMessage(m.chat, buttonMessage, { quoted: fkontak });
 };
 
 handler.help = ['todos'];
