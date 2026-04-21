@@ -1,62 +1,71 @@
 import axios from 'axios';
-import { uploadFile } from '../lib/uploadFile.js';
+import FormData from 'form-data';
 
-let handler = async (m, { conn, usedPrefix, command }) => {
+let handler = async (m, { conn, prefix, command }) => {
   try {
     let q = m.quoted ? m.quoted : m;
     let mime = (q.msg || q).mimetype || '';
 
-    if (!mime) return m.reply(`📸 Responde a una imagen con el comando *${usedPrefix}${command}*`);
+    if (!mime) return m.reply(`📸 Responde a una imagen con el comando *${prefix}${command}* para mejorarla.`);
     if (!mime.startsWith('image')) return m.reply(`⚠️ Solo se admiten imágenes.`);
 
-    await conn.sendMessage(m.chat, { react: { text: "⏳", key: m.key } });
-
-    const media = await q.download();
-    
-    // Subimos la imagen para obtener el enlace
-    const urlMedia = await uploadFile(media);
-
-    // Parámetros de la API
-    const apiKey = "sylphy-6f150d";
-    const scale = "2"; 
-    
-    // Construimos la URL de forma más segura
-    const apiUrl = `https://sylphyy.xyz/tools/upscale?url=${encodeURIComponent(urlMedia)}&scale=${scale}&api_key=${apiKey}`;
-
-    const response = await axios.get(apiUrl, {
-        headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
+    await conn.sendMessage(m.chat, {
+      react: { text: "🔄", key: m.key }
     });
 
-    const data = response.data;
+    const media = await q.download();
 
-    if (data.status && data.result && data.result.url) {
-      await conn.sendMessage(m.chat, {
-        image: { url: data.result.url },
-        caption: `✨ *Imagen Mejorada* ✨\n\n⚙️ *Escala:* ${scale}x\n🔥 *By Barboza x Sasuke*`
-      }, { quoted: m });
+    const enhancedBuffer = await ihancer(media, { method: 1, size: 'high' });
 
-      await conn.sendMessage(m.chat, { react: { text: "✅", key: m.key } });
-    } else {
-      throw new Error(data.result?.message || "La API rechazó la imagen.");
-    }
+    const caption = `✨ *Imagen mejorada con éxito*\n⚙️ Método: iHancer AI\n🔝 Calidad: High\n🔥 By: Sasuke Bot`;
+
+    await conn.sendMessage(m.chat, {
+      image: enhancedBuffer,
+      caption
+    }, { quoted: m });
+
+    await conn.sendMessage(m.chat, {
+      react: { text: "✅", key: m.key }
+    });
 
   } catch (e) {
     console.error(e);
-    await conn.sendMessage(m.chat, { react: { text: "❌", key: m.key } });
-    
-    // Si da error 400, explicamos por qué puede ser
-    if (e.response && e.response.status === 400) {
-        return m.reply("⚠️ *Error 400:* La API no acepta esta imagen. Puede que el enlace generado sea privado o inválido.");
-    }
-    
-    await m.reply(`⚠️ *Error:* ${e.message}`);
+    await conn.sendMessage(m.chat, {
+      react: { text: "❌", key: m.key }
+    });
+    await m.reply("⚠️ Ocurrió un error al procesar la imagen con iHancer.");
   }
 };
 
+async function ihancer(buffer, { method = 1, size = 'low' } = {}) {
+    const _size = ['low', 'medium', 'high']
+
+    if (!buffer || !Buffer.isBuffer(buffer)) throw new Error('Se requiere una imagen')
+    if (method < 1 || method > 4) throw new Error('Métodos disponibles: 1, 2, 3, 4')
+    if (!_size.includes(size)) throw new Error(`Calidades disponibles: ${_size.join(', ')}`)
+
+    const form = new FormData()
+    form.append('method', method.toString())
+    form.append('is_pro_version', 'false')
+    form.append('is_enhancing_more', 'false')
+    form.append('max_image_size', size)
+    form.append('file', buffer, `sasuke_${Date.now()}.jpg`)
+
+    const { data } = await axios.post('https://ihancer.com/api/enhance', form, {
+        headers: {
+            ...form.getHeaders(),
+            'accept-encoding': 'gzip',
+            'host': 'ihancer.com',
+            'user-agent': 'Dart/3.5 (dart:io)'
+        },
+        responseType: 'arraybuffer'
+    })
+
+    return Buffer.from(data)
+}
+
 handler.help = ['hd'];
-handler.tags = ['ai'];
-handler.command = /^(hd|upscale|remini)$/i;
+handler.tags = ['ai', 'imagen'];
+handler.command = ['hd', 'upscale', 'enhance'];
 
 export default handler;
