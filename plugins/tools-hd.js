@@ -1,64 +1,59 @@
 import axios from 'axios';
-import FormData from 'form-data';
-import { fileTypeFromBuffer } from 'file-type';
+import { uploadFile } from '../lib/uploadFile.js';
 
 let handler = async (m, { conn, usedPrefix, command }) => {
   try {
     let q = m.quoted ? m.quoted : m;
     let mime = (q.msg || q).mimetype || '';
 
-    if (!mime) return m.reply(`📸 Responde a una imagen con el comando *${usedPrefix}${command}* para mejorar la calidad.`);
+    if (!mime) return m.reply(`📸 Responde a una imagen con el comando *${usedPrefix}${command}*`);
     if (!mime.startsWith('image')) return m.reply(`⚠️ Solo se admiten imágenes.`);
 
     await conn.sendMessage(m.chat, { react: { text: "⏳", key: m.key } });
 
-    // 1. Descargar la imagen
     const media = await q.download();
     
-    // 2. Subir a Telegra.ph (Función integrada para evitar errores de rutas)
-    const urlMedia = await uploadToTelegraph(media);
+    // Subimos la imagen para obtener el enlace
+    const urlMedia = await uploadFile(media);
 
-    // 3. Llamada a la API de Sylphy
+    // Parámetros de la API
     const apiKey = "sylphy-6f150d";
     const scale = "2"; 
+    
+    // Construimos la URL de forma más segura
     const apiUrl = `https://sylphyy.xyz/tools/upscale?url=${encodeURIComponent(urlMedia)}&scale=${scale}&api_key=${apiKey}`;
 
-    const { data } = await axios.get(apiUrl);
+    const response = await axios.get(apiUrl, {
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+    });
+
+    const data = response.data;
 
     if (data.status && data.result && data.result.url) {
-      const caption = `✨ *Imagen Mejorada con Éxito*\n\n⚙️ *Escala:* ${scale}x\n🔥 *By Barboza x Sasuke*`;
-
       await conn.sendMessage(m.chat, {
         image: { url: data.result.url },
-        caption
+        caption: `✨ *Imagen Mejorada* ✨\n\n⚙️ *Escala:* ${scale}x\n🔥 *By Barboza x Sasuke*`
       }, { quoted: m });
 
       await conn.sendMessage(m.chat, { react: { text: "✅", key: m.key } });
     } else {
-      throw new Error(data.result?.message || "La API no devolvió una URL válida.");
+      throw new Error(data.result?.message || "La API rechazó la imagen.");
     }
 
   } catch (e) {
     console.error(e);
     await conn.sendMessage(m.chat, { react: { text: "❌", key: m.key } });
-    await m.reply(`⚠️ *Error:* ${e.message || "No se pudo procesar la imagen."}`);
+    
+    // Si da error 400, explicamos por qué puede ser
+    if (e.response && e.response.status === 400) {
+        return m.reply("⚠️ *Error 400:* La API no acepta esta imagen. Puede que el enlace generado sea privado o inválido.");
+    }
+    
+    await m.reply(`⚠️ *Error:* ${e.message}`);
   }
 };
-
-/**
- * Función para subir imágenes a Telegra.ph sin depender de archivos externos
- */
-async function uploadToTelegraph(buffer) {
-  const { ext } = await fileTypeFromBuffer(buffer);
-  const form = new FormData();
-  form.append('file', buffer, `tmp.${ext}`);
-  
-  const res = await axios.post('https://telegra.ph/upload', form, {
-    headers: { ...form.getHeaders() }
-  });
-  
-  return 'https://telegra.ph' + res.data[0].src;
-}
 
 handler.help = ['hd'];
 handler.tags = ['ai'];
