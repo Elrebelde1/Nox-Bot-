@@ -1,4 +1,6 @@
 import axios from 'axios';
+// Intentamos importar desde la ruta correcta (un nivel arriba de plugins)
+import { uploadFile } from '../lib/uploadFile.js'; 
 
 let handler = async (m, { conn, prefix, command }) => {
   try {
@@ -10,21 +12,28 @@ let handler = async (m, { conn, prefix, command }) => {
 
     await conn.sendMessage(m.chat, { react: { text: "⏳", key: m.key } });
 
-    // 1. Descargar la imagen y subirla a un servidor temporal (qu.ax)
-    // Nota: La API de Sylphy pide una URL, no el archivo directo.
+    // Descargamos el buffer de la imagen
     const media = await q.download();
-    const { uploadFile } = await import('./lib/uploadFile.js'); // Asegúrate de tener este helper
-    const urlMedia = await uploadFile(media);
 
-    // 2. Llamada a la API de Sylphy
+    // Subimos la imagen para obtener una URL (necesaria para la API)
+    let urlMedia;
+    try {
+        urlMedia = await uploadFile(media);
+    } catch (err) {
+        // Si falla uploadFile, intentamos con otro método común en estos bots
+        const { uploadImage } = await import('../lib/uploadImage.js');
+        urlMedia = await uploadImage(media);
+    }
+
+    // Configuración de la API Sylphy
     const apiKey = "sylphy-6f150d";
-    const scale = "2"; // Puedes cambiarlo a 4 si la API lo soporta
+    const scale = "2"; 
     const apiUrl = `https://sylphyy.xyz/tools/upscale?url=${encodeURIComponent(urlMedia)}&scale=${scale}&api_key=${apiKey}`;
 
     const response = await axios.get(apiUrl);
     const result = response.data;
 
-    if (result.status && result.result.url) {
+    if (result.status && result.result && result.result.url) {
       const enhancedUrl = result.result.url;
       const caption = `✨ *Imagen Mejorada* ✨\n\n⚙️ *Escala:* ${scale}x\n🔥 *By Barboza x Sasuke*`;
 
@@ -35,13 +44,15 @@ let handler = async (m, { conn, prefix, command }) => {
 
       await conn.sendMessage(m.chat, { react: { text: "✅", key: m.key } });
     } else {
-      throw new Error(result.result.message || "Error desconocido");
+      // Manejo del error 500 o fallos de la API
+      const msgError = result.result?.message || "El servidor de la API no pudo procesar la imagen.";
+      throw new Error(msgError);
     }
 
   } catch (e) {
     console.error(e);
     await conn.sendMessage(m.chat, { react: { text: "❌", key: m.key } });
-    await m.reply(`⚠️ *Error:* ${e.message || "No se pudo procesar la imagen."}`);
+    await m.reply(`⚠️ *Error:* ${e.message}`);
   }
 };
 
