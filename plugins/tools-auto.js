@@ -2,7 +2,7 @@ import hispamemes from 'hispamemes'
 import axios from 'axios'
 import delay from 'delay'
 
-const canal = '120363338297109389@newsletter'
+const canal = '120363409416185213@newsletter'
 
 const query = [
   'videos graciosos', 'jajaja videos de risa', 'video fun', 'Funny videos',
