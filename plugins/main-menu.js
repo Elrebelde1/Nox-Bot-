@@ -72,9 +72,9 @@ ${saludo} ${tagUsuario} 👋
 
     const fullMenu = `${header}\n\n${menuBody}\n\n${toStyle('Barboza-Team ⚡')}`;
 
+    // Botón único para ver los canales
     const botones = [
-      { buttonId: `${usedPrefix}canal1`, buttonText: { displayText: "📢 Canal 1" }, type: 1 },
-      { buttonId: `${usedPrefix}canal2`, buttonText: { displayText: "📢 Canal 2" }, type: 1 }
+      { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "⚡ Ver canales" }, type: 1 }
     ];
 
     const buttonMessage = {
