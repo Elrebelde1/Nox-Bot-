@@ -1,71 +1,52 @@
 import axios from 'axios';
-import FormData from 'form-data';
 
 let handler = async (m, { conn, prefix, command }) => {
   try {
     let q = m.quoted ? m.quoted : m;
     let mime = (q.msg || q).mimetype || '';
-    
-    if (!mime) return m.reply(`📸 Responde a una imagen con el comando *${prefix}${command}* para mejorarla.`);
+
+    if (!mime) return m.reply(`📸 Responde a una imagen con el comando *${prefix}${command}* para mejorar su calidad.`);
     if (!mime.startsWith('image')) return m.reply(`⚠️ Solo se admiten imágenes.`);
 
-    await conn.sendMessage(m.chat, {
-      react: { text: "🔄", key: m.key }
-    });
+    await conn.sendMessage(m.chat, { react: { text: "⏳", key: m.key } });
 
+    // 1. Descargar la imagen y subirla a un servidor temporal (qu.ax)
+    // Nota: La API de Sylphy pide una URL, no el archivo directo.
     const media = await q.download();
+    const { uploadFile } = await import('./lib/uploadFile.js'); // Asegúrate de tener este helper
+    const urlMedia = await uploadFile(media);
 
-    const enhancedBuffer = await ihancer(media, { method: 1, size: 'high' });
+    // 2. Llamada a la API de Sylphy
+    const apiKey = "sylphy-6f150d";
+    const scale = "2"; // Puedes cambiarlo a 4 si la API lo soporta
+    const apiUrl = `https://sylphyy.xyz/tools/upscale?url=${encodeURIComponent(urlMedia)}&scale=${scale}&api_key=${apiKey}`;
 
-    const caption = `✨ *Imagen mejorada con éxito*\n⚙️ Método: iHancer AI\n🔝 Calidad: High\n🔥 By: Sasuke Bot`;
+    const response = await axios.get(apiUrl);
+    const result = response.data;
 
-    await conn.sendMessage(m.chat, {
-      image: enhancedBuffer,
-      caption
-    }, { quoted: m });
+    if (result.status && result.result.url) {
+      const enhancedUrl = result.result.url;
+      const caption = `✨ *Imagen Mejorada* ✨\n\n⚙️ *Escala:* ${scale}x\n🔥 *By Barboza x Sasuke*`;
 
-    await conn.sendMessage(m.chat, {
-      react: { text: "✅", key: m.key }
-    });
+      await conn.sendMessage(m.chat, {
+        image: { url: enhancedUrl },
+        caption
+      }, { quoted: m });
+
+      await conn.sendMessage(m.chat, { react: { text: "✅", key: m.key } });
+    } else {
+      throw new Error(result.result.message || "Error desconocido");
+    }
 
   } catch (e) {
     console.error(e);
-    await conn.sendMessage(m.chat, {
-      react: { text: "❌", key: m.key }
-    });
-    await m.reply("⚠️ Ocurrió un error al procesar la imagen con iHancer.");
+    await conn.sendMessage(m.chat, { react: { text: "❌", key: m.key } });
+    await m.reply(`⚠️ *Error:* ${e.message || "No se pudo procesar la imagen."}`);
   }
 };
 
-async function ihancer(buffer, { method = 1, size = 'low' } = {}) {
-    const _size = ['low', 'medium', 'high']
-
-    if (!buffer || !Buffer.isBuffer(buffer)) throw new Error('Se requiere una imagen')
-    if (method < 1 || method > 4) throw new Error('Métodos disponibles: 1, 2, 3, 4')
-    if (!_size.includes(size)) throw new Error(`Calidades disponibles: ${_size.join(', ')}`)
-
-    const form = new FormData()
-    form.append('method', method.toString())
-    form.append('is_pro_version', 'false')
-    form.append('is_enhancing_more', 'false')
-    form.append('max_image_size', size)
-    form.append('file', buffer, `sasuke_${Date.now()}.jpg`)
-
-    const { data } = await axios.post('https://ihancer.com/api/enhance', form, {
-        headers: {
-            ...form.getHeaders(),
-            'accept-encoding': 'gzip',
-            'host': 'ihancer.com',
-            'user-agent': 'Dart/3.5 (dart:io)'
-        },
-        responseType: 'arraybuffer'
-    })
-
-    return Buffer.from(data)
-}
-
 handler.help = ['hd'];
-handler.tags = ['ai', 'imagen'];
-handler.command = ['hd', 'upscale', 'enhance'];
+handler.tags = ['ai', 'tools'];
+handler.command = ['hd', 'upscale', 'remini'];
 
 export default handler;
