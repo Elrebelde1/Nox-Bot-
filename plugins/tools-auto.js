@@ -15,25 +15,28 @@ const query = [
   'edits series phonk'
 ]
 
+/**
+ * Busca videos en TikTok a través de TikWM
+ */
 async function obtenerVideo() {
   const keywords = query[Math.floor(Math.random() * query.length)]
   try {
-    const { data} = await axios.post(
+    const { data } = await axios.post(
       'https://tikwm.com/api/feed/search',
       new URLSearchParams({
         keywords,
         count: '10',
         cursor: '0',
         HD: '1'
-}).toString(),
+      }).toString(),
       {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
           'Cookie': 'current_language=en',
           'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36'
-}
-}
-)
+        }
+      }
+    )
 
     const videos = data?.data?.videos
     if (!videos || videos.length === 0) return null
@@ -42,61 +45,79 @@ async function obtenerVideo() {
     return {
       url: random.play,
       title: random.title || 'Video TikTok'
-}
-} catch (e) {
+    }
+  } catch (e) {
     console.error('[ERROR obtenerVideo]', e)
     return null
-}
+  }
 }
 
+/**
+ * Obtiene un meme de imagen aleatorio
+ */
 async function obtenerMeme() {
   try {
     return await hispamemes.meme()
-} catch (e) {
+  } catch (e) {
     console.error('[ERROR obtenerMeme]', e)
     return null
-}
+  }
 }
 
+/**
+ * Envía el contenido al canal especificado
+ */
 async function enviarAlCanal(conn, contenido) {
   try {
     await conn.sendMessage(canal, contenido)
-} catch (e) {
+  } catch (e) {
     console.error('[ERROR enviarAlCanal]', e)
-}
+  }
 }
 
+/**
+ * Lógica principal de publicación automática
+ * Intervalo: 15 minutos
+ */
 async function autopost(conn) {
+  console.log('🚀 Sistema de autopost iniciado (Cada 15 minutos)')
+  
   while (true) {
     try {
-      const tipo = Math.random() < 0.5? 'meme': 'video'
+      // 50% probabilidad entre imagen o video
+      const tipo = Math.random() < 0.5 ? 'meme' : 'video'
 
       if (tipo === 'meme') {
         const meme = await obtenerMeme()
         if (meme) {
           await enviarAlCanal(conn, {
-            image: { url: meme},
+            image: { url: meme },
             caption: '🤣 ¡Aquí tienes tu Memecito!'
-})
-}
-} else {
+          })
+          console.log('✅ Meme enviado correctamente.')
+        }
+      } else {
         const video = await obtenerVideo()
         if (video) {
           await enviarAlCanal(conn, {
-            video: { url: video.url},
+            video: { url: video.url },
             caption: video.title
-})
-}
-}
+          })
+          console.log('✅ Video enviado correctamente.')
+        }
+      }
 
-      const espera = Math.floor(Math.random() * (2 * 60 * 60 * 1000 - 60 * 60 * 1000)) + 60 * 60 * 1000
-      console.log(`🕒 Próxima publicación en ${Math.floor(espera / 60000)} minutos`)
+      // Tiempo de espera: 15 minutos (900,000 ms)
+      const espera = 15 * 60 * 1000
+      console.log(`🕒 Próxima publicación en 15 minutos...`)
       await delay(espera)
-} catch (err) {
+
+    } catch (err) {
       console.error('[ERROR autopost]', err)
+      // Si hay un error crítico, espera 1 minuto antes de reintentar
       await delay(60 * 1000)
-}
-}
+    }
+  }
 }
 
 export default autopost
