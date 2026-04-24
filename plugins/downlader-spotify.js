@@ -1,50 +1,70 @@
 import fetch from 'node-fetch'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) return m.reply(`🌙 INGRESE EL NOMBRE DE UNA CANCIÓN\n> *Ejemplo:* ${usedPrefix + command} Twice Strategy`)
+    // 1. Validación de entrada (con tu estilo)
+    if (!text) return m.reply(`> ✎ USO: ${usedPrefix + command} <nombre de la canción o URL>`)
+
+    await m.react('🕓')
 
     try {
-        // 1. SEARCH - Delirius API
-        let searchRes = await fetch(`https://api.delirius.store/search/spotify?q=${encodeURIComponent(text)}&limit=1`)
-        let searchJson = await searchRes.json()
-        
-        if (!searchJson.status || !searchJson.data.length) return m.reply("❌ Sin resultados.")
+        // 2. Lógica de URL o Búsqueda (Copiada de tu amigo)
+        const isUrl = text.match(/^(https?:\/\/)?(www\.)?(open\.spotify\.com|spotify\.link)\/.+$/gi)
+        let track
 
-        let track = searchJson.data[0]
-        let trackUrl = track.url
+        if (isUrl) {
+            track = { url: text, title: 'Spotify Track' }
+        } else {
+            const searchRes = await fetch(`https://api.delirius.store/search/spotify?q=${encodeURIComponent(text)}&limit=1`)
+            const searchData = await searchRes.json()
 
-        // 2. DOWNLOAD - SpotifyDL (Buffer logic)
-        let downloadRes = await fetch(`https://archive-ui.tanakadomp.biz.id/download/spotify?url=${trackUrl}`)
-        let downloadJson = await downloadRes.json()
+            if (!searchData.status || !searchData.data.length) {
+                await m.react('✖️')
+                return m.reply('> ⚔ ERROR: No se encontraron resultados.')
+            }
 
-        if (!downloadJson.status) return m.reply("❌ Error en la descarga.")
+            track = searchData.data[0]
 
-        let force = downloadJson.result.data
-        let audioBuffer = Buffer.from(downloadJson.result.buffer.data)
+            // Mensaje de info (Caption)
+            let txt = `\t\t\t\t*SPOTIFY DOWNLOAD*\n\n`
+            txt += `> ▢ *TÍTULO:* ${track.title}\n`
+            txt += `> ▢ *ARTISTA:* ${track.artist}\n`
+            txt += `> ▢ *ÁLBUM:* ${track.album}\n`
+            txt += `> ▢ *DURACIÓN:* ${track.duration}\n`
+            txt += `> ▢ *PUBLICADO:* ${track.publish}\n\n`
+            txt += `> _Procesando audio, espere un momento..._`
 
-        let caption = `\`𝚂𝙿𝙾𝚃𝙸𝙵𝚈 𝚇 𝙳𝙴𝚂𝙲𝙰𝚁𝙶𝙰\`\n\n`
-            + `☪︎ *Título:* ${force.title}\n`
-            + `☪︎ *Artista:* ${force.artis || track.artist}\n`
-            + `☪︎ *Duración:* ${force.durasi || track.duration}\n`
-            + `───── ･ ｡ﾟ☆: *.☽ .* :☆ﾟ. ─────`
+            await conn.sendMessage(m.chat, { 
+                image: { url: track.image }, 
+                caption: txt 
+            }, { quoted: m })
+        }
 
-        // 3. ENVIAR PORTADA Y AUDIO
-        await conn.sendFile(m.chat, force.image || track.image, 'thumb.jpg', caption, m)
+        // 3. Lógica de Descarga (API Delirius directa)
+        const downloadRes = await fetch(`https://api.delirius.store/download/spotifydl?url=${track.url}`)
+        const downloadData = await downloadRes.json()
 
-        await conn.sendMessage(m.chat, { 
-            audio: audioBuffer, 
-            mimetype: "audio/mpeg", 
-            fileName: `${force.title}.mp3` 
-        }, { quoted: m })
+        if (downloadData.status && downloadData.data.download) {
+            await conn.sendMessage(m.chat, { 
+                audio: { url: downloadData.data.download }, 
+                mimetype: 'audio/mpeg', 
+                fileName: `${track.title}.mp3` 
+            }, { quoted: m })
+            await m.react('✅')
+        } else {
+            await m.react('✖️')
+            m.reply('> ⚔ ERROR: No se pudo obtener el archivo de audio.')
+        }
 
     } catch (e) {
+        await m.react('✖️')
         console.error(e)
-        m.reply("⚠️ Servicio no disponible.")
+        m.reply(`> ⚔ ERROR CRÍTICO: ${e.message}`)
     }
 }
 
+// Configuración de Handler
 handler.help = ['spotify']
-handler.tags = ['descargas']
-handler.command = ['spotify', 'spdl']
+handler.tags = ['download']
+handler.command = ['spotify', 'spt', 'sp', 'music']
 
 export default handler
