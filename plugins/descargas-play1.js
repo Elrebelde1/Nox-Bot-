@@ -4,79 +4,68 @@ import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    // Botón de canales (el que querías mantener)
+    const apiKey = 'sylphy-6f150d' // Tu API Key proporcionada
     const botonesCanal = [
         { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
     ]
 
-    // 1. SI NO HAY TEXTO: ENVIAR MENÚ DE AYUDA/CATÁLOGO
     if (!text.trim()) {
         const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
         let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
-
-        let txt = `╭─〔 ♆ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴* ♆ 〕─╮\n`
-        txt += `│\n`
-        txt += `│ 🎬 *ᴜsᴏ ᴄᴏʀʀᴇᴄᴛᴏ:* \n`
-        txt += `│ ${usedPrefix + command} [nombre o link]\n`
-        txt += `│\n`
-        txt += `│ 🌑 "ʙᴜsᴄᴀ ᴛᴜ ᴅᴇsᴛɪɴᴏ ᴇɴ ʟᴀ ᴍᴜsɪᴄᴀ"\n`
-        txt += `╰────────────────────────────╯`
-
-        return await conn.sendMessage(m.chat, {
-            image: catalogoImg.byteLength ? catalogoImg : { url: catalogoImg.url },
-            caption: txt,
-            footer: "By Barboza-Team ⚡",
-            buttons: botonesCanal,
-            headerType: 4
-        }, { quoted: m })
+        let txt = `╭─〔 ♆ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴* ♆ 〕─╮\n│\n│ 🎬 *ᴜsᴏ ᴄᴏʀʀᴇᴄᴛᴏ:* \n│ ${usedPrefix + command} [nombre o link]\n│\n│ 🌑 "ʙᴜsᴄᴀ ᴛᴜ ᴅᴇsᴛɪɴᴏ ᴇɴ ʟᴀ ᴍᴜsɪᴄᴀ"\n╰────────────────────────────╯`
+        return await conn.sendMessage(m.chat, { image: catalogoImg.byteLength ? catalogoImg : { url: catalogoImg.url }, caption: txt, footer: "By Barboza-Team ⚡", buttons: botonesCanal, headerType: 4 }, { quoted: m })
     }
 
-    // 2. LÓGICA DE ENVÍO DE ARCHIVOS (Cuando se pulsan los botones)
-    // Detectamos si el comando es de descarga directa
-    const isAudio = /^(yta|ytmp3)$/i.test(command)
-    const isVideo = /^(ytv|ytmp4)$/i.test(command)
-    const isDocAudio = /^(ytmp3doc)$/i.test(command)
-    const isDocVideo = /^(ytmp4doc)$/i.test(command)
+    // --- LÓGICA DE DESCARGA DIRECTA (CUANDO SE PULSAN LOS BOTONES) ---
+    const isAudio = /^(yta|ytmp3|playaudio)$/i.test(command)
+    const isVideo = /^(ytv|ytmp4|mp4)$/i.test(command)
+    const isDocMp3 = /^(ytmp3doc)$/i.test(command)
+    const isDocMp4 = /^(ytmp4doc)$/i.test(command)
 
-    if (isAudio || isVideo || isDocAudio || isDocVideo) {
+    if (isAudio || isVideo || isDocMp3 || isDocMp4) {
         if (m.react) await m.react('📥')
-        
         try {
-            // AQUÍ VA TU LÓGICA DE DESCARGA REAL
-            // Para el ejemplo uso una descarga directa, ajusta según tus plugins de descarga
-            if (isAudio) {
-                return await conn.sendMessage(m.chat, { audio: { url: text }, mimetype: 'audio/mpeg' }, { quoted: m })
+            let dlUrl = ''
+            let title = 'archivo'
+            
+            if (isAudio || isDocMp3) {
+                // API DELIRIUS MP3
+                let res = await fetch(`https://api.delirius.store/download/ytmp3?url=${encodeURIComponent(text)}`)
+                let json = await res.json()
+                dlUrl = json.status ? json.data.download : null
+                title = json.data?.title || 'audio'
+            } else {
+                // API SYLPHYY MP4 con tu API KEY
+                let res = await fetch(`https://sylphyy.xyz/download/v2/ytmp4?url=${encodeURIComponent(text)}&api_key=${apiKey}`)
+                let json = await res.json()
+                dlUrl = json.status ? json.result.dl_url : null
+                title = json.result?.title || 'video'
             }
-            if (isVideo) {
-                return await conn.sendMessage(m.chat, { video: { url: text }, caption: '✅ Video listo' }, { quoted: m })
-            }
-            if (isDocAudio) {
-                return await conn.sendMessage(m.chat, { document: { url: text }, mimetype: 'audio/mpeg', fileName: `audio.mp3` }, { quoted: m })
-            }
-            if (isDocVideo) {
-                return await conn.sendMessage(m.chat, { document: { url: text }, mimetype: 'video/mp4', fileName: `video.mp4` }, { quoted: m })
-            }
+
+            if (!dlUrl) throw 'Error al obtener link'
+
+            if (isAudio) return await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: 'audio/mpeg' }, { quoted: m })
+            if (isVideo) return await conn.sendMessage(m.chat, { video: { url: dlUrl }, caption: `✅ Video: ${title}` }, { quoted: m })
+            if (isDocMp3) return await conn.sendMessage(m.chat, { document: { url: dlUrl }, mimetype: 'audio/mpeg', fileName: `${title}.mp3` }, { quoted: m })
+            if (isDocMp4) return await conn.sendMessage(m.chat, { document: { url: dlUrl }, mimetype: 'video/mp4', fileName: `${title}.mp4` }, { quoted: m })
+
         } catch (e) {
             console.error(e)
-            return conn.reply(m.chat, '❌ Error al procesar la descarga.', m)
+            if (m.react) await m.react('❌')
+            return conn.reply(m.chat, '🛑 Error en la descarga.', m)
         }
     }
 
-    // 3. LÓGICA DE BÚSQUEDA (Comando play principal)
+    // --- LÓGICA DE BÚSQUEDA Y MENÚ (COMANDO PLAY) ---
     try {
         if (m.react) await m.react('⏳')
-
         const search = await yts(text)
-        if (!search || !search.all.length) {
-            if (m.react) await m.react('❌')
-            return conn.reply(m.chat, '❌ No se encontraron resultados.', m)
-        }
+        if (!search || !search.all.length) return conn.reply(m.chat, '❌ No resultados.', m)
 
         const result = search.videos[0]
         const { title, thumbnail, timestamp, videoId, author, ago } = result
         const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
-        
-        // Re-armamos todos tus botones tal cual los tenías
+
         const buttons = [
             ...botonesCanal,
             { buttonId: `${usedPrefix}yta ${videoUrl}`, buttonText: { displayText: "🎵 Audio" }, type: 1 },
@@ -85,27 +74,13 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             { buttonId: `${usedPrefix}ytmp4doc ${videoUrl}`, buttonText: { displayText: "📁 Documento MP4" }, type: 1 }
         ]
 
-        let info = `「 🎬 𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴 」\n`
-        info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n`
-        info += `│ 👤 *𝙲𝙰𝙽𝙰𝙻:* ${author.name}\n`
-        info += `│ 🎵 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${title}\n`
-        info += `│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽:* ${timestamp}\n`
-        info += `│ 📅 *𝙿𝚄𝙱𝙻𝙸𝙲𝙰𝙳𝙾:* ${ago || 'Reciente'}\n`
-        info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n`
-        info += `*Audio:* Si quieren audio le dan al botón\n`
-        info += `*Video:* Igual\n`
-        info += `*Documento mp3:* igual\n`
-        info += `*Documento mp4:* igual`
+        let info = `「 🎬 𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴 」\n─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n`
+        info += `│ 👤 *𝙲𝙰𝙽𝙰𝙻:* ${author.name}\n│ 🎵 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${title}\n│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽:* ${timestamp}\n│ 📅 *𝙿𝚄𝙱𝙻𝙸𝙲𝙰𝙳𝙾:* ${ago || 'Reciente'}\n─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n`
+        info += `*Audio:* Si quieren audio le dan al botón\n*Video:* Igual\n*Documento mp3:* igual\n*Documento mp4:* igual`
 
-        await conn.sendMessage(m.chat, { 
-            image: { url: thumbnail }, 
-            caption: info,
-            footer: "By Barboza-Team ⚡",
-            buttons: buttons,
-            headerType: 4
-        }, { quoted: m })
-
+        await conn.sendMessage(m.chat, { image: { url: thumbnail }, caption: info, footer: "By Barboza-Team ⚡", buttons: buttons, headerType: 4 }, { quoted: m })
         if (m.react) await m.react('✅')
+
     } catch (e) {
         console.error(e)
         if (m.react) await m.react('❌')
