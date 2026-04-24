@@ -1,65 +1,50 @@
-import { rmSync, readdirSync, existsSync } from 'fs'
-import { join } from 'path'
+const handler = async (m, { conn, text, usedPrefix, command }) => {
+    // 1. VALIDAR EL FORMATO (.recordar mensaje | tiempo)
+    if (!text || !text.includes('|')) {
+        let txt = `╭─〔 ♆ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚁𝙴𝙼𝙸𝙽𝙳𝙴𝚁* ♆ 〕─╮\n│\n`
+        txt += `│ ⏰ *𝚄𝚂𝙾 𝙲𝙾𝚁𝚁𝙴𝙲𝚃𝙾:* \n`
+        txt += `│ ${usedPrefix + command} [mensaje] | [tiempo]\n│\n`
+        txt += `│ 💡 *𝙴𝙹𝙴𝙼𝙿𝙻𝙾:* \n`
+        txt += `│ ${usedPrefix + command} voy a comer | 10m\n│\n`
+        txt += `│ 🌑 "𝙹𝚊𝚖á𝚜 𝚘𝚕𝚟𝚒𝚍𝚎𝚜 𝚝𝚞 𝚍𝚎𝚜𝚝𝚒𝚗𝚘"\n╰────────────────────────────╯`
+        return conn.reply(m.chat, txt, m)
+    }
 
-const handler = async (m, { conn, usedPrefix, command }) => {
-    if (m.react) await m.react('🧹')
+    // 2. SEPARAR EL MENSAJE DEL TIEMPO
+    let [mensaje, tiempo] = text.split('|').map(v => v.trim())
+    
+    // Convertir el tiempo (ej: 10m, 1h, 30s) a milisegundos
+    let milisegundos = 0
+    if (tiempo.endsWith('s')) milisegundos = parseInt(tiempo) * 1000
+    else if (tiempo.endsWith('m')) milisegundos = parseInt(tiempo) * 60000
+    else if (tiempo.endsWith('h')) milisegundos = parseInt(tiempo) * 3600000
+    else milisegundos = parseInt(tiempo) * 60000 // Por defecto minutos si no pone letra
 
-    // Agregué más rutas que suelen llenarse de basura en los bots MD
-    const tmpDirs = [
-        join(process.cwd(), 'tmp'),
-        join(process.cwd(), 'temp'),
-        join(process.cwd(), 'storage/temp'),
-        join(process.cwd(), 'sessions'), // A veces se guardan archivos basura aquí
-        join(process.cwd(), 'src/tmp')   // Otra ruta común
-    ]
+    if (isNaN(milisegundos) || milisegundos <= 0) return m.reply('❌ Tiempo inválido. Usa: 10s, 5m o 1h.')
 
-    let archivosBorrados = 0
+    if (m.react) await m.react('⏳')
+    
+    // 3. CONFIRMACIÓN INICIAL
+    m.reply(`✅ *Recordatorio programado*\n\n🔔 *Motivo:* ${mensaje}\n⏱️ *En:* ${tiempo}\n\n*Te mencionaré cuando el tiempo termine.*`)
 
-    try {
-        for (const dir of tmpDirs) {
-            if (existsSync(dir)) {
-                const files = readdirSync(dir)
-                for (const file of files) {
-                    // NO BORRAR la sesión real ni archivos críticos
-                    if (file !== '.gitignore' && file !== 'creds.json' && !file.includes('app-state')) {
-                        try {
-                            rmSync(join(dir, file), { recursive: true, force: true })
-                            archivosBorrados++
-                        } catch (e) {
-                            continue 
-                        }
-                    }
-                }
-            }
-        }
-
-        if (archivosBorrados === 0) {
-            return conn.reply(m.chat, '✨ *El bot ya está limpio.* No se encontraron archivos temporales para eliminar.', m)
-        }
-
-        let txt = `╭─〔 ♆ *𝚄𝙲𝙷𝙸𝙷𝙰 𝙲𝙻𝙴𝙰𝙽𝙴𝚁* ♆ 〕─╮\n│\n`
-        txt += `│ 🧹 *𝙻𝙸𝙼𝙿𝙸𝙴𝚉𝙰 𝙲𝙾𝙼𝙿𝙻𝙴𝚃𝙰𝙳𝙰*\n`
-        txt += `│ ✨ *𝙰𝚛𝚌𝚑𝚒𝚟𝚘𝚜 𝚎𝚕𝚒𝚖𝚒𝚗𝚊𝚍𝚘𝚜:* ${archivosBorrados}\n`
-        txt += `│ 🚀 *𝙴𝚜𝚝𝚊𝚍𝚘:* 𝚂𝚒𝚜𝚝𝚎𝚖𝚊 𝙾𝚙𝚝𝚒𝚖𝚒𝚣𝚊𝚍𝚘\n│\n`
-        txt += `│ 🌑 "𝙻𝚊 𝚋𝚊𝚜𝚞𝚛𝚊 𝚑𝚊 𝚜𝚒𝚍𝚘 𝚍𝚎𝚜𝚝𝚛𝚞𝚒𝚍𝚊"\n╰────────────────────────────╯`
+    // 4. LÓGICA DEL TEMPORIZADOR
+    setTimeout(async () => {
+        let tag = `@${m.sender.split('@')[0]}`
+        let alerta = `╭─〔 🔔 *𝙰𝙻𝙴𝚁𝚃𝙰 𝚄𝙲𝙷𝙸𝙷𝙰* 🔔 〕─╮\n│\n`
+        alerta += `│ 👤 *𝚄𝚂𝚄𝙰𝚁𝙸𝙾:* ${tag}\n`
+        alerta += `│ 📝 *𝙼𝙴𝙽𝚂𝙰𝙹𝙴:* ${mensaje}\n│\n`
+        alerta += `│ 🌑 "𝙴𝚕 𝚝𝚒𝚎𝚖𝚙𝚘 𝚜𝚎 𝚑𝚊 𝚌𝚞𝚖𝚙𝚕𝚒𝚍𝚘"\n╰──────────────────────────╯`
 
         await conn.sendMessage(m.chat, { 
-            text: txt,
-            footer: "By Barboza-Team ⚡"
+            text: alerta, 
+            mentions: [m.sender] 
         }, { quoted: m })
-
-        if (m.react) await m.react('✅')
-
-    } catch (e) {
-        console.log(e)
-        if (m.react) await m.react('❌')
-        conn.reply(m.chat, `🛑 *Error:* Ocurrió un fallo durante la limpieza.`, m)
-    }
+        
+    }, milisegundos)
 }
 
-handler.help = ['cleartmp']
-handler.tags = ['owner']
-handler.command = /^(cleartmp|clean|limpiar)$/i
-handler.rowner = true 
+handler.help = ['recordar']
+handler.tags = ['tools']
+handler.command = /^(recordar|remind|alarm)$/i
 
 export default handler
