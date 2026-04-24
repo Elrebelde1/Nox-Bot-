@@ -44,7 +44,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                     titulo = json.data.title || 'Audio'
                 }
             } else if (isVideo || isDocMp4) {
-                // API DELIRIUS MP4 (Basado en tu último JSON)
+                // API DELIRIUS MP4
                 let res = await fetch(`https://api.delirius.store/download/ytmp4?url=${encodeURIComponent(text)}`)
                 let json = await res.json()
                 if (json.status && json.data) {
@@ -89,12 +89,13 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const { title, thumbnail, timestamp, videoId, author, ago } = result
         const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
 
+        // BOTONES ORDENADOS SEGÚN TU SOLICITUD
         const buttons = [
-            ...botonesCanal,
             { buttonId: `${usedPrefix}yta ${videoUrl}`, buttonText: { displayText: "🎵 Audio" }, type: 1 },
             { buttonId: `${usedPrefix}ytv ${videoUrl}`, buttonText: { displayText: "🎥 Video" }, type: 1 },
             { buttonId: `${usedPrefix}ytmp3doc ${videoUrl}`, buttonText: { displayText: "📁 Documento MP3" }, type: 1 },
-            { buttonId: `${usedPrefix}ytmp4doc ${videoUrl}`, buttonText: { displayText: "📁 Documento MP4" }, type: 1 }
+            { buttonId: `${usedPrefix}ytmp4doc ${videoUrl}`, buttonText: { displayText: "📁 Documento MP4" }, type: 1 },
+            { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
         ]
 
         let info = `「 🎬 𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴 」\n─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n`
