@@ -30,11 +30,6 @@ export async function handler(chatUpdate) {
         m.exp = 0
         m.limit = false
         try {op
-            chat = global.db.data.chats[m.chat]
-if (chat?.blockcmds?.includes(command)) {
-if (m.isOwner || m.isAdmin) return
-return m.reply(`🚫 Comando *${usedPrefix + command}* desactivado en este grupo.`)
-}
             let user = global.db.data.users[m.sender]
             if (typeof user !== 'object')
                 global.db.data.users[m.sender] = {}
