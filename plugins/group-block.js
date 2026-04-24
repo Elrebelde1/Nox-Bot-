@@ -1,20 +1,19 @@
 const handler = async (m, { conn, text, isROwner, isAdmin, usedPrefix, command }) => {
-    // 1. Verificación de rango
+    // 1. Permisos
     if (!(isAdmin || isROwner)) return m.reply('❌ *Solo los admins pueden usar este comando.*')
 
-    // 2. Inicialización ultra-segura de la base de datos
-    if (!global.db) global.db = { data: { chats: {} } }
-    if (!global.db.data) global.db.data = { chats: {} }
+    // 2. Inicialización de DB
+    if (!global.db.data) global.db.data = {}
     if (!global.db.data.chats) global.db.data.chats = {}
     if (!global.db.data.chats[m.chat]) global.db.data.chats[m.chat] = {}
     
     let chat = global.db.data.chats[m.chat]
     if (!chat.blockcmds) chat.blockcmds = [] 
 
-    // 3. Respuesta si pones solo .block
+    // 3. Menú de ayuda si no hay texto
     if (!text) {
         let lista = chat.blockcmds.length > 0 
-            ? chat.blockcmds.map(c => `• ${usedPrefix + c}`).join('\n') 
+            ? chat.blockcmds.map(c => `• *${usedPrefix + c}*`).join('\n') 
             : '_Ninguno_'
             
         let ayuda = `✨ *𝚄𝙲𝙷𝙸𝙷𝙰 𝙲𝙾𝙽𝚃𝚁𝙾𝙻* ✨\n\n`
@@ -22,12 +21,14 @@ const handler = async (m, { conn, text, isROwner, isAdmin, usedPrefix, command }
         ayuda += `📝 *𝙴𝚓𝚎𝚖𝚙𝚕𝚘:* ${usedPrefix + command} play\n\n`
         ayuda += `🚫 *𝙲𝚘𝚖𝚊𝚗𝚍𝚘𝚜 𝚋𝚕𝚘𝚚𝚞𝚎𝚊𝚍𝚘𝚜 𝚊𝚚𝚞𝚒:* \n${lista}`
         
-        return conn.reply(m.chat, ayuda, m)
+        return m.reply(ayuda)
     }
 
-    let cmd = text.toLowerCase().replace(usedPrefix, '').trim()
+    // 4. Limpiar el texto del comando a bloquear
+    // Esto quita el punto si el usuario lo puso (ej: ".block .play" -> "play")
+    let cmd = text.toLowerCase().trim().replace(/^\.+/, '')
 
-    // 4. Lógica Toggle (Bloquear/Desbloquear)
+    // 5. Bloquear / Desbloquear
     if (chat.blockcmds.includes(cmd)) {
         chat.blockcmds = chat.blockcmds.filter(c => c !== cmd)
         if (m.react) await m.react('✅')
