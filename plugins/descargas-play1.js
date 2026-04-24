@@ -9,6 +9,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
     ]
 
+    // 1. SI NO HAY TEXTO (MENÚ INICIAL)
     if (!text.trim()) {
         const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
         let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
@@ -16,9 +17,9 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         return await conn.sendMessage(m.chat, { image: catalogoImg.byteLength ? catalogoImg : { url: catalogoImg.url }, caption: txt, footer: "By Barboza-Team ⚡", buttons: botonesCanal, headerType: 4 }, { quoted: m })
     }
 
-    // --- DETECCIÓN DE BOTONES ---
-    const isAudio = /^(yta|ytmp3|playaudio)$/i.test(command)
-    const isVideo = /^(ytv|ytmp4|mp4)$/i.test(command)
+    // 2. LÓGICA DE DESCARGA (DETECTA LOS BOTONES)
+    const isAudio = /^(yta|ytmp3)$/i.test(command)
+    const isVideo = /^(ytv|ytmp4)$/i.test(command)
     const isDocMp3 = /^(ytmp3doc)$/i.test(command)
     const isDocMp4 = /^(ytmp4doc)$/i.test(command)
 
@@ -29,30 +30,30 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             let titulo = ''
 
             if (isAudio || isDocMp3) {
-                // API DELIRIUS V2 (Basado en tu JSON: success y data.download)
+                // API DELIRIUS V2 - Basado en tu JSON
                 let res = await fetch(`https://api.delirius.store/download/ytmp3v2?url=${encodeURIComponent(text)}`)
                 let json = await res.json()
                 if (json.success && json.data) {
                     dlUrl = json.data.download
-                    titulo = json.data.title || 'audio'
+                    titulo = json.data.title || 'Audio'
                 }
             } else {
-                // API SYLPHYY V2 (Basado en tu JSON: status y result.dl_url)
+                // API SYLPHYY V2 - Basado en tu JSON exacto
                 let res = await fetch(`https://sylphyy.xyz/download/v2/ytmp4?url=${encodeURIComponent(text)}&api_key=${apiKey}`)
                 let json = await res.json()
                 if (json.status && json.result) {
                     dlUrl = json.result.dl_url
-                    titulo = json.result.title || 'video'
+                    titulo = json.result.title || 'Video'
                 }
             }
 
-            if (!dlUrl) throw 'No se pudo obtener el enlace'
+            if (!dlUrl || dlUrl === '') throw 'URL vacía'
 
             if (isAudio) {
                 return await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: 'audio/mpeg' }, { quoted: m })
             }
             if (isVideo) {
-                return await conn.sendMessage(m.chat, { video: { url: dlUrl }, caption: `✅ ${titulo}` }, { quoted: m })
+                return await conn.sendMessage(m.chat, { video: { url: dlUrl }, caption: `✅ *Video listo:*\n${titulo}`, footer: "By Barboza-Team ⚡" }, { quoted: m })
             }
             if (isDocMp3) {
                 return await conn.sendMessage(m.chat, { document: { url: dlUrl }, mimetype: 'audio/mpeg', fileName: `${titulo}.mp3` }, { quoted: m })
@@ -62,14 +63,14 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             }
 
         } catch (e) {
-            console.error(e)
+            console.error('ERROR EN DESCARGA:', e)
             if (m.react) await m.react('❌')
-            return conn.reply(m.chat, `🛑 Error al descargar el archivo.`, m)
+            return conn.reply(m.chat, `🛑 Error al descargar el archivo. Verifica el enlace.`, m)
         }
-        return 
+        return // IMPORTANTE: Para que no siga al buscador de abajo
     }
 
-    // --- COMANDO PLAY (BÚSQUEDA) ---
+    // 3. BUSCADOR (COMANDO PLAY)
     try {
         if (m.react) await m.react('⏳')
         const search = await yts(text)
@@ -82,6 +83,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const { title, thumbnail, timestamp, videoId, author, ago } = result
         const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
 
+        // BOTONES CON LA URL PARA EL SIGUIENTE PASO
         const buttons = [
             ...botonesCanal,
             { buttonId: `${usedPrefix}yta ${videoUrl}`, buttonText: { displayText: "🎵 Audio" }, type: 1 },
@@ -91,10 +93,21 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         ]
 
         let info = `「 🎬 𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴 」\n─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n`
-        info += `│ 👤 *𝙲𝙰𝙽𝙰𝙻:* ${author.name}\n│ 🎵 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${title}\n│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽:* ${timestamp}\n│ 📅 *𝙿𝚄𝙱𝙻𝙸𝙲𝙰𝙳𝙾:* ${ago || 'Reciente'}\n─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n`
-        info += `*Audio:* Si quieren audio le dan al botón\n*Video:* Igual\n*Documento mp3:* igual\n*Documento mp4:* igual`
+        info += `│ 👤 *𝙲𝙰𝙽𝙰𝙻:* ${author.name}\n`
+        info += `│ 🎵 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${title}\n`
+        info += `│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽:* ${timestamp}\n`
+        info += `│ 📅 *𝙿𝚄𝙱𝙻𝙸𝙲𝙰𝙳𝙾:* ${ago || 'Reciente'}\n`
+        info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n`
+        info += `*Seleccione una opción para descargar:*`
 
-        await conn.sendMessage(m.chat, { image: { url: thumbnail }, caption: info, footer: "By Barboza-Team ⚡", buttons: buttons, headerType: 4 }, { quoted: m })
+        await conn.sendMessage(m.chat, { 
+            image: { url: thumbnail }, 
+            caption: info, 
+            footer: "By Barboza-Team ⚡", 
+            buttons: buttons, 
+            headerType: 4 
+        }, { quoted: m })
+
         if (m.react) await m.react('✅')
     } catch (e) {
         console.error(e)
@@ -102,5 +115,5 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 }
 
-handler.command = /^(play|yta|ytmp3|play2|ytv|playaudio|mp4|ytmp4|ytmp3doc|ytmp4doc)$/i
+handler.command = /^(play|yta|ytmp3|play2|ytv|mp4|ytmp4|ytmp3doc|ytmp4doc)$/i
 export default handler
