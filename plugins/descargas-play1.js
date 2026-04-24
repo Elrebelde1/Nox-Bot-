@@ -14,10 +14,16 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
         let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
         let txt = `╭─〔 ♆ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴* ♆ 〕─╮\n│\n│ 🎬 *ᴜsᴏ ᴄᴏʀʀᴇᴄᴛᴏ:* \n│ ${usedPrefix + command} [nombre o link]\n│\n│ 🌑 "ʙᴜsᴄᴀ ᴛᴜ ᴅᴇsᴛɪɴᴏ ᴇɴ ʟᴀ ᴍᴜsɪᴄᴀ"\n╰────────────────────────────╯`
-        return await conn.sendMessage(m.chat, { image: catalogoImg.byteLength ? catalogoImg : { url: catalogoImg.url }, caption: txt, footer: "By Barboza-Team ⚡", buttons: botonesCanal, headerType: 4 }, { quoted: m })
+        return await conn.sendMessage(m.chat, { 
+            image: catalogoImg.byteLength ? catalogoImg : { url: catalogoImg.url }, 
+            caption: txt, 
+            footer: "By Barboza-Team ⚡", 
+            buttons: botonesCanal, 
+            headerType: 4 
+        }, { quoted: m })
     }
 
-    // 2. LÓGICA DE DESCARGA (DETECTA LOS BOTONES)
+    // 2. LÓGICA DE DESCARGA (AL PRESIONAR BOTONES)
     const isAudio = /^(yta|ytmp3)$/i.test(command)
     const isVideo = /^(ytv|ytmp4)$/i.test(command)
     const isDocMp3 = /^(ytmp3doc)$/i.test(command)
@@ -30,30 +36,30 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             let titulo = ''
 
             if (isAudio || isDocMp3) {
-                // API DELIRIUS V2 - Basado en tu JSON
+                // API DELIRIUS MP3 V2
                 let res = await fetch(`https://api.delirius.store/download/ytmp3v2?url=${encodeURIComponent(text)}`)
                 let json = await res.json()
                 if (json.success && json.data) {
                     dlUrl = json.data.download
                     titulo = json.data.title || 'Audio'
                 }
-            } else {
-                // API SYLPHYY V2 - Basado en tu JSON exacto
-                let res = await fetch(`https://sylphyy.xyz/download/v2/ytmp4?url=${encodeURIComponent(text)}&api_key=${apiKey}`)
+            } else if (isVideo || isDocMp4) {
+                // API DELIRIUS MP4 (Basado en tu último JSON)
+                let res = await fetch(`https://api.delirius.store/download/ytmp4?url=${encodeURIComponent(text)}`)
                 let json = await res.json()
-                if (json.status && json.result) {
-                    dlUrl = json.result.dl_url
-                    titulo = json.result.title || 'Video'
+                if (json.status && json.data) {
+                    dlUrl = json.data.download
+                    titulo = json.data.title || 'Video'
                 }
             }
 
-            if (!dlUrl || dlUrl === '') throw 'URL vacía'
+            if (!dlUrl) throw 'No se pudo obtener el enlace de descarga'
 
             if (isAudio) {
                 return await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: 'audio/mpeg' }, { quoted: m })
             }
             if (isVideo) {
-                return await conn.sendMessage(m.chat, { video: { url: dlUrl }, caption: `✅ *Video listo:*\n${titulo}`, footer: "By Barboza-Team ⚡" }, { quoted: m })
+                return await conn.sendMessage(m.chat, { video: { url: dlUrl }, caption: `✅ *Video:* ${titulo}`, footer: "By Barboza-Team ⚡" }, { quoted: m })
             }
             if (isDocMp3) {
                 return await conn.sendMessage(m.chat, { document: { url: dlUrl }, mimetype: 'audio/mpeg', fileName: `${titulo}.mp3` }, { quoted: m })
@@ -63,14 +69,14 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             }
 
         } catch (e) {
-            console.error('ERROR EN DESCARGA:', e)
+            console.error(e)
             if (m.react) await m.react('❌')
-            return conn.reply(m.chat, `🛑 Error al descargar el archivo. Verifica el enlace.`, m)
+            return conn.reply(m.chat, `🛑 Error al descargar el archivo.`, m)
         }
-        return // IMPORTANTE: Para que no siga al buscador de abajo
+        return 
     }
 
-    // 3. BUSCADOR (COMANDO PLAY)
+    // 3. BUSCADOR (COMANDO PLAY PRINCIPAL)
     try {
         if (m.react) await m.react('⏳')
         const search = await yts(text)
@@ -83,7 +89,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const { title, thumbnail, timestamp, videoId, author, ago } = result
         const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
 
-        // BOTONES CON LA URL PARA EL SIGUIENTE PASO
         const buttons = [
             ...botonesCanal,
             { buttonId: `${usedPrefix}yta ${videoUrl}`, buttonText: { displayText: "🎵 Audio" }, type: 1 },
