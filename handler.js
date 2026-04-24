@@ -30,6 +30,11 @@ export async function handler(chatUpdate) {
         m.exp = 0
         m.limit = false
         try {
+            let chat = global.db.data.chats[m.chat]
+if (chat && chat.blockcmds && chat.blockcmds.includes(command)) {
+    if (isAdmin) return // Opcional: Permitir que los admins sí usen comandos bloqueados
+    return m.reply('🚫 Este comando ha sido bloqueado en este grupo por un administrador.')
+}
             let user = global.db.data.users[m.sender]
             if (typeof user !== 'object')
                 global.db.data.users[m.sender] = {}
