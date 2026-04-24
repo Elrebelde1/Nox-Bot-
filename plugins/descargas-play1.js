@@ -16,7 +16,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         return await conn.sendMessage(m.chat, { image: catalogoImg.byteLength ? catalogoImg : { url: catalogoImg.url }, caption: txt, footer: "By Barboza-Team ⚡", buttons: botonesCanal, headerType: 4 }, { quoted: m })
     }
 
-    // --- DETECCIÓN DE COMANDOS DE BOTONES ---
+    // --- DETECCIÓN DE BOTONES ---
     const isAudio = /^(yta|ytmp3|playaudio)$/i.test(command)
     const isVideo = /^(ytv|ytmp4|mp4)$/i.test(command)
     const isDocMp3 = /^(ytmp3doc)$/i.test(command)
@@ -29,15 +29,15 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             let titulo = ''
 
             if (isAudio || isDocMp3) {
-                // API DELIRIUS: La respuesta es { status: true, data: { download: 'url' } }
-                let res = await fetch(`https://api.delirius.store/download/ytmp3?url=${encodeURIComponent(text)}`)
+                // API DELIRIUS V2 (Basado en tu JSON: success y data.download)
+                let res = await fetch(`https://api.delirius.store/download/ytmp3v2?url=${encodeURIComponent(text)}`)
                 let json = await res.json()
-                if (json.status && json.data) {
+                if (json.success && json.data) {
                     dlUrl = json.data.download
                     titulo = json.data.title || 'audio'
                 }
             } else {
-                // API SYLPHYY: La respuesta es { status: true, result: { dl_url: 'url' } }
+                // API SYLPHYY V2 (Basado en tu JSON: status y result.dl_url)
                 let res = await fetch(`https://sylphyy.xyz/download/v2/ytmp4?url=${encodeURIComponent(text)}&api_key=${apiKey}`)
                 let json = await res.json()
                 if (json.status && json.result) {
@@ -46,7 +46,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                 }
             }
 
-            if (!dlUrl) throw 'No se obtuvo el enlace de descarga'
+            if (!dlUrl) throw 'No se pudo obtener el enlace'
 
             if (isAudio) {
                 return await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: 'audio/mpeg' }, { quoted: m })
@@ -64,12 +64,12 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         } catch (e) {
             console.error(e)
             if (m.react) await m.react('❌')
-            return conn.reply(m.chat, `🛑 Error al procesar la solicitud.`, m)
+            return conn.reply(m.chat, `🛑 Error al descargar el archivo.`, m)
         }
-        return // Detiene la ejecución aquí si fue un comando de descarga
+        return 
     }
 
-    // --- COMANDO PRINCIPAL (BÚSQUEDA Y MENÚ) ---
+    // --- COMANDO PLAY (BÚSQUEDA) ---
     try {
         if (m.react) await m.react('⏳')
         const search = await yts(text)
@@ -94,14 +94,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         info += `│ 👤 *𝙲𝙰𝙽𝙰𝙻:* ${author.name}\n│ 🎵 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${title}\n│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽:* ${timestamp}\n│ 📅 *𝙿𝚄𝙱𝙻𝙸𝙲𝙰𝙳𝙾:* ${ago || 'Reciente'}\n─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n`
         info += `*Audio:* Si quieren audio le dan al botón\n*Video:* Igual\n*Documento mp3:* igual\n*Documento mp4:* igual`
 
-        await conn.sendMessage(m.chat, { 
-            image: { url: thumbnail }, 
-            caption: info, 
-            footer: "By Barboza-Team ⚡", 
-            buttons: buttons, 
-            headerType: 4 
-        }, { quoted: m })
-
+        await conn.sendMessage(m.chat, { image: { url: thumbnail }, caption: info, footer: "By Barboza-Team ⚡", buttons: buttons, headerType: 4 }, { quoted: m })
         if (m.react) await m.react('✅')
     } catch (e) {
         console.error(e)
