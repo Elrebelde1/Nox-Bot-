@@ -1,33 +1,19 @@
-import chalk from 'chalk';
+const handler = async (m, { conn, isOwner }) => {
+  if (!isOwner) return;
 
-const targetChannels = [
-    '120363423619689248@newsletter', 
-    '120363414007802886@newsletter'
-];
+  await m.react('🔄');
+  
+  await conn.reply(m.chat, '🌀 *Reiniciando Sasuke Bot MD...*\n\n> El proceso se detendrá y el host lo iniciará automáticamente. Dame unos segundos para volver.', m);
 
-const reactionEmoji = '🔥';
-
-let handler = m => m;
-
-handler.before = async function (m, { conn }) {
-    // Log para debug: te dirá en consola qué chat está recibiendo mensajes
-    // console.log(chalk.blue(`[DEBUG] Mensaje recibido de: ${m.chat}`));
-
-    if (targetChannels.includes(m.chat)) {
-        try {
-            // En canales, a veces m.key.id es necesario para la reacción
-            await conn.sendMessage(m.chat, {
-                react: {
-                    text: reactionEmoji,
-                    key: m.key
-                }
-            });
-            console.log(chalk.bgGreen.black(`[ OK ] Reacción enviada por ${conn.user.name || 'Subbot'}`));
-        } catch (e) {
-            console.log(chalk.bgRed.white(`[ ERROR ] No se pudo reaccionar: ${e.message}`));
-        }
-    }
-    return !0;
+  // Un pequeño retraso para que el mensaje llegue a WhatsApp antes de matar el proceso
+  setTimeout(() => {
+    process.exit();
+  }, 2000);
 };
+
+handler.help = ['reset'];
+handler.tags = ['owner'];
+handler.command = /^(reset|reiniciar|restart)$/i;
+handler.owner = true;
 
 export default handler;
