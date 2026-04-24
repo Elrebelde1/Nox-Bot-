@@ -1,14 +1,13 @@
 import fetch from 'node-fetch'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-    // 1. Validación de entrada (con tu estilo)
-    if (!text) return m.reply(`> ✎ USO: ${usedPrefix + command} <nombre de la canción o URL>`)
+    // Validación con estilo Sasuke MD
+    if (!text) return m.reply(`*〈 ⛩️ 𝚂𝙰𝚂𝚄𝙺𝙴 𝙱𝙾𝚃 𝙼𝙳 ⛩️ 〉*\n\n> 🌙 *𝚄𝚂𝙾:* ${usedPrefix + command} <nombre/url>\n> 💡 _Ejemplo: ${usedPrefix + command} Moonlight Sunrise_`)
 
-    await m.react('🕓')
+    await m.react('⚡') 
 
     try {
-        // 2. Lógica de URL o Búsqueda (Copiada de tu amigo)
-        const isUrl = text.match(/^(https?:\/\/)?(www\.)?(open\.spotify\.com|spotify\.link)\/.+$/gi)
+        const isUrl = text.match(/^(https?:\/\/)?(open\.spotify\.com|spotify\.link)\/.+$/gi)
         let track
 
         if (isUrl) {
@@ -19,19 +18,21 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
             if (!searchData.status || !searchData.data.length) {
                 await m.react('✖️')
-                return m.reply('> ⚔ ERROR: No se encontraron resultados.')
+                return m.reply('`『 👁️‍🗨️ ERROR: OBJETIVO NO ENCONTRADO 』`')
             }
 
             track = searchData.data[0]
 
-            // Mensaje de info (Caption)
-            let txt = `\t\t\t\t*SPOTIFY DOWNLOAD*\n\n`
-            txt += `> ▢ *TÍTULO:* ${track.title}\n`
-            txt += `> ▢ *ARTISTA:* ${track.artist}\n`
-            txt += `> ▢ *ÁLBUM:* ${track.album}\n`
-            txt += `> ▢ *DURACIÓN:* ${track.duration}\n`
-            txt += `> ▢ *PUBLICADO:* ${track.publish}\n\n`
-            txt += `> _Procesando audio, espere un momento..._`
+            // Diseño de información (Uchiha Style)
+            let txt = `*｢ 🎧 𝚂𝙿𝙾𝚃𝙸𝙵𝚈 𝙼𝚄𝚂𝙸𝙲 ｣*\n`
+            txt += `───── ･ ｡ﾟ☆: *.☽ .* :☆ﾟ. ─────\n`
+            txt += `> 👤 *𝙰𝚁𝚃𝙸𝚂𝚃𝙰:* ${track.artist}\n`
+            txt += `> 🎵 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${track.title}\n`
+            txt += `> 💿 *𝙰𝙻𝙱𝚄𝙼:* ${track.album || 'N/A'}\n`
+            txt += `> ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽:* ${track.duration}\n`
+            txt += `> 📅 *𝙿𝚄𝙱𝙻𝙸𝙲𝙰𝙳𝙾:* ${track.publish}\n`
+            txt += `───── ･ ｡ﾟ☆: *.☽ .* :☆ﾟ. ─────\n\n`
+            txt += `*『 🐦‍⬛ 𝙸𝙽𝚅𝙾𝙲𝙰𝙽𝙳𝙾 𝙰𝚄𝙳𝙸𝙾... 』*`
 
             await conn.sendMessage(m.chat, { 
                 image: { url: track.image }, 
@@ -39,7 +40,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
             }, { quoted: m })
         }
 
-        // 3. Lógica de Descarga (API Delirius directa)
         const downloadRes = await fetch(`https://api.delirius.store/download/spotifydl?url=${track.url}`)
         const downloadData = await downloadRes.json()
 
@@ -49,22 +49,21 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
                 mimetype: 'audio/mpeg', 
                 fileName: `${track.title}.mp3` 
             }, { quoted: m })
-            await m.react('✅')
+            await m.react('🔥') 
         } else {
             await m.react('✖️')
-            m.reply('> ⚔ ERROR: No se pudo obtener el archivo de audio.')
+            m.reply('`『 👁️‍🗨️ FALLO EN LA EXTRACCIÓN 』`')
         }
 
     } catch (e) {
         await m.react('✖️')
         console.error(e)
-        m.reply(`> ⚔ ERROR CRÍTICO: ${e.message}`)
+        m.reply(`*❌ ERROR CRÍTICO:* \`${e.message}\``)
     }
 }
 
-// Configuración de Handler
 handler.help = ['spotify']
-handler.tags = ['download']
-handler.command = ['spotify', 'spt', 'sp', 'music']
+handler.tags = ['descargas']
+handler.command = ['spotify', 'sp', 'music', 'spt']
 
 export default handler
