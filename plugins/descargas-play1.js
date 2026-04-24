@@ -45,35 +45,33 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         let downloadUrl = null
         let selectedServer = ""
 
-        // LÓGICA DE APIS ORIGINAL
+        // LÓGICA DE APIS ORIGINAL (RE-CORREGIDA)
         if (isAudio) {
             try {
-                const res = await fetch(`https://api.delirius.store/download/ytmp3?url=${encodeURIComponent(videoUrl)}`)
-                const json = await res.json()
+                let res = await fetch(`https://api.delirius.store/download/ytmp3?url=${encodeURIComponent(videoUrl)}`)
+                let json = await res.json()
                 if (json.status && json.data?.download) {
                     downloadUrl = json.data.download
                     selectedServer = "Delirius V1"
-                }
-            } catch {
-                try {
-                    const res = await fetch(`https://api.delirius.store/download/ytmp3v2?url=${encodeURIComponent(videoUrl)}`)
-                    const json = await res.json()
-                    if (json.success && json.data?.download) {
-                        downloadUrl = json.data.download
+                } else {
+                    let res2 = await fetch(`https://api.delirius.store/download/ytmp3v2?url=${encodeURIComponent(videoUrl)}`)
+                    let json2 = await res2.json()
+                    if (json2.success && json2.data?.download) {
+                        downloadUrl = json2.data.download
                         selectedServer = "Delirius V2"
                     }
-                } catch (e) { console.error(e) }
-            }
+                }
+            } catch (e) { console.error("Error en Audio API") }
         } else {
             try {
                 const apiKey = 'sylphy-6f150d'
-                const res = await fetch(`https://sylphyy.xyz/download/v2/ytmp4?url=${encodeURIComponent(videoUrl)}&api_key=${apiKey}`)
-                const json = await res.json()
+                let res = await fetch(`https://sylphyy.xyz/download/v2/ytmp4?url=${encodeURIComponent(videoUrl)}&api_key=${apiKey}`)
+                let json = await res.json()
                 if (json.status && json.result?.dl_url) {
                     downloadUrl = json.result.dl_url
                     selectedServer = "Sylphy V2"
                 }
-            } catch (e) { console.error(e) }
+            } catch (e) { console.error("Error en Video API") }
         }
 
         if (!downloadUrl) {
@@ -81,7 +79,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             return conn.reply(m.chat, `🛑 ᴇʀʀᴏʀ ᴀʟ ᴏʙᴛᴇɴᴇʀ ᴅᴇsᴄᴀʀɢᴀ.`, m)
         }
 
-        // DISEÑO DE INFORMACIÓN DE TU CAPTURA APLICADO A YOUTUBE
+        // DISEÑO DE INFORMACIÓN DE TU CAPTURA
         let info = `「 🎬 𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴 」\n`
         info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n`
         info += `│ 👤 *𝙲𝙰𝙽𝙰𝙻:* ${author.name}\n`
