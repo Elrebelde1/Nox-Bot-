@@ -1,17 +1,7 @@
-import { readFileSync, existsSync } from 'fs';
-import { join } from 'path';
-import fetch from "node-fetch";
+import fetch from 'node-fetch';
 
-const imgPath = join(process.cwd(), 'storage', 'img', 'miniurl.jpg');
-let imgLocal;
-try {
-  imgLocal = existsSync(imgPath) ? readFileSync(imgPath) : Buffer.alloc(0);
-} catch (e) {
-  imgLocal = Buffer.alloc(0);
-}
-
-const handler = async (m, { conn, text, usedPrefix, command }) => {
-  // Manejador de botones (Audio o HD extra)
+const handler = async (m, { conn, text, command, usedPrefix }) => {
+  // Manejadores para los botones
   if (command === 'tt_vid' || command === 'tt_aud') {
     const res = await fetch(`https://www.tikwm.com/api/?url=${text}`);
     const json = await res.json();
@@ -22,61 +12,67 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     }
   }
 
-  // Comando principal
-  if (!text) return conn.reply(m.chat, '❌ ¡Necesito un enlace de TikTok!', m);
-  if (!text.match(/(tiktok\.com\/|vt\.tiktok\.com\/)/i)) return conn.reply(m.chat, '🤔 Enlace no válido.', m);
+  if (!text) {
+    return conn.reply(m.chat, '❌ ¡Necesito un enlace de TikTok! Por favor, proporciona uno después del comando.', m);
+  }
+
+  if (!text.match(/(tiktok\.com\/|vt\.tiktok\.com\/)/i)) {
+    return conn.reply(m.chat, '🤔 Parece que el enlace no es de TikTok. Por favor, asegúrate de enviar un enlace válido.', m);
+  }
 
   try {
     const apiUrl = `https://www.tikwm.com/api/?url=${encodeURIComponent(text)}`;
     const response = await fetch(apiUrl);
     const result = await response.json();
 
-    if (!result || result.code !== 0) return conn.reply(m.chat, '❌ No se pudo obtener el video.', m);
+    if (!result || result.code !== 0 || !result.data || !result.data.play) {
+      let errorMessage = '❌ No pude descargar el video.';
+      if (result && result.msg) errorMessage += `\nDetalles: ${result.msg}`;
+      return conn.reply(m.chat, errorMessage, m);
+    }
 
     const data = result.data;
-    const videoUrl = data.play; // Video normal sin marca de agua
-    
+    const author = data.author?.nickname || 'Desconocido';
+    const description = data.title || 'Sin descripción';
+    const duration = data.duration ? formatDuration(data.duration) : 'N/A';
+    const size = data.size ? `${(data.size / (1024 * 1024)).toFixed(2)} MB` : 'N/A';
+
     const caption = `
 ✅ *TikTok Encontrado*
 
-👤 *Autor:* ${data.author.nickname}
-📝 *Descripción:* ${data.title || 'Sin descripción'}
-⏳ *Duración:* ${data.duration}s
-📏 *Tamaño:* ${(data.size / (1024 * 1024)).toFixed(2)} MB
+👤 *Autor:* ${author}
+📝 *Descripción:* ${description}
+⏳ *Duración:* ${duration}
+📏 *Tamaño:* ${size}
 
 _Si deseas el archivo en HD o solo el audio, usa los botones de abajo:_`.trim();
 
-    const fkontak = {
-      key: { participants: "0@s.whatsapp.net", remoteJid: "status@broadcast", fromMe: false, id: "AlienMenu" },
-      message: {
-        locationMessage: {
-          name: "*TikTok Downloader 🌀*",
-          jpegThumbnail: imgLocal,
-          vcard: "BEGIN:VCARD\nVERSION:3.0\nN:;Sasuke;;;\nFN:Sasuke Bot\nORG:Barboza Developers\nEND:VCARD"
-        }
-      },
-      participant: "0@s.whatsapp.net"
-    };
-
+    // Botones con la lógica que pediste
     const buttons = [
       { buttonId: `${usedPrefix}tt_vid ${text}`, buttonText: { displayText: 'Video en HD' }, type: 1 },
       { buttonId: `${usedPrefix}tt_aud ${text}`, buttonText: { displayText: 'Extraer Audio' }, type: 1 }
     ];
 
-    // Envía el video directamente con los botones incluidos
+    // Se envía el video normal primero con los botones
     await conn.sendMessage(m.chat, {
-      video: { url: videoUrl },
+      video: { url: data.play },
       caption: caption,
       footer: 'By Barboza-Team ⚡',
       buttons: buttons,
       headerType: 4
-    }, { quoted: fkontak });
+    }, { quoted: m });
 
   } catch (error) {
-    console.error(error);
-    conn.reply(m.chat, '❌ Ocurrió un error al procesar el video.', m);
+    console.error('Error al descargar TikTok:', error);
+    conn.reply(m.chat, '❌ ¡Oops! Algo salió mal al intentar descargar el video.', m);
   }
 };
+
+function formatDuration(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+}
 
 handler.command = /^(tiktok|tt|tt_vid|tt_aud)$/i;
 
