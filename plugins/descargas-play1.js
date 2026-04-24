@@ -4,11 +4,7 @@ import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    // Botón original de canales
-    const botonesCanal = [
-        { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
-    ]
-
+    // 1. SI NO HAY TEXTO: ENVIAR CATÁLOGO/USO
     if (!text.trim()) {
         const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
         let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
@@ -24,12 +20,43 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         return await conn.sendMessage(m.chat, {
             image: catalogoImg.byteLength ? catalogoImg : { url: catalogoImg.url },
             caption: txt,
-            footer: "By Barboza-Team ⚡",
-            buttons: botonesCanal,
-            headerType: 4
+            footer: "By Barboza-Team ⚡"
         }, { quoted: m })
     }
 
+    // 2. LÓGICA DE DESCARGA DIRECTA (Cuando presionas los botones)
+    const isAudio = /^(yta|ytmp3|playaudio)$/i.test(command)
+    const isVideo = /^(ytv|ytmp4|mp4)$/i.test(command)
+    const isDoc = /^(ytmp3doc|ytmp4doc)$/i.test(command)
+
+    if (isAudio || isVideo || isDoc) {
+        if (m.react) await m.react('📥')
+        try {
+            // Usamos una API pública para obtener el link de descarga directo
+            // Puedes cambiar esta URL por la de tu API de preferencia
+            const res = await fetch(`https://api.zenkey.my.id/api/download/ytmp3?url=${text}&apikey=zenkey`)
+            const json = await res.json()
+            
+            if (isAudio) {
+                return await conn.sendMessage(m.chat, { 
+                    audio: { url: json.result.download }, 
+                    mimetype: 'audio/mpeg' 
+                }, { quoted: m })
+            }
+            
+            if (isVideo) {
+                return await conn.sendMessage(m.chat, { 
+                    video: { url: json.result.download }, 
+                    caption: `✅ Aquí tienes tu video` 
+                }, { quoted: m })
+            }
+        } catch (e) {
+            console.error(e)
+            return conn.reply(m.chat, '❌ Error al descargar el archivo.', m)
+        }
+    }
+
+    // 3. LÓGICA DE BÚSQUEDA Y MENÚ (Cuando escribes "play [nombre]")
     try {
         if (m.react) await m.react('⏳')
 
@@ -43,13 +70,10 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const { title, thumbnail, timestamp, videoId, author, ago } = result
         const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
         
-        // Configuración de los nuevos botones
         const buttons = [
-            ...botonesCanal, // Mantiene el botón de canales
             { buttonId: `${usedPrefix}yta ${videoUrl}`, buttonText: { displayText: "🎵 Audio" }, type: 1 },
             { buttonId: `${usedPrefix}ytv ${videoUrl}`, buttonText: { displayText: "🎥 Video" }, type: 1 },
-            { buttonId: `${usedPrefix}ytmp3doc ${videoUrl}`, buttonText: { displayText: "📁 Documento MP3" }, type: 1 },
-            { buttonId: `${usedPrefix}ytmp4doc ${videoUrl}`, buttonText: { displayText: "📁 Documento MP4" }, type: 1 }
+            { buttonId: `${usedPrefix}ytmp3doc ${videoUrl}`, buttonText: { displayText: "📁 Doc MP3" }, type: 1 }
         ]
 
         let info = `「 🎬 𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴 」\n`
@@ -57,12 +81,8 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         info += `│ 👤 *𝙲𝙰𝙽𝙰𝙻:* ${author.name}\n`
         info += `│ 🎵 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${title}\n`
         info += `│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽:* ${timestamp}\n`
-        info += `│ 📅 *𝙿𝚄𝙱𝙻𝙸𝙲𝙰𝙳𝙾:* ${ago || 'Reciente'}\n`
         info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n`
-        info += `*Audio:* Si quieren audio le dan al botón\n`
-        info += `*Video:* Igual\n`
-        info += `*Documento mp3:* igual\n`
-        info += `*Documento mp4:* igual`
+        info += `*Seleccione una opción para descargar:*`
 
         await conn.sendMessage(m.chat, { 
             image: { url: thumbnail }, 
@@ -79,5 +99,5 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 }
 
-handler.command = /^(play|yta|ytmp3|play2|ytv|playaudio|mp4|ytmp4)$/i
+handler.command = /^(play|yta|ytmp3|play2|ytv|playaudio|mp4|ytmp4|ytmp3doc|ytmp4doc)$/i
 export default handler
