@@ -2,7 +2,6 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import fetch from "node-fetch";
 
-// Cargamos tu imagen miniurl.jpg
 const imgPath = join(process.cwd(), 'storage', 'img', 'miniurl.jpg');
 let imgLocal;
 try {
@@ -12,19 +11,18 @@ try {
 }
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-  // Si el comando es una respuesta de botón (interna)
+  // Manejador de botones (Audio o HD extra)
   if (command === 'tt_vid' || command === 'tt_aud') {
-    const type = command === 'tt_vid' ? 'video' : 'audio';
     const res = await fetch(`https://www.tikwm.com/api/?url=${text}`);
     const json = await res.json();
-    if (type === 'video') {
-      return await conn.sendMessage(m.chat, { video: { url: json.data.hdplay || json.data.play }, caption: `✅ *Video HD descargado*` }, { quoted: m });
+    if (command === 'tt_vid') {
+      return await conn.sendMessage(m.chat, { video: { url: json.data.hdplay || json.data.play }, caption: `✅ *Video HD extraído*` }, { quoted: m });
     } else {
       return await conn.sendMessage(m.chat, { audio: { url: json.data.music }, mimetype: 'audio/mp4', fileName: 'tiktok.mp3' }, { quoted: m });
     }
   }
 
-  // Validación inicial
+  // Comando principal
   if (!text) return conn.reply(m.chat, '❌ ¡Necesito un enlace de TikTok!', m);
   if (!text.match(/(tiktok\.com\/|vt\.tiktok\.com\/)/i)) return conn.reply(m.chat, '🤔 Enlace no válido.', m);
 
@@ -36,6 +34,8 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     if (!result || result.code !== 0) return conn.reply(m.chat, '❌ No se pudo obtener el video.', m);
 
     const data = result.data;
+    const videoUrl = data.play; // Video normal sin marca de agua
+    
     const caption = `
 ✅ *TikTok Encontrado*
 
@@ -44,9 +44,8 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 ⏳ *Duración:* ${data.duration}s
 📏 *Tamaño:* ${(data.size / (1024 * 1024)).toFixed(2)} MB
 
-Elija una opción para descargar:`.trim();
+_Si deseas el archivo en HD o solo el audio, usa los botones de abajo:_`.trim();
 
-    // Tu fkontak personalizado
     const fkontak = {
       key: { participants: "0@s.whatsapp.net", remoteJid: "status@broadcast", fromMe: false, id: "AlienMenu" },
       message: {
@@ -59,25 +58,23 @@ Elija una opción para descargar:`.trim();
       participant: "0@s.whatsapp.net"
     };
 
-    // Tus botones personalizados
     const buttons = [
       { buttonId: `${usedPrefix}tt_vid ${text}`, buttonText: { displayText: 'Video en HD' }, type: 1 },
       { buttonId: `${usedPrefix}tt_aud ${text}`, buttonText: { displayText: 'Extraer Audio' }, type: 1 }
     ];
 
-    const buttonMessage = {
-      image: imgLocal,
+    // Envía el video directamente con los botones incluidos
+    await conn.sendMessage(m.chat, {
+      video: { url: videoUrl },
       caption: caption,
       footer: 'By Barboza-Team ⚡',
       buttons: buttons,
       headerType: 4
-    };
-
-    await conn.sendMessage(m.chat, buttonMessage, { quoted: fkontak });
+    }, { quoted: fkontak });
 
   } catch (error) {
     console.error(error);
-    conn.reply(m.chat, '❌ Ocurrió un error inesperado.', m);
+    conn.reply(m.chat, '❌ Ocurrió un error al procesar el video.', m);
   }
 };
 
