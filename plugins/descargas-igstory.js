@@ -1,33 +1,37 @@
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    // 1. VALIDAR EL FORMATO (.recordar mensaje | tiempo)
     if (!text || !text.includes('|')) {
         let txt = `╭─〔 ♆ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚁𝙴𝙼𝙸𝙽𝙳𝙴𝚁* ♆ 〕─╮\n│\n`
         txt += `│ ⏰ *𝚄𝚂𝙾 𝙲𝙾𝚁𝚁𝙴𝙲𝚃𝙾:* \n`
         txt += `│ ${usedPrefix + command} [mensaje] | [tiempo]\n│\n`
         txt += `│ 💡 *𝙴𝙹𝙴𝙼𝙿𝙻𝙾:* \n`
-        txt += `│ ${usedPrefix + command} voy a comer | 10m\n│\n`
+        txt += `│ ${usedPrefix + command} voy a dormir | 10 minutos\n│\n`
         txt += `│ 🌑 "𝙹𝚊𝚖á𝚜 𝚘𝚕𝚟𝚒𝚍𝚎𝚜 𝚝𝚞 𝚍𝚎𝚜𝚝𝚒𝚗𝚘"\n╰────────────────────────────╯`
         return conn.reply(m.chat, txt, m)
     }
 
-    // 2. SEPARAR EL MENSAJE DEL TIEMPO
-    let [mensaje, tiempo] = text.split('|').map(v => v.trim())
+    let [mensaje, tiempoText] = text.split('|').map(v => v.trim().toLowerCase())
     
-    // Convertir el tiempo (ej: 10m, 1h, 30s) a milisegundos
+    // Lógica mejorada para detectar tiempo
     let milisegundos = 0
-    if (tiempo.endsWith('s')) milisegundos = parseInt(tiempo) * 1000
-    else if (tiempo.endsWith('m')) milisegundos = parseInt(tiempo) * 60000
-    else if (tiempo.endsWith('h')) milisegundos = parseInt(tiempo) * 3600000
-    else milisegundos = parseInt(tiempo) * 60000 // Por defecto minutos si no pone letra
+    let valor = parseInt(tiempoText)
 
-    if (isNaN(milisegundos) || milisegundos <= 0) return m.reply('❌ Tiempo inválido. Usa: 10s, 5m o 1h.')
+    if (tiempoText.includes('segundo') || tiempoText.endsWith('s')) {
+        milisegundos = valor * 1000
+    } else if (tiempoText.includes('minuto') || tiempoText.endsWith('m')) {
+        milisegundos = valor * 60000
+    } else if (tiempoText.includes('hora') || tiempoText.endsWith('h')) {
+        milisegundos = valor * 3600000
+    } else {
+        // Si solo puso el número, asumimos minutos
+        milisegundos = valor * 60000
+    }
+
+    if (isNaN(milisegundos) || milisegundos <= 0) return m.reply('❌ Tiempo inválido. Usa: 10 minutos, 1 hora, etc.')
 
     if (m.react) await m.react('⏳')
     
-    // 3. CONFIRMACIÓN INICIAL
-    m.reply(`✅ *Recordatorio programado*\n\n🔔 *Motivo:* ${mensaje}\n⏱️ *En:* ${tiempo}\n\n*Te mencionaré cuando el tiempo termine.*`)
+    m.reply(`✅ *Recordatorio programado*\n\n🔔 *Motivo:* ${mensaje}\n⏱️ *En:* ${tiempoText}\n\n*Te mencionaré cuando el tiempo termine.*`)
 
-    // 4. LÓGICA DEL TEMPORIZADOR
     setTimeout(async () => {
         let tag = `@${m.sender.split('@')[0]}`
         let alerta = `╭─〔 🔔 *𝙰𝙻𝙴𝚁𝚃𝙰 𝚄𝙲𝙷𝙸𝙷𝙰* 🔔 〕─╮\n│\n`
@@ -40,6 +44,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             mentions: [m.sender] 
         }, { quoted: m })
         
+        if (m.react) await m.react('🔔')
     }, milisegundos)
 }
 
