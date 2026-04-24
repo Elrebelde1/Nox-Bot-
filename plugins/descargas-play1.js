@@ -12,7 +12,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
         let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
 
-        let txt = `╭─〔 ♆ *ᴜᴄʜɪʜᴀ ʏᴏᴜᴛᴜʙᴇ* ♆ 〕─╮\n`
+        let txt = `╭─〔 ♆ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴* ♆ 〕─╮\n`
         txt += `│\n`
         txt += `│ 🎬 *ᴜsᴏ ᴄᴏʀʀᴇᴄᴛᴏ:* \n`
         txt += `│ ${usedPrefix + command} [nombre o link]\n`
@@ -39,13 +39,13 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         }
 
         const result = search.videos[0]
-        const { title, thumbnail, timestamp, videoId } = result
+        const { title, thumbnail, timestamp, videoId, author, ago } = result
         const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
         const isAudio = /play$|yta|ytmp3|playaudio/.test(command)
         let downloadUrl = null
         let selectedServer = ""
 
-        // LÓGICA DE APIS (Tal como la tenías)
+        // LÓGICA DE APIS ORIGINAL
         if (isAudio) {
             try {
                 const res = await fetch(`https://api.delirius.store/download/ytmp3?url=${encodeURIComponent(videoUrl)}`)
@@ -81,7 +81,16 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             return conn.reply(m.chat, `🛑 ᴇʀʀᴏʀ ᴀʟ ᴏʙᴛᴇɴᴇʀ ᴅᴇsᴄᴀʀɢᴀ.`, m)
         }
 
-        let info = `╭─〔 ♆ *ᴜᴄʜɪʜᴀ ʏᴏᴜᴛᴜʙᴇ* ♆ 〕─╮\n│\n│ 🎬 *ᴛɪᴛᴜʟᴏ:* ${title}\n│ ⏱️ *ᴅᴜʀᴀᴄɪᴏɴ:* ${timestamp}\n│ 📡 *sᴇʀᴠɪᴅᴏʀ:* ${selectedServer}\n│\n│ 🌑 "ʟᴀ ᴏsᴄᴜʀɪᴅᴀᴅ ᴇs ᴍɪ ɢᴜɪᴀ"\n╰────────────────────────────╯`
+        // DISEÑO DE INFORMACIÓN DE TU CAPTURA APLICADO A YOUTUBE
+        let info = `「 🎬 𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴 」\n`
+        info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n`
+        info += `│ 👤 *𝙲𝙰𝙽𝙰𝙻:* ${author.name}\n`
+        info += `│ 🎵 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${title}\n`
+        info += `│ 📡 *𝚂𝙴𝚁𝚅𝙸𝙳𝙾𝚁:* ${selectedServer}\n`
+        info += `│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽:* ${timestamp}\n`
+        info += `│ 📅 *𝙿𝚄𝙱𝙻𝙸𝙲𝙰𝙳𝙾:* ${ago || 'Reciente'}\n`
+        info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n`
+        info += `「 🐦‍⬛  *𝙸𝙽𝚅𝙾𝙲𝙰𝙽𝙳𝙾 𝙼𝙴𝙳𝙸𝙰...* 」`
 
         await conn.sendMessage(m.chat, { 
             image: { url: thumbnail }, 
