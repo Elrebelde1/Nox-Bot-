@@ -45,7 +45,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         let downloadUrl = null
         let selectedServer = ""
 
-        // LÓGICA DE APIS ORIGINAL (RE-CORREGIDA)
+        // LÓGICA DE APIS ORIGINAL
         if (isAudio) {
             try {
                 let res = await fetch(`https://api.delirius.store/download/ytmp3?url=${encodeURIComponent(videoUrl)}`)
@@ -88,7 +88,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         info += `│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽:* ${timestamp}\n`
         info += `│ 📅 *𝙿𝚄𝙱𝙻𝙸𝙲𝙰𝙳𝙾:* ${ago || 'Reciente'}\n`
         info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n`
-        info += `「 🐦‍⬛  *𝙸𝙽𝚅𝙾𝙲𝙰𝙽𝙳𝙾 𝙼𝙴𝙳𝙸𝙰...* 」`
+        info += `「 🐦‍⬛  *𝙸𝙽𝚅𝙾𝙲𝙰𝙽𝙳𝙾 𝙰𝚄𝙳𝙸𝙾...* 」`
 
         await conn.sendMessage(m.chat, { 
             image: { url: thumbnail }, 
