@@ -62,10 +62,6 @@ export async function handler(chatUpdate) {
                     user.banned = false
                 if (!('useDocument' in user))
                     user.useDocument = false
-                if (chat?.blockcmds?.includes(command)) {
-if (m.isOwner || m.isAdmin) return
-return m.reply(`🚫 Comando *${usedPrefix + command}* desactivado en este grupo.`)
-}
                 if (!isNumber(user.level))
                     user.level = 0
                 if (!isNumber(user.bank))
