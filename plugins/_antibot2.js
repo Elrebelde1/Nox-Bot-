@@ -34,6 +34,5 @@ handler.help = ['reenviar']
 handler.tags = ['tools']
 handler.command = /^(reenviar|forward|fwd)$/i
 handler.admin = true // Solo para admins como tú
-handler.owner = true // Solo el dueño o admins
 
 export default handler
