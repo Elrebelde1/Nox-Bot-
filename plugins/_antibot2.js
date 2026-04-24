@@ -1,27 +1,39 @@
-const handler = async (m, { conn, text }) => {
-    // 1. Verificar si el usuario está respondiendo a algo
-    if (!m.quoted) return m.reply('✨ *¡Invocación fallida!* Responde al mensaje que quieras reenviar con el comando.')
-
-    // 2. Obtener el ID del chat destino (si no pone nada, es el mismo chat)
-    let dest = text ? text.replace(/[^0-9]/g, '') + '@s.whatsapp.net' : m.chat
+const handler = async (m, { conn, text, isOwner, isAdmin }) => {
+    // 1. Verificar si hay un mensaje citado
+    const q = m.quoted ? m.quoted : m
+    const mime = (q.msg || q).mimetype || ''
     
+    if (!m.quoted) return m.reply('✨ *Uchiha Reenvío* ✨\n\nResponde a un mensaje (texto, foto, video, voz) con el comando para volver a enviarlo.')
+
     try {
-        if (m.react) await m.react('🕊️') // Reacción de "vuelo/envío"
+        if (m.react) await m.react('🌀') // Reacción de Sharingan
 
-        // 3. Reenviar el mensaje "citado" (quoted)
-        // copyNForward lo manda como si fuera un mensaje nuevo del bot
-        await conn.copyNForward(dest, m.quoted, true)
+        // 2. Determinar destino (si no hay texto, es el chat actual)
+        let dest = text ? text.replace(/[^0-9]/g, '') + '@s.whatsapp.net' : m.chat
 
-        if (text) m.reply(`✅ Mensaje reenviado con éxito a: ${text}`)
-        
+        // 3. Reenvío Forzado (Ignora restricciones de reenvío)
+        await conn.copyNForward(dest, m.quoted, true).catch(async (_) => {
+            // Si falla el método normal, usamos el método de retransmisión directa
+            return await conn.relayMessage(dest, m.quoted.message, { messageId: m.quoted.id })
+        })
+
+        if (text) m.reply(`✅ *Enviado a:* ${text}`)
+
     } catch (e) {
         console.error(e)
-        m.reply('❌ No pude reenviar el mensaje. Asegúrate de que el ID sea correcto o que yo tenga permisos.')
+        // Si todo falla, intentamos enviarlo como un mensaje nuevo manual (solo para texto)
+        if (m.quoted.text) {
+            await conn.sendMessage(m.chat, { text: m.quoted.text }, { quoted: m })
+        } else {
+            m.reply('❌ *Error crítico:* No se pudo replicar el archivo. Asegúrate de que el mensaje original no haya sido eliminado.')
+        }
     }
 }
 
 handler.help = ['reenviar']
 handler.tags = ['tools']
 handler.command = /^(reenviar|forward|fwd)$/i
+handler.admin = true // Solo para admins como tú
+handler.owner = true // Solo el dueño o admins
 
 export default handler
