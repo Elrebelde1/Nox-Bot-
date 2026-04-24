@@ -29,7 +29,7 @@ export async function handler(chatUpdate) {
             return
         m.exp = 0
         m.limit = false
-        try {op
+        try {
             let user = global.db.data.users[m.sender]
             if (typeof user !== 'object')
                 global.db.data.users[m.sender] = {}
