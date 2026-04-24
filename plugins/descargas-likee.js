@@ -1,47 +1,85 @@
 import fetch from "node-fetch"
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    // 1. SI NO HAY TEXTO (INSTRUCCIONES)
     if (!text) {
-        let txt = `╭─〔 ♆ *𝚄𝙲𝙷𝙸𝙷𝙰 𝙲𝚄𝚁𝚁𝙴𝙽𝙲𝚈* ♆ 〕─╮\n│\n`
-        txt += `│ 💰 *𝚄𝚂𝙾 𝙲𝙾𝚁𝚁𝙴𝙲𝚃𝙾:* \n`
-        txt += `│ ${usedPrefix + command} [monto] [desde] [hacia]\n│\n`
-        txt += `│ 💡 *𝙴𝙹𝙴𝙼𝙿𝙻𝙾:* \n`
-        txt += `│ ${usedPrefix + command} 10 USD VES\n│\n`
-        txt += `│ 🌑 "𝙴𝚕 𝚍𝚒𝚗𝚎𝚛𝚘 𝚎𝚜 𝚞𝚗𝚊 𝚒𝚕𝚞𝚜𝚒ó𝚗"\n╰────────────────────────────╯`
+        let txt = `╭─〔 ♆ *𝚄𝙲𝙷𝙸𝙷𝙰 𝙼𝚄𝙻𝚃𝙸-𝚃𝙰𝚂𝙰* ♆ 〕─╮\n│\n`
+        txt += `│ 💰 *𝚄𝚂𝙾 𝚄𝙻𝚃𝚁𝙰-𝙵𝙻𝙴𝚇𝙸𝙱𝙻𝙴:* \n`
+        txt += `│ ${usedPrefix + command} [monto] [moneda] a [moneda]\n│\n`
+        txt += `│ 💡 *𝙴𝙹𝙴𝙼𝙿𝙻𝙾𝚂:* \n`
+        txt += `│ • ${usedPrefix + command} 100 verdes a soberanos\n`
+        txt += `│ • ${usedPrefix + command} 50 lucas a dolares\n`
+        txt += `│ • ${usedPrefix + command} 10 soles a pesos colombianos\n│\n`
+        txt += `│ 🌑 "𝙴𝚕 𝚖𝚞𝚗𝚍𝚘 𝚐𝚒𝚛𝚊, 𝚎𝚕 𝚍𝚒𝚗𝚎𝚛𝚘 𝚝𝚊𝚖𝚋𝚒é𝚗"\n╰────────────────────────────╯`
         return conn.reply(m.chat, txt, m)
     }
 
-    const args = text.split(' ')
-    const amount = args[0]
-    // Si no pone monedas, por defecto es de USD a VES
-    const from = (args[1] || 'USD').toUpperCase()
-    const to = (args[2] || 'VES').toUpperCase()
-
-    if (isNaN(amount)) return conn.reply(m.chat, '❌ El monto debe ser un número válido.', m)
+    // DICCIONARIO MAESTRO (MÁS Y MÁS)
+    const alias = {
+        // Venezuela
+        "bolivares": "VES", "bolivar": "VES", "ves": "VES", "bs": "VES", "soberanos": "VES", "bsd": "VES",
+        // USA / Global
+        "usd": "USD", "dolares": "USD", "dolar": "USD", "verdes": "USD", "bucks": "USD",
+        // Perú
+        "pesos peruano": "PEN", "peso peruano": "PEN", "soles": "PEN", "sol": "PEN", "pen": "PEN",
+        // Colombia
+        "pesos colombianos": "COP", "peso colombiano": "COP", "cop": "COP", "lucas": "COP",
+        // México
+        "pesos mexicanos": "MXN", "peso mexicano": "MXN", "mxn": "MXN", "mex": "MXN",
+        // Argentina
+        "pesos argentinos": "ARS", "peso argentino": "ARS", "ars": "ARS",
+        // Chile
+        "pesos chilenos": "CLP", "peso chileno": "CLP", "clp": "CLP",
+        // Europa
+        "euros": "EUR", "euro": "EUR", "eur": "EUR",
+        // Brasil
+        "reales": "BRL", "real": "BRL", "brl": "BRL",
+        // Otros
+        "pesos uruguayos": "UYU", "uyu": "UYU",
+        "pesos dominicanos": "DOP", "dop": "DOP",
+        "quetzales": "GTQ", "gtq": "GTQ",
+        "soles": "PEN", "bolivianos": "BOB", "bob": "BOB"
+    }
 
     try {
-        if (m.react) await m.react('⏳')
+        // Separar por " a " o por " A "
+        let partes = text.toLowerCase().split(/\s+a\s+/)
+        let primeraParte = partes[0].trim().split(/\s+/)
         
-        // Usando la API de ExchangeRate (Pública)
+        let amount = parseFloat(primeraParte[0])
+        // El resto de la primera parte es la moneda de origen (ej: "pesos", "peruano")
+        let fromText = primeraParte.slice(1).join(' ').trim()
+        let toText = partes[1] ? partes[1].trim() : 'usd'
+
+        // Si no puso moneda de origen, asumimos USD
+        if (!fromText) fromText = 'usd'
+
+        let from = alias[fromText] || fromText.toUpperCase()
+        let to = alias[toText] || toText.toUpperCase()
+
+        if (isNaN(amount)) return conn.reply(m.chat, '❌ Pon un número válido. Ejemplo: .tasa 10 usd a ves', m)
+        if (m.react) await m.react('⏳')
+
         const res = await fetch(`https://api.exchangerate-api.com/v4/latest/${from}`)
         const json = await res.json()
+        
+        if (!json.rates) throw 'Error de API'
         const rate = json.rates[to]
 
-        if (!rate) throw 'Moneda no soportada'
+        if (!rate) throw 'Moneda no encontrada'
 
-        const result = (amount * rate).toFixed(2)
+        const result = (amount * rate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        const tasaFija = rate.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })
 
-        let info = `「 💰 𝚄𝙲𝙷𝙸𝙷𝙰 𝚃𝙰𝚂𝙰 」\n─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n`
-        info += `│ 📥 *𝙼𝙾𝙽𝚃𝙾:* ${amount} ${from}\n`
-        info += `│ 📤 *𝚁𝙴𝚂𝚄𝙻𝚃𝙰𝙳𝙾:* ${result} ${to}\n`
-        info += `│ 📈 *𝚃𝙰𝚂𝙰:* 1 ${from} = ${rate} ${to}\n`
+        let info = `「 💰 𝚄𝙲𝙷𝙸𝙷𝙰 𝙴𝚇𝙲𝙷𝙰𝙽𝙶𝙴 」\n─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n`
+        info += `│ 📤 *𝙾𝚁𝙸𝙶𝙴𝙽:* ${amount} ${from}\n`
+        info += `│ 📥 *𝙳𝙴𝚂𝚃𝙸𝙽𝙾:* ${result} ${to}\n`
+        info += `│ 📈 *𝙲𝙰𝙼𝙱𝙸𝙾:* 1 ${from} = ${tasaFija} ${to}\n`
         info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n`
-        info += `*Actualizado:* ${json.date}`
+        info += `*By Barboza-Team ⚡*`
 
         await conn.sendMessage(m.chat, { 
             text: info, 
-            footer: "By Barboza-Team ⚡",
+            footer: "Sistema de Divisas Global",
             buttons: [
                 { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
             ],
@@ -53,12 +91,12 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     } catch (e) {
         console.error(e)
         if (m.react) await m.react('❌')
-        conn.reply(m.chat, '🛑 Error al consultar la tasa. Verifica las siglas (ej: USD, VES, COP, EUR).', m)
+        conn.reply(m.chat, '🛑 No pude procesar eso. Intenta algo simple como: "100 usd a ves".', m)
     }
 }
 
 handler.help = ['tasa']
 handler.tags = ['tools']
-handler.command = /^(tasa|convertir|divisa)$/i
+handler.command = /^(tasa|convertir|divisa|precio)$/i
 
 export default handler
