@@ -15,7 +15,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
         const { title, thumbnail, timestamp, views, url, author } = result
         
-        // DISEÑO COLORIDO Y NUEVO TEXTO
         const info = `
 🌸 *𝙻𝚎𝚘𝚗𝚎𝚕 𝚢 𝚂𝚞𝚖𝚒 𝙳𝚘𝚠𝚗𝚕𝚘𝚊𝚍𝚎𝚛* 🌸
 ─── ･ ｡ﾟ☆: *.☽ .* :☆ﾟ. ───
@@ -37,13 +36,17 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         }, { quoted: m })
 
         const isAudio = /play|yta|ytmp3|playaudio/i.test(command)
+        
+        // HEADERS PARA EVITAR EL ERROR 403
+        const headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
+        }
 
         if (isAudio) {
-            // API DELIRIUS MP3 V2 (success)
-            const res = await fetch(`https://api.delirius.store/download/ytmp3v2?url=${encodeURIComponent(url)}`)
+            const res = await fetch(`https://api.delirius.store/download/ytmp3v2?url=${encodeURIComponent(url)}`, { headers })
             const json = await res.json()
 
-            if (!json.success || !json.data?.download) throw '⚠️ No se pudo obtener el audio de Delirius.'
+            if (!json.success || !json.data?.download) throw '⚠️ El servidor rechazó la descarga (403). Intenta más tarde.'
 
             await conn.sendMessage(m.chat, { 
                 audio: { url: json.data.download }, 
@@ -52,11 +55,10 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             }, { quoted: m })
 
         } else {
-            // API DELIRIUS MP4 (status)
-            const res = await fetch(`https://api.delirius.store/download/ytmp4?url=${encodeURIComponent(url)}`)
+            const res = await fetch(`https://api.delirius.store/download/ytmp4?url=${encodeURIComponent(url)}`, { headers })
             const json = await res.json()
 
-            if (!json.status || !json.data?.download) throw '⚠️ No se pudo obtener el video de Delirius.'
+            if (!json.status || !json.data?.download) throw '⚠️ El servidor rechazó la descarga (403). Intenta más tarde.'
 
             await conn.sendFile(m.chat, json.data.download, `${title}.mp4`, `🌸 *Aquí tienes tu video*\n> ✨ ${title}`, m)
         }
