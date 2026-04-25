@@ -23,9 +23,9 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         }, { quoted: m })
     }
 
-    // 2. LÓGICA DE DESCARGA (AL PRESIONAR BOTONES)
+    // 2. LÓGICA DE DESCARGA (APIs SYLPHYY)
     const isAudio = /^(yta|ytmp3)$/i.test(command)
-    const isVideo = /^(ytv|ytmp4)$/i.test(command)
+    const isVideo = /^(ytv|ytmp4|mp4)$/i.test(command)
     const isDocMp3 = /^(ytmp3doc)$/i.test(command)
     const isDocMp4 = /^(ytmp4doc)$/i.test(command)
 
@@ -34,26 +34,27 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         try {
             let dlUrl = ''
             let titulo = ''
+            const ytUrl = encodeURIComponent(text)
 
             if (isAudio || isDocMp3) {
-                // API DELIRIUS MP3 V2
-                let res = await fetch(`https://api.delirius.store/download/ytmp3v2?url=${encodeURIComponent(text)}`)
+                // NUEVA API SYLPHYY MP3
+                let res = await fetch(`https://sylphyy.xyz/download/v2/ytmp3?url=${ytUrl}&api_key=${apiKey}`)
                 let json = await res.json()
-                if (json.success && json.data) {
-                    dlUrl = json.data.download
-                    titulo = json.data.title || 'Audio'
+                if (json.status && json.result) {
+                    dlUrl = json.result.dl_url
+                    titulo = json.result.title || 'Audio'
                 }
             } else if (isVideo || isDocMp4) {
-                // API DELIRIUS MP4
-                let res = await fetch(`https://api.delirius.store/download/ytmp4?url=${encodeURIComponent(text)}`)
+                // NUEVA API SYLPHYY MP4
+                let res = await fetch(`https://sylphyy.xyz/download/v2/ytmp4?url=${ytUrl}&api_key=${apiKey}`)
                 let json = await res.json()
-                if (json.status && json.data) {
-                    dlUrl = json.data.download
-                    titulo = json.data.title || 'Video'
+                if (json.status && json.result) {
+                    dlUrl = json.result.dl_url
+                    titulo = json.result.title || 'Video'
                 }
             }
 
-            if (!dlUrl) throw 'No se pudo obtener el enlace de descarga'
+            if (!dlUrl || dlUrl === "") throw 'No se pudo obtener el enlace de descarga'
 
             if (isAudio) {
                 return await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: 'audio/mpeg' }, { quoted: m })
@@ -71,7 +72,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         } catch (e) {
             console.error(e)
             if (m.react) await m.react('❌')
-            return conn.reply(m.chat, `🛑 Error al descargar el archivo.`, m)
+            return conn.reply(m.chat, `🛑 Error al descargar el archivo con la nueva API.`, m)
         }
         return 
     }
@@ -89,7 +90,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const { title, thumbnail, timestamp, videoId, author, ago } = result
         const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
 
-        // BOTONES ORDENADOS SEGÚN TU SOLICITUD
         const buttons = [
             { buttonId: `${usedPrefix}yta ${videoUrl}`, buttonText: { displayText: "🎵 Audio" }, type: 1 },
             { buttonId: `${usedPrefix}ytv ${videoUrl}`, buttonText: { displayText: "🎥 Video" }, type: 1 },
