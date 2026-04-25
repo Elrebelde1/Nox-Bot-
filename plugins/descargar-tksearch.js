@@ -1,54 +1,65 @@
+import axios from "axios";
 import Jimp from "jimp";
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) return m.reply(`📝 Escribe el mensaje para el pizarrón.\n\n*Ejemplo:* ${usedPrefix}${command} Sasuke is goat`);
+    
+    if (command === 'cartel') {
+        if (!text) return m.reply(`📝 Escribe el mensaje para el pizarrón.\n\n*Ejemplo:* ${usedPrefix}${command} Sasuke is goat`);
 
-    try {
-        m.react("🎨");
+        try {
+            m.react("🎨");
 
-        // Imagen de Sasuke en Base64 para que nunca falle (es un texto largo, no lo toques)
-        const sasukeBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAlgAAAJYCAYAAAC+ZpdaAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAgc4YYwAAAABJRU5ErkJggg=="; // Nota: He acortado la cadena para el ejemplo, pero en el código real debe ser la cadena completa de la imagen.
+            // Enlace directo a tu imagen de Sasuke
+            const urlBase = 'https://qu.ax/liznC';
 
-        // Convertir Base64 a un buffer que Jimp pueda leer
-        const base64Data = sasukeBase64.replace(/^data:image\/png;base64,/, "");
-        const imageBuffer = Buffer.from(base64Data, 'base64');
+            // Descargar la imagen
+            const response = await axios.get(urlBase, { responseType: 'arraybuffer' });
+            if (!response.data || response.status !== 200) {
+                throw new Error("No se pudo descargar la imagen base.");
+            }
+            const imageBuffer = Buffer.from(response.data);
 
-        const imagen = await Jimp.read(imageBuffer);
-        const fuente = await Jimp.loadFont(Jimp.FONT_SANS_32_BLACK); // Fuente mediana negra
+            // Cargar imagen y fuente
+            const imagen = await Jimp.read(imageBuffer);
+            const fuente = await Jimp.loadFont(Jimp.FONT_SANS_32_BLACK); // Fuente negra mediana
 
-        // Coordenadas y ancho máximo para centrar el texto en el pizarrón
-        const x = 120;
-        const y = 180;
-        const anchoMax = 350;
+            // Coordenadas y ancho máximo para el texto
+            // Es posible que necesites ajustar estas coordenadas (x, y) 
+            // según dónde esté exactamente el pizarrón en tu imagen.
+            const x = 120;     // Distancia desde la izquierda
+            const y = 180;     // Distancia desde arriba
+            const anchoMax = 350; // Ancho máximo del texto
 
-        // Escribir el texto sobre la imagen
-        imagen.print(
-            fuente,
-            x,
-            y,
-            {
-                text: text,
-                alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
-                alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE
-            },
-            anchoMax,
-            anchoMax
-        );
+            // Dibujar el texto sobre la imagen
+            imagen.print(
+                fuente,
+                x,
+                y,
+                {
+                    text: text,
+                    alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
+                    alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE
+                },
+                anchoMax,
+                anchoMax
+            );
 
-        // Convertir la imagen final a un buffer para enviarla
-        const bufferFinal = await imagen.getBufferAsync(Jimp.MIME_PNG);
+            // Convertir la imagen final a un buffer para enviarla
+            const bufferFinal = await imagen.getBufferAsync(Jimp.MIME_PNG);
 
-        // Enviar la imagen
-        await conn.sendMessage(m.chat, { 
-            image: bufferFinal, 
-            caption: '⚡ *Sasuke ha hablado:*' 
-        }, { quoted: m });
+            // Enviar la imagen
+            await conn.sendMessage(m.chat, { 
+                image: bufferFinal, 
+                caption: '⚡ *Sasuke ha hablado:*' 
+            }, { quoted: m });
 
-        m.react("✅");
+            m.react("✅");
 
-    } catch (e) {
-        console.error(e);
-        m.reply("⚠️ Hubo un fallo interno al generar la imagen.");
+        } catch (e) {
+            console.error("Error detallado:", e);
+            m.reply("⚠️ Hubo un fallo al generar la imagen. Verifica que el enlace de la imagen base siga funcionando.");
+        }
+        return;
     }
 };
 
