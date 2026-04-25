@@ -1,106 +1,94 @@
-
 import axios from "axios";
 
-const handler = async (m, { conn, text}) => {
-    if (!text) return m.reply("🔍 *Por favor, ingresa un término de búsqueda para encontrar videos en TikTok.*");
+const handler = async (m, { conn, text, usedPrefix, command }) => {
+    // Manejador para los botones de la búsqueda
+    if (command === 'tts_vid' || command === 'tts_aud') {
+        const url = text.split(' ')[0];
+        if (command === 'tts_vid') {
+            return await conn.sendMessage(m.chat, { video: { url: url }, caption: `✅ *Video en Alta Calidad (HD)*` }, { quoted: m });
+        } else {
+            return await conn.sendMessage(m.chat, { audio: { url: url }, mimetype: 'audio/mp4', fileName: 'tiktok.mp3' }, { quoted: m });
+        }
+    }
+
+    if (!text) return m.reply("🔍 *Por favor, ingresa un término de búsqueda.*");
 
     try {
         m.react("🔄");
         let info = await tiktok.search(text);
+        
+        // Selección aleatoria del video
         let videoAleatorio = Math.floor(Math.random() * info.length);
-        let { metadata, estadisticas, author, media} = info[videoAleatorio];
+        let { metadata, estadisticas, author, media } = info[videoAleatorio];
 
         let mensaje = `
 🎥 *Título:* ${metadata.titulo}
-⏳ *Duración:* ${metadata.duracion} segundos
-📅 *Creado:* ${metadata.creado}
+⏳ *Duración:* ${metadata.duracion}s
+👤 *Autor:* ${author.name}
 
 📊 *Estadísticas:*
-👀 *Reproducciones:* ${estadisticas.reproducciones}
-❤️ *Likes:* ${estadisticas.likes}
-💬 *Comentarios:* ${estadisticas.comentarios}
-🔄 *Compartidos:* ${estadisticas.compartidos}
-⬇️ *Descargas:* ${estadisticas.descargas}
+👀 ${estadisticas.reproducciones} | ❤️ ${estadisticas.likes}
+`.trim();
 
-👤 *Autor:* ${author.name}
-`;
+        // Configuración de los 3 botones
+        const buttons = [
+            { buttonId: `${usedPrefix}tts ${text}`, buttonText: { displayText: '⏭️ Siguiente Video' }, type: 1 },
+            { buttonId: `${usedPrefix}tts_aud ${media.audio}`, buttonText: { displayText: '🎵 Extraer Audio' }, type: 1 },
+            { buttonId: `${usedPrefix}tts_vid ${media.no_watermark}`, buttonText: { displayText: '📺 Ver en HD' }, type: 1 }
+        ];
 
-        await conn.sendFile(m.chat, media.no_watermark, "tiktok_video.mp4", mensaje, m);
-} catch (error) {
-        console.error("❌ Error en la búsqueda de TikTok:", error);
-        m.reply("⚠️ *No se encontraron resultados o hubo un error en la API.*");
-}
+        await conn.sendMessage(m.chat, {
+            video: { url: media.no_watermark },
+            caption: mensaje,
+            footer: 'By Barboza-Team ⚡',
+            buttons: buttons,
+            headerType: 4
+        }, { quoted: m });
+
+        m.react("✅");
+
+    } catch (error) {
+        console.error(error);
+        m.reply("⚠️ *Sin resultados para esta búsqueda.*");
+        m.react("❌");
+    }
 };
 
-handler.command = ["tiktoksearch"];
+handler.command = /^(tiktoksearch|tts|tts_vid|tts_aud)$/i;
 export default handler;
 
 const tiktok = {
     search: async function (q) {
         try {
-            const data = {
-                count: 20,
-                cursor: 0,
-                web: 1,
-                hd: 1,
-                keywords: q,
-};
-
+            const data = { count: 20, cursor: 0, web: 1, hd: 1, keywords: q };
             const config = {
                 method: "post",
                 url: "https://tikwm.com/api/feed/search",
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                    Accept: "application/json, text/javascript, */*; q=0.01",
-                    "X-Requested-With": "XMLHttpRequest",
-                    "User-Agent": "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36",
-                    Referer: "https://tikwm.com/",
-},
+                    "User-Agent": "Mozilla/5.0 (Linux; Android 10)",
+                },
                 data: data,
-};
-
+            };
             const response = await axios(config);
-
             if (response.data.data) {
                 return response.data.data.videos.map((video) => ({
-                    metadata: {
-                        titulo: video.title,
-                        duracion: video.duration,
-                        region: video.region,
-                        video_id: video.video_id,
-                        creado: new Date(video.create_time * 1000).toLocaleString("es-AR", {
-                            weekday: "long",
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                            hour: "numeric",
-                            minute: "numeric",
-                            second: "numeric",
-                            hour12: false,
-}),
-},
+                    metadata: { titulo: video.title, duracion: video.duration },
                     estadisticas: {
                         reproducciones: Number(video.play_count).toLocaleString(),
                         likes: Number(video.digg_count).toLocaleString(),
-                        comentarios: Number(video.comment_count).toLocaleString(),
-                        compartidos: Number(video.share_count).toLocaleString(),
-                        descargas: Number(video.download_count).toLocaleString(),
-},
-                    author: {
-                        name: video.author.nickname,
-                        username: "@" + video.author.unique_id,
-},
+                    },
+                    author: { name: video.author.nickname },
                     media: {
                         no_watermark: "https://tikwm.com" + video.play,
-                        watermark: "https://tikwm.com" + video.wmplay,
                         audio: "https://tikwm.com" + video.music,
-},
-}));
-} else {
-                throw new Error("Sin información disponible");
-}
-} catch (error) {
-            throw new Error("Error en la búsqueda de TikTok: " + error);
-}
-},
+                    },
+                }));
+            } else {
+                throw new Error("Sin info");
+            }
+        } catch (error) {
+            throw new Error(error);
+        }
+    },
 };
