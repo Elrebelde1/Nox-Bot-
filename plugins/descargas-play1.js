@@ -7,7 +7,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     if (!text.trim()) {
         const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
         let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
-        let txt = `╭─〔 🌸 *𝚂𝚄𝙼𝙸 𝚂𝙰𝙺𝚄𝚆𝙰𝚁𝙰𝚉𝙰* 🌸 〕─╮\n│\n│ 🎬 *𝚄𝚂𝙾 𝙲𝙾𝚁𝚁𝙴𝙲𝚃𝙾:* \n│ ${usedPrefix + command} [nombre o link]\n│\n│ ✨ *𝚃𝙲𝚃𝚅*\n╰────────────────────────────╯`
+        let txt = `╭─〔 🌸 *𝚂𝚄𝙼𝙸 𝚂𝙰𝙺𝚄𝚆𝙰𝚁𝙰𝚉𝙰* 🌸 〕─╮\n│\n│ 🎬 *𝚄𝚂𝙾 𝙲𝙾𝚁𝚁𝙴𝙲𝚃𝙾:* \n│ ${usedPrefix + command} [nombre o link]\n│\n╰────────────────────────────╯`
         return await conn.sendMessage(m.chat, { 
             image: catalogoImg.byteLength ? catalogoImg : { url: catalogoImg.url }, 
             caption: txt, 
@@ -55,15 +55,15 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             if (!dlUrl) throw 'Error'
 
             if (isAudio) {
-                return await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: 'audio/mpeg' }, { quoted: m })
+                await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: 'audio/mpeg' }, { quoted: m })
+            } else if (isVideo) {
+                await conn.sendMessage(m.chat, { video: { url: dlUrl }, caption: `✅ *Video:* ${titulo}`, footer: "By Leonel ⚡" }, { quoted: m })
             }
-            if (isVideo) {
-                return await conn.sendMessage(m.chat, { video: { url: dlUrl }, caption: `✅ *Video:* ${titulo}`, footer: "By Leonel ⚡" }, { quoted: m })
-            }
+            if (m.react) await m.react('✅')
 
         } catch (e) {
             if (m.react) await m.react('❌')
-            return conn.reply(m.chat, `🛑 Error al procesar.`, m)
+            return conn.reply(m.chat, `🛑 Error al procesar la descarga.`, m)
         }
         return 
     }
@@ -77,17 +77,14 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         }
 
         const result = search.videos[0]
-        const { title, thumbnail, timestamp, videoId, author, ago } = result
+        const { title, thumbnail, timestamp, author, ago } = result
 
         let info = `「 🌸 𝚂𝚄𝙼𝙸 𝚂𝙰𝙺𝚄𝚆𝙰𝚁𝙰𝚉𝙰 🌸 」\n─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n`
         info += `│ 👤 *𝙲𝙰𝙽𝙰𝙻:* ${author.name}\n`
         info += `│ 🎵 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${title}\n`
         info += `│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽:* ${timestamp}\n`
         info += `│ 📅 *𝙿𝚄𝙱𝙻𝙸𝙲𝙰𝙳𝙾:* ${ago || 'Reciente'}\n`
-        info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n`
-        info += `*✨ 𝚃𝙲𝚃𝚅*\n`
-        info += `👉 *${usedPrefix + command} audio ${title}*\n`
-        info += `👉 *${usedPrefix + command} video ${title}*`
+        info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───`
 
         await conn.sendMessage(m.chat, { 
             image: { url: thumbnail }, 
