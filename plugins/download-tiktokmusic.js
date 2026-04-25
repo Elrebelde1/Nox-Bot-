@@ -1,34 +1,40 @@
 /* Comando: .tiktokmusic
-   Descripción: Descarga y envía el audio/video de música de TikTok
+   Descripción: Busca y descarga el video/audio de TikTok basado en una búsqueda.
 */
 
+import fetch from 'node-fetch'
+
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) throw `*¿Qué música buscas?*\n\nEjemplo: _${usedPrefix + command} Gata Only_`
+    if (!text) throw `*¿Qué música o video buscas?*\n\nEjemplo: _${usedPrefix + command} Reguetón 2024_`
     
     try {
-        await m.reply('*🎵 Buscando y procesando la música, espera un momento...*')
+        // Notificación de inicio
+        await m.reply('*🎵 Buscando en TikTok, un momento...*')
 
-        // Buscando el video mediante un servicio de scraping
-        let res = await fetch(`https://api.lolhuman.xyz/api/tiktoksearch?apikey=GataDios&query=${encodeURIComponent(text)}`)
-        let json = await res.json()
+        // Usamos un buscador alternativo que suele ser más estable para búsquedas abiertas
+        let searchRes = await fetch(`https://api.agatz.xyz/api/tiktoksearch?message=${encodeURIComponent(text)}`)
+        let searchJson = await searchRes.json()
         
-        if (!json.status) throw 'No se encontró ningún resultado para tu búsqueda.'
+        if (searchJson.status !== 200) throw 'No se encontraron resultados.'
         
-        // Tomamos el primer resultado de la búsqueda
-        let videoData = json.result[0]
-        let { title, author, play } = videoData
+        // Seleccionamos el primer video de los resultados
+        let video = searchJson.data[0]
+        
+        let caption = `*🎵 TIKTOK MUSIC 🎵*\n\n`
+        caption += `*📌 Título:* ${video.title}\n`
+        caption += `*👤 Autor:* ${video.author.nickname}\n`
+        caption += `*🔗 Link:* https://www.tiktok.com/@${video.author.unique_id}/video/${video.video_id}\n\n`
+        caption += `_🚀 Enviando el video solicitado..._`
 
-        let txt = `*🎵 TIKTOK MUSIC 🎵*\n\n`
-        txt += `*📌 Título:* ${title}\n`
-        txt += `*👤 Autor:* ${author.nickname}\n`
-        txt += `*🚀 Enviando video...*`
+        // Enviamos el video (usamos el enlace 'no_watermark' o 'nowm' si está disponible)
+        // En este API la propiedad suele ser 'url' o 'play'
+        let videoUrl = video.no_watermark || video.url || video.play
 
-        // Enviamos el video directamente
-        await conn.sendFile(m.chat, play, 'error.mp4', txt, m)
+        await conn.sendFile(m.chat, videoUrl, 'tiktok.mp4', caption, m)
 
     } catch (e) {
-        console.log(e)
-        m.reply('*❌ Ocurrió un error al intentar obtener la música. Inténtalo de nuevo más tarde.*')
+        console.error(e)
+        m.reply('*❌ Lo siento, no pude encontrar ese video o el servidor está saturado. Intenta con otro nombre.*')
     }
 }
 
