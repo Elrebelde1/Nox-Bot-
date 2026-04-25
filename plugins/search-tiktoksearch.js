@@ -3,11 +3,24 @@ import axios from "axios";
 const handler = async (m, { conn, text, usedPrefix, command }) => {
     // Manejador para los botones de la búsqueda
     if (command === 'tts_vid' || command === 'tts_aud') {
-        const url = text.split(' ')[0];
-        if (command === 'tts_vid') {
-            return await conn.sendMessage(m.chat, { video: { url: url }, caption: `✅ *Video en Alta Calidad (HD)*` }, { quoted: m });
-        } else {
-            return await conn.sendMessage(m.chat, { audio: { url: url }, mimetype: 'audio/mp4', fileName: 'tiktok.mp3' }, { quoted: m });
+        // En tts_aud, el 'text' ahora es el ID del video para evitar el error 403
+        const target = text.split(' ')[0];
+        
+        try {
+            if (command === 'tts_vid') {
+                return await conn.sendMessage(m.chat, { video: { url: target }, caption: `✅ *Video en Alta Calidad (HD)*` }, { quoted: m });
+            } else {
+                // Si es audio, hacemos una petición rápida para obtener el link directo sin bloqueo
+                const res = await axios.get(`https://www.tikwm.com/api/?url=${target}`);
+                const musicUrl = res.data.data.music;
+                return await conn.sendMessage(m.chat, { 
+                    audio: { url: musicUrl }, 
+                    mimetype: 'audio/mp4', 
+                    fileName: 'tiktok.mp3' 
+                }, { quoted: m });
+            }
+        } catch (e) {
+            return m.reply("⚠️ *Error al obtener el archivo. Intenta de nuevo.*");
         }
     }
 
@@ -17,9 +30,8 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         m.react("🔄");
         let info = await tiktok.search(text);
         
-        // Selección aleatoria del video
         let videoAleatorio = Math.floor(Math.random() * info.length);
-        let { metadata, estadisticas, author, media } = info[videoAleatorio];
+        let { metadata, estadisticas, author, media, id } = info[videoAleatorio];
 
         let mensaje = `
 🎥 *Título:* ${metadata.titulo}
@@ -30,10 +42,10 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 👀 ${estadisticas.reproducciones} | ❤️ ${estadisticas.likes}
 `.trim();
 
-        // Configuración de los 3 botones
+        // CONFIGURACIÓN DE BOTONES
         const buttons = [
             { buttonId: `${usedPrefix}tts ${text}`, buttonText: { displayText: '⏭️ Siguiente Video' }, type: 1 },
-            { buttonId: `${usedPrefix}tts_aud ${media.audio}`, buttonText: { displayText: '🎵 Extraer Audio' }, type: 1 },
+            { buttonId: `${usedPrefix}tts_aud ${id}`, buttonText: { displayText: '🎵 Extraer Audio' }, type: 1 },
             { buttonId: `${usedPrefix}tts_vid ${media.no_watermark}`, buttonText: { displayText: '📺 Ver en HD' }, type: 1 }
         ];
 
@@ -73,6 +85,7 @@ const tiktok = {
             const response = await axios(config);
             if (response.data.data) {
                 return response.data.data.videos.map((video) => ({
+                    id: video.video_id, // Guardamos el ID para el botón de audio
                     metadata: { titulo: video.title, duracion: video.duration },
                     estadisticas: {
                         reproducciones: Number(video.play_count).toLocaleString(),
@@ -81,7 +94,6 @@ const tiktok = {
                     author: { name: video.author.nickname },
                     media: {
                         no_watermark: "https://tikwm.com" + video.play,
-                        audio: "https://tikwm.com" + video.music,
                     },
                 }));
             } else {
