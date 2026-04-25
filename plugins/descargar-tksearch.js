@@ -1,46 +1,48 @@
 import axios from "axios";
 import Jimp from "jimp";
-import fs from "fs";
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
     
     if (command === 'cartel') {
-        if (!text) return m.reply(`📝 Escribe el mensaje para el pizarrón.\n\n*Ejemplo:* ${usedPrefix}${command} Sasuke es el mejor`);
+        if (!text) return m.reply(`📝 Escribe el mensaje para el pizarrón.\n\n*Ejemplo:* ${usedPrefix}${command} Hola a todos`);
 
         try {
             m.react("🎨");
-            const base = './src/sasuke_base.png'; 
-            const resultado = `./tmp/sasuke_${m.sender.split('@')[0]}.png`;
-
-            const imagen = await Jimp.read(base);
+            
+            const urlBase = 'https://i.ibb.co/3Yv6Y9j/sasuke-pizarron.png'; 
+            
+            const imagen = await Jimp.read(urlBase);
             const fuente = await Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
+
+            const x = 120; 
+            const y = 180;
+            const anchoMax = 350;
 
             imagen.print(
                 fuente,
-                120, 
-                180, 
+                x,
+                y,
                 {
                     text: text,
                     alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
                     alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE
                 },
-                350, 
-                350  
+                anchoMax,
+                anchoMax
             );
 
-            await imagen.writeAsync(resultado);
+            const buffer = await imagen.getBufferAsync(Jimp.MIME_PNG);
 
             await conn.sendMessage(m.chat, { 
-                image: { url: resultado }, 
-                caption: '⚡ *Aquí tienes tu cartel*' 
+                image: buffer, 
+                caption: '⚡ *Sasuke ha hablado:*' 
             }, { quoted: m });
 
-            fs.unlinkSync(resultado);
             m.react("✅");
 
         } catch (e) {
             console.error(e);
-            m.reply("⚠️ Error: Asegúrate de tener la imagen 'sasuke_base.png' en la carpeta src.");
+            m.reply("⚠️ Hubo un fallo al generar la imagen. Intenta de nuevo.");
         }
         return;
     }
