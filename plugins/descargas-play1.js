@@ -1,60 +1,67 @@
 import axios from 'axios'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) throw `⚠️ ¡Te faltó el link!\n\nEjemplo:\n*${usedPrefix + command}* https://www.youtube.com/watch?v=pyf8cbqyfPs`
+    if (!text) throw `⚠️ Ingresa un link de YouTube para descargar.`
 
     try {
-        // Determinamos si quiere audio o video según el comando
-        const isVideo = command === 'playvid' || command === 'ytmp4' || text.includes('--mp4')
-        const apiUrl = isVideo 
+        // Determinamos si el comando pide video o audio
+        let isVideo = /vid|mp4|v$/i.test(command)
+        let apiEndpoint = isVideo 
             ? `https://api.delirius.store/download/ytmp4?url=${text}`
             : `https://api.delirius.store/download/ytmp3v2?url=${text}`
 
-        await m.reply('_⏳ Procesando, espera un momento..._')
+        await m.reply('_⏳ Procesando, por favor espera..._')
 
-        const response = await axios.get(apiUrl)
-        const res = response.data
+        const { data: res } = await axios.get(apiEndpoint)
 
-        if (!res.status && !res.success) throw '❌ Error al obtener los datos de la API.'
+        // Validación según la respuesta de cada endpoint
+        if (isVideo && !res.status) throw 'Error en la API de Video'
+        if (!isVideo && !res.success) throw 'Error en la API de Audio'
 
-        const { title, author, views, likes, image, download, format } = res.data
+        const data = res.data
+        const title = data.title || 'Sin título'
+        const author = data.author || 'Desconocido'
+        const fileSize = isVideo ? data.format : 'MP3' // En video el JSON trae "360p" en format
+        const dl_url = data.download
 
-        let caption = `
+        let txt = `
 ✨ *YOUTUBE DOWNLOADER* ✨
 
-🎵 *Título:* ${title}
+📌 *Título:* ${title}
 👤 *Canal:* ${author}
-👀 *Vistas:* ${views || 'No disponible'}
-👍 *Likes:* ${likes || 'No disponible'}
-⚙️ *Calidad/Formato:* ${format || (isVideo ? 'mp4' : 'mp3')}
+👀 *Vistas:* ${data.views}
+👍 *Likes:* ${data.likes}
+💾 *Calidad:* ${fileSize}
 
-> *Enviando archivo...*`.trim()
+> *Enviando contenido...*`.trim()
 
-        // Enviamos la miniatura con la info
-        await conn.sendMessage(m.chat, { image: { url: image }, caption: caption }, { quoted: m })
+        // Enviamos miniatura informativa
+        await conn.sendMessage(m.chat, { image: { url: data.image }, caption: txt }, { quoted: m })
 
-        // Enviamos el archivo final
         if (isVideo) {
+            // Enviar Video
             await conn.sendMessage(m.chat, { 
-                video: { url: download }, 
+                video: { url: dl_url }, 
                 fileName: `${title}.mp4`, 
-                mimetype: 'video/mp4' 
+                mimetype: 'video/mp4',
+                caption: `🎬 ${title}`
             }, { quoted: m })
         } else {
+            // Enviar Audio
             await conn.sendMessage(m.chat, { 
-                audio: { url: download }, 
+                audio: { url: dl_url }, 
                 fileName: `${title}.mp3`, 
-                mimetype: 'audio/mpeg' 
+                mimetype: 'audio/mpeg'
             }, { quoted: m })
         }
 
     } catch (e) {
         console.error(e)
-        m.reply(`❌ *Error:* No se pudo descargar el contenido. Intenta con otro enlace.`)
+        m.reply(`❌ *Error:* Verifique que el enlace sea de YouTube o intente más tarde.\n\n${e.message || e}`)
     }
 }
 
-handler.help = ['play', 'playvid']
+handler.help = ['play', 'playvid', 'ytmp3', 'ytmp4']
 handler.tags = ['downloader']
 handler.command = /^(play|playvid|ytmp3|ytmp4)$/i
 
