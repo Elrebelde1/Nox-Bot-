@@ -4,7 +4,7 @@ import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    const apiKey = 'sylphy-6f150d'
+    const apiKeySylphyy = 'sylphy-6f150d'
     const botonesCanal = [
         { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
     ]
@@ -23,7 +23,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         }, { quoted: m })
     }
 
-    // 2. LÓGICA DE DESCARGA (APIs SYLPHYY)
+    // 2. LÓGICA DE DESCARGA (MIXTA: SYLPHYY & DELIRIUS)
     const isAudio = /^(yta|ytmp3)$/i.test(command)
     const isVideo = /^(ytv|ytmp4|mp4)$/i.test(command)
     const isDocMp3 = /^(ytmp3doc)$/i.test(command)
@@ -37,18 +37,25 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             let titulo = ''
             const ytUrl = encodeURIComponent(cleanUrl)
 
-            // LLAMADA A LA API (MISMA ESTRUCTURA PARA MP3 Y MP4)
-            const type = (isAudio || isDocMp3) ? 'ytmp3' : 'ytmp4'
-            let res = await fetch(`https://sylphyy.xyz/download/v2/${type}?url=${ytUrl}&api_key=${apiKey}`)
-            let json = await res.json()
-
-            // MAPEO SEGÚN TU JSON: json.result.dl_url
-            if (json.status && json.result) {
-                dlUrl = json.result.dl_url
-                titulo = json.result.title || 'Archivo'
+            if (isAudio || isDocMp3) {
+                // USANDO SYLPHYY PARA MP3
+                let res = await fetch(`https://sylphyy.xyz/download/v2/ytmp3?url=${ytUrl}&api_key=${apiKeySylphyy}`)
+                let json = await res.json()
+                if (json.status && json.result) {
+                    dlUrl = json.result.dl_url
+                    titulo = json.result.title || 'Audio'
+                }
+            } else if (isVideo || isDocMp4) {
+                // USANDO DELIRIUS PARA MP4
+                let res = await fetch(`https://api.delirius.store/download/ytmp4?url=${ytUrl}`)
+                let json = await res.json()
+                if (json.status && json.data) {
+                    dlUrl = json.data.download
+                    titulo = json.data.title || 'Video'
+                }
             }
 
-            if (!dlUrl) throw new Error('No se obtuvo dl_url')
+            if (!dlUrl) throw new Error('No se pudo obtener el enlace de descarga')
 
             if (isAudio) {
                 return await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: 'audio/mpeg' }, { quoted: m })
@@ -70,7 +77,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         } catch (e) {
             console.error(e)
             if (m.react) await m.react('❌')
-            return conn.reply(m.chat, `🛑 Error al obtener el archivo desde Sylphyy.`, m)
+            return conn.reply(m.chat, `🛑 Error al descargar el archivo.`, m)
         }
         return 
     }
