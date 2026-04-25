@@ -1,40 +1,42 @@
-/* Comando: .tiktokmusic
-   Descripción: Busca y descarga el video/audio de TikTok basado en una búsqueda.
-*/
-
 import fetch from 'node-fetch'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) throw `*¿Qué música o video buscas?*\n\nEjemplo: _${usedPrefix + command} Reguetón 2024_`
+    if (!text) throw `*¿Qué música buscas?*\n\nEjemplo: _${usedPrefix + command} Reggaeton Mix_`
     
     try {
-        // Notificación de inicio
-        await m.reply('*🎵 Buscando en TikTok, un momento...*')
+        await m.reply('*🎵 Buscando el video más duro de TikTok... Dame un segundo.*')
 
-        // Usamos un buscador alternativo que suele ser más estable para búsquedas abiertas
-        let searchRes = await fetch(`https://api.agatz.xyz/api/tiktoksearch?message=${encodeURIComponent(text)}`)
-        let searchJson = await searchRes.json()
+        // Buscamos el video primero
+        let search = await fetch(`https://api.fgmods.xyz/api/search/tiktok?text=${encodeURIComponent(text)}&apikey=fg-free`)
+        let res = await search.json()
         
-        if (searchJson.status !== 200) throw 'No se encontraron resultados.'
-        
-        // Seleccionamos el primer video de los resultados
-        let video = searchJson.data[0]
-        
-        let caption = `*🎵 TIKTOK MUSIC 🎵*\n\n`
-        caption += `*📌 Título:* ${video.title}\n`
-        caption += `*👤 Autor:* ${video.author.nickname}\n`
-        caption += `*🔗 Link:* https://www.tiktok.com/@${video.author.unique_id}/video/${video.video_id}\n\n`
-        caption += `_🚀 Enviando el video solicitado..._`
+        if (res.status !== 200 || !res.result.length) {
+            throw 'No encontré nada con ese nombre.'
+        }
 
-        // Enviamos el video (usamos el enlace 'no_watermark' o 'nowm' si está disponible)
-        // En este API la propiedad suele ser 'url' o 'play'
-        let videoUrl = video.no_watermark || video.url || video.play
+        // Agarramos el link del primer video encontrado
+        let videoUrl = res.result[0].url
+        
+        // Ahora obtenemos el video directo sin marca de agua
+        let download = await fetch(`https://api.fgmods.xyz/api/downloader/tiktok?url=${videoUrl}&apikey=fg-free`)
+        let data = await download.json()
 
-        await conn.sendFile(m.chat, videoUrl, 'tiktok.mp4', caption, m)
+        if (data.status !== 200) throw 'Error al procesar la descarga.'
+
+        let { title, author, nowm } = data.result
+
+        let txt = `*✅ ¡LISTO! AQUÍ TIENES TU MÚSICA*\n\n`
+        txt += `*📌 Título:* ${title || 'Sin título'}\n`
+        txt += `*👤 Autor:* ${author.nickname || 'Desconocido'}\n`
+        txt += `\n_Enviando archivo..._`
+
+        // Enviamos el video
+        await conn.sendFile(m.chat, nowm, 'tiktok.mp4', txt, m)
 
     } catch (e) {
-        console.error(e)
-        m.reply('*❌ Lo siento, no pude encontrar ese video o el servidor está saturado. Intenta con otro nombre.*')
+        console.log(e)
+        // Respuesta en caso de que el servidor esté caído de verdad
+        m.reply('*⚠️ El servidor de descarga está saturado ahorita. Prueba con .play (nombre de la canción) si quieres solo el audio.*')
     }
 }
 
