@@ -32,29 +32,23 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     if (isAudio || isVideo || isDocMp3 || isDocMp4) {
         if (m.react) await m.react('📥')
         try {
-            // Limpieza de URL para evitar errores con parámetros extra de YouTube
-            let cleanUrl = text.trim().split(' ')[0].split('?si=')[0].split('&')[0]
+            let cleanUrl = text.trim().split(' ')[0]
             let dlUrl = ''
             let titulo = ''
             const ytUrl = encodeURIComponent(cleanUrl)
 
-            if (isAudio || isDocMp3) {
-                let res = await fetch(`https://sylphyy.xyz/download/v2/ytmp3?url=${ytUrl}&api_key=${apiKey}`)
-                let json = await res.json()
-                if (json.status && json.result) {
-                    dlUrl = json.result.dl_url
-                    titulo = json.result.title || 'Audio'
-                }
-            } else if (isVideo || isDocMp4) {
-                let res = await fetch(`https://sylphyy.xyz/download/v2/ytmp4?url=${ytUrl}&api_key=${apiKey}`)
-                let json = await res.json()
-                if (json.status && json.result) {
-                    dlUrl = json.result.dl_url
-                    titulo = json.result.title || 'Video'
-                }
+            // LLAMADA A LA API (MISMA ESTRUCTURA PARA MP3 Y MP4)
+            const type = (isAudio || isDocMp3) ? 'ytmp3' : 'ytmp4'
+            let res = await fetch(`https://sylphyy.xyz/download/v2/${type}?url=${ytUrl}&api_key=${apiKey}`)
+            let json = await res.json()
+
+            // MAPEO SEGÚN TU JSON: json.result.dl_url
+            if (json.status && json.result) {
+                dlUrl = json.result.dl_url
+                titulo = json.result.title || 'Archivo'
             }
 
-            if (!dlUrl || dlUrl === "" || dlUrl.length < 10) throw new Error('URL de descarga inválida')
+            if (!dlUrl) throw new Error('No se obtuvo dl_url')
 
             if (isAudio) {
                 return await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: 'audio/mpeg' }, { quoted: m })
@@ -74,9 +68,9 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             }
 
         } catch (e) {
-            console.error('Error en descarga:', e)
+            console.error(e)
             if (m.react) await m.react('❌')
-            return conn.reply(m.chat, `🛑 Error al procesar la descarga.\n\n*Aviso:* Asegúrate de que el video no tenga restricciones de edad o sea privado.`, m)
+            return conn.reply(m.chat, `🛑 Error al obtener el archivo desde Sylphyy.`, m)
         }
         return 
     }
