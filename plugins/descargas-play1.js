@@ -32,12 +32,13 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     if (isAudio || isVideo || isDocMp3 || isDocMp4) {
         if (m.react) await m.react('📥')
         try {
+            // Limpieza de URL para evitar errores con parámetros extra de YouTube
+            let cleanUrl = text.trim().split(' ')[0].split('?si=')[0].split('&')[0]
             let dlUrl = ''
             let titulo = ''
-            const ytUrl = encodeURIComponent(text)
+            const ytUrl = encodeURIComponent(cleanUrl)
 
             if (isAudio || isDocMp3) {
-                // NUEVA API SYLPHYY MP3
                 let res = await fetch(`https://sylphyy.xyz/download/v2/ytmp3?url=${ytUrl}&api_key=${apiKey}`)
                 let json = await res.json()
                 if (json.status && json.result) {
@@ -45,7 +46,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                     titulo = json.result.title || 'Audio'
                 }
             } else if (isVideo || isDocMp4) {
-                // NUEVA API SYLPHYY MP4
                 let res = await fetch(`https://sylphyy.xyz/download/v2/ytmp4?url=${ytUrl}&api_key=${apiKey}`)
                 let json = await res.json()
                 if (json.status && json.result) {
@@ -54,13 +54,17 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                 }
             }
 
-            if (!dlUrl || dlUrl === "") throw 'No se pudo obtener el enlace de descarga'
+            if (!dlUrl || dlUrl === "" || dlUrl.length < 10) throw new Error('URL de descarga inválida')
 
             if (isAudio) {
                 return await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: 'audio/mpeg' }, { quoted: m })
             }
             if (isVideo) {
-                return await conn.sendMessage(m.chat, { video: { url: dlUrl }, caption: `✅ *Video:* ${titulo}`, footer: "By Barboza-Team ⚡" }, { quoted: m })
+                return await conn.sendMessage(m.chat, { 
+                    video: { url: dlUrl }, 
+                    caption: `✅ *Video:* ${titulo}`, 
+                    footer: "By Barboza-Team ⚡" 
+                }, { quoted: m })
             }
             if (isDocMp3) {
                 return await conn.sendMessage(m.chat, { document: { url: dlUrl }, mimetype: 'audio/mpeg', fileName: `${titulo}.mp3` }, { quoted: m })
@@ -70,9 +74,9 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             }
 
         } catch (e) {
-            console.error(e)
+            console.error('Error en descarga:', e)
             if (m.react) await m.react('❌')
-            return conn.reply(m.chat, `🛑 Error al descargar el archivo con la nueva API.`, m)
+            return conn.reply(m.chat, `🛑 Error al procesar la descarga.\n\n*Aviso:* Asegúrate de que el video no tenga restricciones de edad o sea privado.`, m)
         }
         return 
     }
@@ -93,8 +97,8 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const buttons = [
             { buttonId: `${usedPrefix}yta ${videoUrl}`, buttonText: { displayText: "🎵 Audio" }, type: 1 },
             { buttonId: `${usedPrefix}ytv ${videoUrl}`, buttonText: { displayText: "🎥 Video" }, type: 1 },
-            { buttonId: `${usedPrefix}ytmp3doc ${videoUrl}`, buttonText: { displayText: "📁 Documento MP3" }, type: 1 },
-            { buttonId: `${usedPrefix}ytmp4doc ${videoUrl}`, buttonText: { displayText: "📁 Documento MP4" }, type: 1 },
+            { buttonId: `${usedPrefix}ytmp3doc ${videoUrl}`, buttonText: { displayText: "📁 Doc MP3" }, type: 1 },
+            { buttonId: `${usedPrefix}ytmp4doc ${videoUrl}`, buttonText: { displayText: "📁 Doc MP4" }, type: 1 },
             { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
         ]
 
