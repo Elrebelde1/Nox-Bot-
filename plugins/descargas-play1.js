@@ -2,68 +2,59 @@ import fetch from "node-fetch"
 import yts from 'yt-search'
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) throw `⚠️ ¡Ingresa el nombre o el link!\n\nEjemplo:\n*${usedPrefix + command}* Antifragile`
-
-    if (m.react) await m.react('⏳')
-
     try {
-        // BUSCADOR
-        const search = await yts(text)
-        const video = search.videos[0]
-        if (!video) throw '❌ No se encontraron resultados.'
-        
-        const url = video.url
-        const { title, thumbnail, timestamp, author } = video
+        if (!text.trim()) return conn.reply(m.chat, `❀ Por favor, ingresa el nombre o link de YouTube.`, m)
+        await m.react('🕒')
 
-        // 1. PRIMERO YTMP3 (Audio)
-        let resMp3 = await fetch(`https://api.delirius.store/download/ytmp3v2?url=${encodeURIComponent(url)}`)
-        let jsonMp3 = await resMp3.json()
+        const videoMatch = text.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/|v\/))([a-zA-Z0-9_-]{11})/)
+        const query = videoMatch ? 'https://youtu.be/' + videoMatch[1] : text
+        const search = await yts(query)
+        const result = videoMatch ? search.videos.find(v => v.videoId === videoMatch[1]) || search.all[0] : search.all[0]
 
-        // 2. DESPUÉS YTMP4 (Video)
-        let resMp4 = await fetch(`https://api.delirius.store/download/ytmp4?url=${encodeURIComponent(url)}`)
-        let jsonMp4 = await resMp4.json()
+        if (!result) throw 'ꕥ No se encontraron resultados.'
 
-        // VALIDACIÓN DE DATOS
-        if (!jsonMp3.success || !jsonMp4.status) throw 'Error al obtener enlaces de descarga'
+        const { title, thumbnail, timestamp, views, url, author } = result
+        const info = `「✦」Descargando *<${title}>*\n\n> ❑ Canal » *${author.name}*\n> ♡ Vistas » *${views.toLocaleString()}*\n> ✧︎ Duración » *${timestamp}*\n> ➪ Link » ${url}`
 
-        const dl_mp3 = jsonMp3.data.download
-        const dl_mp4 = jsonMp4.data.download
+        const thumb = (await conn.getFile(thumbnail)).data
+        await conn.sendMessage(m.chat, { image: thumb, caption: info }, { quoted: m })
 
-        let info = `「 🎬 𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴 」\n─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n`
-        info += `│ 👤 *𝙲𝙰𝙽𝙰𝙻:* ${author.name}\n`
-        info += `│ 🎵 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${title}\n`
-        info += `│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽:* ${timestamp}\n`
-        info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n> *Enviando Audio y Video...*`
+        // LÓGICA DE DELIRIUS (Primero MP3, luego MP4)
+        const isAudio = /play|yta|ytmp3|playaudio/i.test(command)
 
-        // ENVIAR INFO CON MINIATURA
-        await conn.sendMessage(m.chat, { 
-            image: { url: thumbnail }, 
-            caption: info, 
-            footer: "By Barboza-Team ⚡" 
-        }, { quoted: m })
+        if (isAudio) {
+            // API DELIRIUS MP3 V2
+            const res = await fetch(`https://api.delirius.store/download/ytmp3v2?url=${encodeURIComponent(url)}`)
+            const json = await res.json()
 
-        // ENVIAR AUDIO
-        await conn.sendMessage(m.chat, { 
-            audio: { url: dl_mp3 }, 
-            mimetype: 'audio/mpeg',
-            fileName: `${title}.mp3`
-        }, { quoted: m })
+            if (!json.success || !json.data?.download) throw '⚠ No se pudo obtener el audio de Delirius.'
 
-        // ENVIAR VIDEO
-        await conn.sendMessage(m.chat, { 
-            video: { url: dl_mp4 }, 
-            caption: `✅ *Video:* ${title}`,
-            footer: "By Barboza-Team ⚡"
-        }, { quoted: m })
+            await conn.sendMessage(m.chat, { 
+                audio: { url: json.data.download }, 
+                fileName: `${title}.mp3`, 
+                mimetype: 'audio/mpeg' 
+            }, { quoted: m })
 
-        if (m.react) await m.react('✅')
+        } else {
+            // API DELIRIUS MP4
+            const res = await fetch(`https://api.delirius.store/download/ytmp4?url=${encodeURIComponent(url)}`)
+            const json = await res.json()
+
+            if (!json.status || !json.data?.download) throw '⚠ No se pudo obtener el video de Delirius.'
+
+            await conn.sendFile(m.chat, json.data.download, `${title}.mp4`, `> ❀ ${title}`, m)
+        }
+
+        await m.react('✔️')
 
     } catch (e) {
         console.error(e)
-        if (m.react) await m.react('❌')
-        m.reply(`🛑 Error: No se pudo completar la descarga.`)
+        await m.react('✖️')
+        return conn.reply(m.chat, `⚠︎ Error: ${e}`, m)
     }
 }
 
-handler.command = /^(play)$/i
+handler.command = /^(play|yta|ytmp3|play2|ytv|ytmp4|playaudio|mp4)$/i
+handler.group = false
+
 export default handler
