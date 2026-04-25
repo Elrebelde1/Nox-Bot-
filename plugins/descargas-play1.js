@@ -15,86 +15,72 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         }, { quoted: m })
     }
 
-    let linkSearch = text
-    let forceAudio = /^(audio|mp3)$/i.test(text.split(' ')[0])
-    let forceVideo = /^(video|mp4)$/i.test(text.split(' ')[0])
-
-    if (forceAudio || forceVideo) {
-        linkSearch = text.split(' ').slice(1).join(' ')
-    }
-
-    const isAudio = /^(yta|ytmp3)$/i.test(command) || forceAudio
-    const isVideo = /^(ytv|ytmp4)$/i.test(command) || forceVideo
+    let isAudio = /^(yta|ytmp3)$/i.test(command) || text.toLowerCase().startsWith('audio ')
+    let isVideo = /^(ytv|ytmp4)$/i.test(command) || text.toLowerCase().startsWith('video ')
+    let query = text.replace(/^(audio|video) /i, '')
 
     if (isAudio || isVideo) {
         if (m.react) await m.react('📥')
         try {
-            let search = await yts(linkSearch)
-            if (!search.videos.length) return m.reply('No se encontró el video.')
-            let targetUrl = search.videos[0].url
-            let titulo = search.videos[0].title
-            
+            let search = await yts(query)
+            if (!search.videos.length) return m.reply('❌ No se encontró nada.')
+            let url = search.videos[0].url
+            let title = search.videos[0].title
+
             if (isAudio) {
-                let res = await fetch(`https://api.delirius.store/download/ytmp3v2?url=${encodeURIComponent(targetUrl)}`)
+                let res = await fetch(`https://api.delirius.store/download/ytmp3v2?url=${encodeURIComponent(url)}`)
                 let json = await res.json()
-                if (json.status && json.data?.download) {
+                if (json.success && json.data.download) {
                     await conn.sendMessage(m.chat, { 
                         audio: { url: json.data.download }, 
                         mimetype: 'audio/mpeg',
-                        fileName: `${titulo}.mp3`
+                        fileName: `${title}.mp3`
                     }, { quoted: m })
-                } else {
-                    throw 'Error en API'
-                }
-            } else if (isVideo) {
-                let res = await fetch(`https://api.delirius.store/download/ytmp4?url=${encodeURIComponent(targetUrl)}`)
+                    if (m.react) await m.react('✅')
+                } else throw 'Error'
+            } else {
+                let res = await fetch(`https://api.delirius.store/download/ytmp4?url=${encodeURIComponent(url)}`)
                 let json = await res.json()
-                if (json.status && json.data?.download) {
+                if (json.status && json.data.download) {
                     await conn.sendMessage(m.chat, { 
                         video: { url: json.data.download }, 
-                        caption: `✅ *Video:* ${titulo}`, 
-                        footer: "By Leonel ⚡" 
+                        caption: `✅ *Video:* ${title}`,
+                        footer: "By Leonel ⚡"
                     }, { quoted: m })
-                } else {
-                    throw 'Error en API'
-                }
+                    if (m.react) await m.react('✅')
+                } else throw 'Error'
             }
-            if (m.react) await m.react('✅')
         } catch (e) {
-            console.error(e)
             if (m.react) await m.react('❌')
-            m.reply('🛑 Error al enviar el archivo.')
+            console.error(e)
         }
-        return 
+        return
     }
 
     try {
         if (m.react) await m.react('⏳')
         const search = await yts(text)
-        if (!search || !search.all.length) return
-        
         const result = search.videos[0]
-        const { title, thumbnail, timestamp, author, ago } = result
+        if (!result) return
 
         let info = `「 🌸 𝚂𝚄𝙼𝙸 𝚂𝙰𝙺𝚄𝚆𝙰𝚁𝙰𝚉𝙰 🌸 」\n`
         info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n`
-        info += `│ 👤 *𝙲𝙰𝙽𝙰𝙻:* ${author.name}\n`
-        info += `│ 🎵 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${title}\n`
-        info += `│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽:* ${timestamp}\n`
-        info += `│ 📅 *𝙿𝚄𝙱𝙻𝙸𝙲𝙰𝙳𝙾:* ${ago}\n`
+        info += `│ 👤 *𝙲𝙰𝙽𝙰𝙻:* ${result.author.name}\n`
+        info += `│ 🎵 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${result.title}\n`
+        info += `│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽:* ${result.timestamp}\n`
+        info += `│ 📅 *𝙿𝚄𝙱𝙻𝙸𝙲𝙰𝙳𝙾:* ${result.ago}\n`
         info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───`
 
         await conn.sendMessage(m.chat, { 
-            image: { url: thumbnail }, 
+            image: { url: result.thumbnail }, 
             caption: info, 
             footer: "By Leonel ⚡"
         }, { quoted: m })
-
         if (m.react) await m.react('✅')
     } catch (e) {
         if (m.react) await m.react('❌')
     }
 }
 
-handler.command = /^(play|yta|ytmp3|play2|ytv|mp4|ytmp4)$/i
+handler.command = /^(play|yta|ytmp3|ytv|ytmp4)$/i
 export default handler
