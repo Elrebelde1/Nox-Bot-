@@ -2,42 +2,43 @@ import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-    // Tus enlaces de qu.ax asignados correctamente
+    // Tus enlaces de Catbox asignados correctamente
     const mapas = {
         'bermuda': {
             nombre: '𝐁𝐄𝐑𝐌𝐔𝐃𝐀 🏝️',
-            url: 'https://qu.ax/Z6Ho1'
+            url: 'https://files.catbox.moe/qmmttw.jpg'
         },
         'purgatorio': {
             nombre: '𝐏𝐔𝐑𝐆𝐀𝐓𝐎𝐑𝐈𝐎 🏔️',
-            url: 'https://qu.ax/f118g'
+            url: 'https://files.catbox.moe/3yijjx.jpg'
         },
         'kalahari': {
             nombre: '𝐊𝐀𝐋𝐀𝐇𝐀𝐑𝐈 🏜️',
-            url: 'https://qu.ax/B5sH9'
+            url: 'https://files.catbox.moe/6xsh7r.jpg'
         },
         'alpes': {
             nombre: '𝐀𝐋𝐏𝐄𝐒 ❄️',
-            url: 'https://qu.ax/kTUpa'
+            url: 'https://files.catbox.moe/dqtv1j.jpg'
         },
         'nexterra': {
             nombre: '𝐍𝐄𝐗𝐓𝐄𝐑𝐑𝐀 🤖',
-            url: 'https://qu.ax/Brc3j'
+            url: 'https://files.catbox.moe/f0r33v.jpg'
         }
     }
 
     let seleccion = text.toLowerCase().trim()
 
+    // Menú de ayuda si no se especifica mapa
     if (!seleccion || !mapas[seleccion]) {
         const pathImg = join(process.cwd(), 'storage', 'img', 'miniurl.jpg')
-        let menuImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://qu.ax/Z6Ho1' }
+        let menuImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/qmmttw.jpg' }
 
         let txt = `╔══🔥 • 𝕾𝕬𝕾𝖀𝕶𝕰 𝕭𝕺𝕿 • 🔥══╗\n`
         txt += `   ⚔️  𝐒𝐄𝐋𝐄𝐂𝐂𝐈Ó𝐍 𝐃𝐄 𝐌𝐀𝐏𝐀𝐒  ⚔️\n`
         txt += `╚════════════════════╝\n\n`
         
         txt += `📍 *EJEMPLO:* \n`
-        txt += `  *${usedPrefix + command} kalahari*\n\n`
+        txt += `  *${usedPrefix + command} bermuda*\n\n`
 
         txt += `🗺️ *LISTA DISPONIBLE:*\n`
         txt += `  • Bermuda\n  • Purgatorio\n  • Kalahari\n  • Alpes\n  • Nexterra\n\n`
@@ -55,10 +56,11 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     cap += `╚════════════════════╝\n\n`
     cap += `> 🥷🏻 *Analicen el terreno. La victoria se construye con estrategia y honor. ¡A la batalla!*`
 
+    // Envío de imagen con Catbox
     await conn.sendMessage(m.chat, { 
         image: { url: mapa.url }, 
         caption: cap 
-    }, { quoted: m })
+    }, { quoted: m }).catch(_ => m.reply('❌ Hubo un error al cargar el mapa. Intenta de nuevo.'))
 }
 
 handler.help = ['mapa']
