@@ -5,13 +5,12 @@ const handler = async (m, { conn, text, command, usedPrefix }) => {
   if (command === 'tt_vid' || command === 'tt_aud') {
     const res = await fetch(`https://www.tikwm.com/api/?url=${text}`);
     const json = await res.json();
-    
+
     if (command === 'tt_vid') {
-      // AQUÍ SE CAMBIÓ: Prioriza hdplay para la mejor calidad
       const videoHd = json.data.hdplay || json.data.play; 
       return await conn.sendMessage(m.chat, { 
         video: { url: videoHd }, 
-        caption: `✅ *Video en Alta Calidad extraído*` 
+        caption: `╔══🔥 • 𝕾𝕬𝕾𝖀𝕶𝕰 𝕭𝕺𝕿 • 🔥══╗\n   ✅  *TIKTOK HD LISTO* \n╚════════════════════╝` 
       }, { quoted: m });
     } else {
       return await conn.sendMessage(m.chat, { 
@@ -23,22 +22,23 @@ const handler = async (m, { conn, text, command, usedPrefix }) => {
   }
 
   if (!text) {
-    return conn.reply(m.chat, '❌ ¡Necesito un enlace de TikTok! Por favor, proporciona uno después del comando.', m);
+    return conn.reply(m.chat, '╔══🔥 • 𝕾𝕬𝕾𝖀𝕶𝕰 𝕭𝕺𝕿 • 🔥══╗\n   ❌  *ERROR DE ENLACE* \n╚════════════════════╝\n\n¡Necesito un enlace de TikTok!', m);
   }
 
-  if (!text.match(/(tiktok\.com\/|vt\.tiktok\.com\/)/i)) {
-    return conn.reply(m.chat, '🤔 Parece que el enlace no es de TikTok. Por favor, asegúrate de enviar un enlace válido.', m);
+  // Limpieza automática del link largo que pasaste
+  let cleanUrl = text.split('?')[0];
+
+  if (!cleanUrl.match(/(tiktok\.com\/|vt\.tiktok\.com\/)/i)) {
+    return conn.reply(m.chat, '🤔 Parece que el enlace no es de TikTok válido.', m);
   }
 
   try {
-    const apiUrl = `https://www.tikwm.com/api/?url=${encodeURIComponent(text)}`;
+    const apiUrl = `https://www.tikwm.com/api/?url=${encodeURIComponent(cleanUrl)}`;
     const response = await fetch(apiUrl);
     const result = await response.json();
 
     if (!result || result.code !== 0 || !result.data || !result.data.play) {
-      let errorMessage = '❌ No pude descargar el video.';
-      if (result && result.msg) errorMessage += `\nDetalles: ${result.msg}`;
-      return conn.reply(m.chat, errorMessage, m);
+      return conn.reply(m.chat, '❌ No pude descargar el video. El enlace podría estar roto.', m);
     }
 
     const data = result.data;
@@ -47,22 +47,21 @@ const handler = async (m, { conn, text, command, usedPrefix }) => {
     const duration = data.duration ? formatDuration(data.duration) : 'N/A';
     const size = data.size ? `${(data.size / (1024 * 1024)).toFixed(2)} MB` : 'N/A';
 
-    const caption = `
-✅ *TikTok Encontrado*
+    const caption = `╔══🔥 • 𝕾𝕬𝕾𝖀𝕶𝕰 𝕭𝕺𝕿 • 🔥══╗
+   ✅  *TIKTOK ENCONTRADO* ╚════════════════════╝
 
 👤 *Autor:* ${author}
 📝 *Descripción:* ${description}
 ⏳ *Duración:* ${duration}
 📏 *Tamaño:* ${size}
 
-_Si deseas el archivo en HD o solo el audio, usa los botones de abajo:_`.trim();
+_Usa los botones para HD o Audio:_`.trim();
 
     const buttons = [
-      { buttonId: `${usedPrefix}tt_vid ${text}`, buttonText: { displayText: 'Video en HD' }, type: 1 },
-      { buttonId: `${usedPrefix}tt_aud ${text}`, buttonText: { displayText: 'Extraer Audio' }, type: 1 }
+      { buttonId: `${usedPrefix}tt_vid ${cleanUrl}`, buttonText: { displayText: 'Video en HD 🎥' }, type: 1 },
+      { buttonId: `${usedPrefix}tt_aud ${cleanUrl}`, buttonText: { displayText: 'Extraer Audio 🎵' }, type: 1 }
     ];
 
-    // Se envía el video normal primero con los botones
     await conn.sendMessage(m.chat, {
       video: { url: data.play },
       caption: caption,
@@ -73,7 +72,7 @@ _Si deseas el archivo en HD o solo el audio, usa los botones de abajo:_`.trim();
 
   } catch (error) {
     console.error('Error al descargar TikTok:', error);
-    conn.reply(m.chat, '❌ ¡Oops! Algo salió mal al intentar descargar el video.', m);
+    conn.reply(m.chat, '❌ ¡Oops! Algo salió mal con la conexión.', m);
   }
 };
 
