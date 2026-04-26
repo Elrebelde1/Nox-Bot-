@@ -1,5 +1,3 @@
-
-
 import axios from 'axios'
 import fs from 'fs'
 import { exec } from 'child_process'
@@ -32,7 +30,7 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
 
         const buttonMessage = {
             text: `👤 *𝖲𝖺𝗌𝗎𝗄𝖾 𝖡𝗈𝗍 𝖬𝖣 — 𝖡𝗋𝖺𝗍 𝖢𝗈𝗅𝗈𝗋*\n\n📝 *Texto:* ${textoFinal}\n\n*Seleccione el color de fondo:*`,
-            footer: "𝖡𝗒 𝖡𝖺𝗋𝖻𝗈𝗓𝖺-𝖳𝖾𝖺𝗆 ⚡",
+            footer: "𝖡𝗒 𝖡𝖺𝗋𝖻𝗈𝗺𝖺-𝖳𝖾𝖺𝗆 ⚡",
             buttons: colores,
             headerType: 1
         }
@@ -44,12 +42,13 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
     try {
         await m.react('🕒')
 
-        // API configurada para Sasuke Bot
-        const apiKey = "yosoyyo_sk_u8qjoidy"
-        const colorFondo = color.trim().toLowerCase()
+        // CAMBIO DE API SOLAMENTE
+        const apiKey = "sylphy-6f150d"
+        const colorFondo = color.trim().toLowerCase().replace(/[^a-z]/g, '') // Limpia emojis para que la API no falle
         const textoFormateado = wrapText(textoFinal, 28)
 
-        const apiUrl = `https://yosoyyo-api-ofc.onrender.com/api/brat?text=${encodeURIComponent(textoFormateado)}&color=${colorFondo}&apiKey=${apiKey}`
+        // URL actualizada a Sylphyy
+        const apiUrl = `https://sylphyy.xyz/tools/brat?text=${encodeURIComponent(textoFormateado)}&color=Negro&fondo=${colorFondo}&type=Nose&api_key=${apiKey}`
 
         const response = await axios.get(apiUrl, { responseType: 'arraybuffer' })
 
@@ -81,7 +80,7 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
     } catch (e) {
         console.error(e)
         await m.react('✖️')
-        await conn.sendMessage(m.chat, { text: '❌ *Error en Sasuke Bot API.*', edit: key })
+        await conn.sendMessage(m.chat, { text: '❌ *Error en la API.*', edit: key })
     }
 }
 
