@@ -62,7 +62,7 @@ let handler = async (m, { conn }) => {
 
 handler.help = ['reglaslideres']
 handler.tags = ['freefire']
-handler.command = /^(reglaslideres|reglas|lideres)$/i
+handler.command = /^(reglaslideres2|reglas|lideres)$/i
 handler.register = true
 
 export default handler
