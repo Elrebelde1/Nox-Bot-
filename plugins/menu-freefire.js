@@ -4,32 +4,32 @@ let handler = async (m, { conn, usedPrefix }) => {
    👑  𝐌𝐄𝐍Ú 𝐅𝐑𝐄𝐄 𝐅𝐈𝐑𝐄  👑
 ╚════════════════════╝
 
-📍 *USUARIO:* @${m.sender.split('@')[0]}
+📍 *𝙐𝙎𝙐𝘼𝙍𝙄𝙊:* @${m.sender.split('@')[0]}
 
 ┏━━━━━━━━━━━━━━━━━━━━┓
-┃ 🎮 *CLAN GESTIÓN*
+┃ 🎮 *𝘾𝙇𝘼𝙉 𝙂𝙀𝙎𝙏𝙄𝙊́𝙉*
 ┗━━━━━━━━━━━━━━━━━━━━┛
-🖤 ➺ ${usedPrefix}donarsala
-🖤 ➺ ${usedPrefix}reglas
-🖤 ➺ ${usedPrefix}setreglas
-🖤 ➺ ${usedPrefix}borrareglas
+🖤 ➺ *${usedPrefix}𝙙𝙤𝙣𝙖𝙧𝙨𝙖𝙡𝙖*
+🖤 ➺ *${usedPrefix}𝙧𝙚𝙜𝙡𝙖𝙨*
+🖤 ➺ *${usedPrefix}𝙨𝙚𝙩𝙧𝙚𝙜𝙡𝙖𝙨*
+🖤 ➺ *${usedPrefix}𝙗𝙤𝙧𝙧𝙖𝙧𝙚𝙜𝙡𝙖𝙨*
 
 ┏━━━━━━━━━━━━━━━━━━━━┓
-┃ 🗺️ *MAPAS ESTRATÉGICOS*
+┃ 🗺️ *𝙈𝘼𝙋𝘼𝙎 𝙀𝙎𝙏𝙍𝘼𝙏𝙀́𝙂𝙄𝘾𝙊𝙎*
 ┗━━━━━━━━━━━━━━━━━━━━┛
-🖤 ➺ ${usedPrefix}mapa bermuda
-🖤 ➺ ${usedPrefix}mapa purgatorio
-🖤 ➺ ${usedPrefix}mapa kalahari
-🖤 ➺ ${usedPrefix}mapa nexterra
-🖤 ➺ ${usedPrefix}mapa alpes
+🖤 ➺ *${usedPrefix}𝙢𝙖𝙥𝙖 𝙗𝙚𝙧𝙢𝙪𝙙𝙖*
+🖤 ➺ *${usedPrefix}𝙢𝙖𝙥𝙖 𝙥𝙪𝙧𝙜𝙖𝙩𝙤𝙧𝙞𝙤*
+🖤 ➺ *${usedPrefix}𝙢𝙖𝙥𝙖 𝙠𝙖𝙡𝙖𝙝𝙖𝙧𝙞*
+🖤 ➺ *${usedPrefix}𝙢𝙖𝙥𝙖 𝙣𝙚𝙭𝙩𝙚𝙧𝙧𝙖*
+🖤 ➺ *${usedPrefix}𝙢𝙖𝙥𝙖 𝙖𝙡𝙥𝙚𝙨*
 
 ┏━━━━━━━━━━━━━━━━━━━━┓
-┃ ⚔️ *LISTA DE VERSUS*
+┃ ⚔️ *𝙇𝙄𝙎𝙏𝘼 𝘿𝙀 𝙑𝙀𝙍𝙎𝙐𝙎*
 ┗━━━━━━━━━━━━━━━━━━━━┛
-⚔ ➺ .4vs4 | .6vs6 | .8vs8
-⚔ ➺ .12vs12 | .16vs16
-⚔ ➺ .20vs20 | .24vs24
-⚔ ➺ .scrim
+⚔ ➺ *.4𝙫𝙨4 | .6𝙫𝙨6 | .8𝙫𝙨8*
+⚔ ➺ *.12𝙫𝙨12 | .16𝙫𝙨16*
+⚔ ➺ *.20𝙫𝙨20 | .24𝙫𝙨24*
+⚔ ➺ *.𝙨𝙘𝙧𝙞𝙢*
 
 *◈────────── • ☄️ • ──────────◈*
 ✨ 𝑺𝒂𝒔𝒖𝒌𝒆 𝑩𝒐𝒕 | 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 ✨`,
