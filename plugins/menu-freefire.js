@@ -1,43 +1,36 @@
-import { readFileSync, existsSync } from 'fs'
-import { join } from 'path'
-
 let handler = async (m, { conn, usedPrefix }) => {
-  // Imagen principal del menú
-  const pathImg = join(process.cwd(), 'storage', 'img', 'miniurl.jpg')
-  let img = existsSync(pathImg) ? readFileSync(pathImg) : 'https://i.ibb.co/J55dPST/garena-free-fire-logo-rosj9f102kpok60v.jpg'
+  let img = 'https://i.ibb.co/J55dPST/garena-free-fire-logo-rosj9f102kpok60v.jpg'
 
-  let texto = `╔══🔥 • 𝕾𝕬𝕾𝖀𝕶𝕰 𝕭𝕺𝕿 • 🔥══╗\n`
-  texto += `   👑  𝐌𝐄𝐍Ú 𝐅𝐑𝐄𝐄 𝐅𝐈𝐑𝐄  👑\n`
-  texto += `╚════════════════════╝\n\n`
+  let texto = `╔══🔥 • 𝕾𝕬𝕾𝖀𝕶𝕰 𝕭𝕺𝕿 • 🔥══╗
+   👑  𝐌𝐄𝐍Ú 𝐅𝐑𝐄𝐄 𝐅𝐈𝐑𝐄  👑
+╚════════════════════╝
 
-  texto += `┏━━━━━━━━━━━━━━━━━━━━┓\n`
-  texto += `┃ 🎮 *COMANDOS DE CLAN* \n`
-  texto += `┗━━━━━━━━━━━━━━━━━━━━┛\n`
-  texto += `🖤 ➺ ${usedPrefix}donarsala\n`
-  texto += `🖤 ➺ ${usedPrefix}reglas (Ver reglamento)\n`
-  texto += `🖤 ➺ ${usedPrefix}setreglas (Configurar)\n`
-  texto += `🖤 ➺ ${usedPrefix}borrareglas\n\n`
+┏━━━━━━━━━━━━━━━━━━━━┓
+┃ 🎮 *COMANDOS DE CLAN* ┗━━━━━━━━━━━━━━━━━━━━┛
+🖤 ➺ ${usedPrefix}donarsala
+🖤 ➺ ${usedPrefix}reglas (Ver reglamento)
+🖤 ➺ ${usedPrefix}setreglas (Configurar)
+🖤 ➺ ${usedPrefix}borrareglas
 
-  texto += `┏━━━━━━━━━━━━━━━━━━━━┓\n`
-  texto += `┃ 🗺️ *EXPLORACIÓN DE MAPAS*\n`
-  texto += `┗━━━━━━━━━━━━━━━━━━━━┛\n`
-  texto += `🖤 ➺ ${usedPrefix}mapa bermuda\n`
-  texto += `🖤 ➺ ${usedPrefix}mapa purgatorio\n`
-  texto += `🖤 ➺ ${usedPrefix}mapa kalahari\n`
-  texto += `🖤 ➺ ${usedPrefix}mapa nexterra\n`
-  texto += `🖤 ➺ ${usedPrefix}mapa alpes\n\n`
+┏━━━━━━━━━━━━━━━━━━━━┓
+┃ 🗺️ *EXPLORACIÓN DE MAPAS*
+┗━━━━━━━━━━━━━━━━━━━━┛
+🖤 ➺ ${usedPrefix}mapa bermuda
+🖤 ➺ ${usedPrefix}mapa purgatorio
+🖤 ➺ ${usedPrefix}mapa kalahari
+🖤 ➺ ${usedPrefix}mapa nexterra
+🖤 ➺ ${usedPrefix}mapa alpes
 
-  texto += `┏━━━━━━━━━━━━━━━━━━━━┓\n`
-  texto += `┃ ⚔️ *LISTA DE VERSUS*\n`
-  texto += `┗━━━━━━━━━━━━━━━━━━━━┛\n`
-  texto += `⚔ ➺ .4vs4 | .6vs6 | .8vs8\n`
-  texto += `⚔ ➺ .12vs12 | .16vs16\n`
-  texto += `⚔ ➺ .20vs20 | .24vs24\n`
-  texto += `⚔ ➺ .scrim\n\n`
+┏━━━━━━━━━━━━━━━━━━━━┓
+┃ ⚔️ *LISTA DE VERSUS*
+┗━━━━━━━━━━━━━━━━━━━━┛
+⚔ ➺ .4vs4 | .6vs6 | .8vs8
+⚔ ➺ .12vs12 | .16vs16
+⚔ ➺ .20vs20 | .24vs24
+⚔ ➺ .scrim
 
-  texto += `*◈────────── • ☄️ • ──────────◈*\n`
-  texto += `📢 [Canal Oficial](https://whatsapp.com/channel/0029Vb8kvXUBfxnzYWsbS81I)\n`
-  texto += `✨ 𝑺𝒂𝒔𝒖𝒌𝒆 𝑩𝒐𝒕 | 𝑳𝒂 𝒗𝒐𝒛 𝒅𝒆𝒍 𝑰𝒏𝒇ِي𝒆𝒓𝒏𝒐 ✨`
+*◈────────── • ☄️ • ──────────◈*
+✨ 𝑺𝒂𝒔𝒖𝒌𝒆 𝑩𝒐𝒕 | 𝑳𝒂 𝒗𝒐𝒛 𝒅𝒆𝒍 𝑰𝒏𝒇ِي𝒆𝒓𝒏𝒐 ✨`
 
   const fkontak = {
     "key": {
@@ -54,12 +47,12 @@ let handler = async (m, { conn, usedPrefix }) => {
     "participant": "0@s.whatsapp.net"
   }
 
-  await conn.sendMessage(m.chat, { image: (typeof img === 'string' ? { url: img } : img), caption: texto }, { quoted: fkontak })
+  await conn.sendMessage(m.chat, { image: { url: img }, caption: texto }, { quoted: fkontak })
 }
 
 handler.help = ['menuff']
-handler.tags = ['freefire', 'main']
-handler.command = /^(menuff|menufreefire|ffmenu)$/i
+handler.tags = ['freefire']
+handler.command = /^(menuff|menufreefire|ffmenu|freefire)$/i
 handler.register = true
 
 export default handler
