@@ -20,33 +20,32 @@ let handler = async (m, { conn, usedPrefix, command }) => {
 
     let msg = await conn.sendMessage(m.chat, { image: { url: img }, caption: caption }, { quoted: fkontak })
 
-    // Inicializamos la base de datos temporal
+    // Inicializar base de datos para este mensaje específico
     global.db.data.vs4 = global.db.data.vs4 ? global.db.data.vs4 : {}
     global.db.data.vs4[msg.key.id] = {
-        slots: { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null },
-        owner: m.sender
+        1: null, 2: null, 3: null, 4: null, 5: null, 6: null
     }
 }
 
 handler.all = async function (m) {
-    // 1. Verificar que sea una respuesta a la lista activa
+    // Verificar que sea una respuesta a una lista activa
     if (!m.quoted || !m.quoted.id || !global.db.data.vs4 || !global.db.data.vs4[m.quoted.id]) return
     
     let slot = parseInt(m.text)
     if (isNaN(slot) || slot < 1 || slot > 6) return
 
-    let data = global.db.data.vs4[m.quoted.id].slots
+    let data = global.db.data.vs4[m.quoted.id]
     let user = m.sender
-    let name = m.pushName || 'Sin nombre' // Extrae el nombre automático del usuario
+    let name = m.pushName || 'Usuario'
 
-    // 2. Validaciones: No repetir usuario y que el lugar esté libre
+    // Validaciones: lugar libre y usuario no repetido
     if (Object.values(data).some(v => v?.id === user)) return 
     if (data[slot]) return 
 
-    // 3. Anotar con ID y Nombre
+    // Anotar datos del usuario
     data[slot] = { id: user, name: name }
 
-    // 4. Reconstruir la lista
+    // RECONSTRUCCIÓN DE LA ESCUADRA (Aquí es donde se pone el nombre)
     const newCaption = `╭─❍ *4 VS 4 | RETO SASUKE* 🔥
 │
 │🏆 *Escuadra 1:*
@@ -60,22 +59,19 @@ handler.all = async function (m) {
 │   🥷🏻 6. • ${data[6] ? `*${data[6].name}* (@${data[6].id.split('@')[0]})` : 'Por definir'}
 ╰───────────────❍`
 
-    // 5. Editar mensaje de la lista
+    // Editar la lista original con los nombres en la escuadra
     await this.sendMessage(m.chat, { 
         text: newCaption, 
         edit: m.quoted.vM.key, 
         mentions: Object.values(data).filter(v => v !== null).map(v => v.id) 
     })
 
-    // 6. INTRODUCCIÓN / CONFIRMACIÓN AUTOMÁTICA
-    // El bot envía un mensaje de bienvenida al usuario recién anotado
+    // Introducción / Confirmación
     await this.reply(m.chat, `✅ *¡Anotado correctamente!*
 👤 *Jugador:* ${name}
-📍 *Posición:* ${slot <= 4 ? 'Titular' : 'Suplente'} #${slot}
+📍 *Posición:* ${slot <= 4 ? 'Titular' : 'Suplente'} #${slot}`, m)
 
-> Prepárate para el combate, no olvides cumplir las reglas del clan. 🌀`, m)
-
-    // Borramos el número que envió el usuario para mantener el chat limpio
+    // Borrar el número enviado por el usuario
     await this.sendMessage(m.chat, { delete: m.key })
 }
 
