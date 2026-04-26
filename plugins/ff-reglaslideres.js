@@ -2,48 +2,48 @@ import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 
 let handler = async (m, { conn }) => {
-    // 1. Definir la ruta de la imagen
+    // Ruta de la imagen local
     const pathImg = join(process.cwd(), 'storage', 'img', 'miniurl.jpg')
     
-    // 2. Cargar imagen con validación para que no falle si no existe
+    // Cargar imagen con respaldo por si falla la ruta
     let menuImg
     if (existsSync(pathImg)) {
         menuImg = readFileSync(pathImg)
     } else {
-        menuImg = { url: 'https://cdn.russellxz.click/16b3faeb.jpeg' } // Imagen de respaldo
+        menuImg = { url: 'https://cdn.russellxz.click/16b3faeb.jpeg' } 
     }
 
     let txt = `╔══🔥 • 𝕾𝕬𝕾𝖀𝕶𝕰 𝕭𝕺𝕿 • 🔥══╗\n`
-    txt += `   ⚔️  𝐑𝐄𝐆𝐋𝐀𝐒 𝐃𝐄 𝐋Í𝐃𝐄𝐑𝐄𝐒  ⚔️\n`
+    txt += `   ⚔️  𝐁𝐀𝐒𝐄𝐒 𝐏𝐀𝐑𝐀 𝐋Í𝐃𝐄𝐑𝐄𝐒  ⚔️\n`
     txt += `╚════════════════════╝\n\n`
 
     txt += `┏━━━━━━━━━━━━━━━━━━━━┓\n`
-    txt += `┃ 📜 *CÓDIGO DE HONOR* \n`
+    txt += `┃ 📜 *REGLAMENTO OFICIAL* \n`
     txt += `┗━━━━━━━━━━━━━━━━━━━━┛\n\n`
 
-    txt += `> 🥷🏻 *1. RESPETO ABSOLUTO:* Prohibido insultos entre líderes o a escuadras contrarias.\n\n`
+    txt += `> 🥷🏻 *1. RESPETO:* No se tolera toxicidad ni insultos en el chat de versus.\n\n`
     
-    txt += `> 🏮 *2. PUNTUALIDAD:* Máximo 10 min de espera o se declara victoria por default.\n\n`
+    txt += `> 🏮 *2. ESPERA:* Máximo 10 minutos de tolerancia. Pasado el tiempo es victoria automática.\n\n`
     
-    txt += `> ⚡ *3. TRANSPARENCIA:* Cero uso de archivos (Reedit/Hacks). Se puede pedir grabación de pantalla.\n\n`
+    txt += `> ⚡ *3. LEGALIDAD:* Uso de hacks, macros o archivos es ban inmediato del clan.\n\n`
     
-    txt += `> 🛡️ *4. RESPONSABILIDAD:* Cada líder responde por el comportamiento de sus jugadores.\n\n`
+    txt += `> 🛡️ *4. ESPECIFICACIONES:* Solo se permiten los jugadores anotados en la lista oficial.\n\n`
     
-    txt += `> 🚫 *5. CERO TOXICIDAD:* Comportamientos antideportivos causarán baneo de próximos retos.\n\n`
+    txt += `> 🚫 *5. DESCALIFICACIÓN:* Líder que abandone el versus sin terminar las salas, queda vetado.\n\n`
 
     txt += `*◈────────── • ☄️ • ──────────◈*\n`
-    txt += `   ❗ *INCUMPLIR ES EXPULSIÓN* ❗\n`
+    txt += `   ❗ *EL HONOR ES NUESTRA LEY* ❗\n`
     txt += `*◈────────── • ☄️ • ──────────◈*\n\n`
 
-    txt += `✨ 𝑺𝒂𝒔𝒖𝒌𝒆 𝑩𝒐𝒕 | 𝑫𝒊𝒔𝒄𝒊𝒑𝒍𝒊𝒏𝒂 𝒚 𝑮𝒍𝒐𝒓𝒊𝒂 ✨`
+    txt += `✨ 𝑺𝒂𝒔𝒖𝒌𝒆 𝑩𝒐𝒕 | 𝑳𝒂 𝒗𝒐𝒛 𝒅𝒆𝒍 𝑰𝒏𝒇ِي𝒆𝒓𝒏𝒐 ✨`
 
-    // Mensaje de contacto falso (fkontak)
+    // Mensaje de contacto falso
     const fkontak = {
         "key": {
             "participants":"0@s.whatsapp.net",
             "remoteJid": "status@broadcast",
             "fromMe": false,
-            "id": "ReglasLideres"
+            "id": "BasesLideres"
         },
         "message": {
             "contactMessage": {
@@ -53,16 +53,15 @@ let handler = async (m, { conn }) => {
         "participant": "0@s.whatsapp.net"
     }
 
-    // Enviar mensaje
     await conn.sendMessage(m.chat, { 
         image: menuImg, 
         caption: txt 
     }, { quoted: fkontak })
 }
 
-handler.help = ['reglaslideres']
-handler.tags = ['freefire']
-handler.command = /^(reglaslideres2|reglas|lideres)$/i
+handler.help = ['bases']
+handler.tags = ['clanes']
+handler.command = /^(bases|normas|reglaslider)$/i
 handler.register = true
 
 export default handler
