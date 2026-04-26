@@ -1,3 +1,4 @@
+
 import fg from 'api-dylux'
 import fetch from 'node-fetch'
 import axios from 'axios'
@@ -41,34 +42,31 @@ let handler = async (m, { conn, args, command, usedPrefix}) => {
     }
   }
 
-  // Enviar mensaje de texto inicial
+  // 1. Mensaje de texto inicial
   await conn.sendMessage(m.chat, {
     text: '🎯 *Reto grupal activo | Sasuke Bot MD*',
   }, { quoted: fkontak})
 
-  // Mensaje visual principal (La lista 4vs4)
-  // Guardamos el mensaje enviado en una variable 'sent'
+  // 2. Mensaje principal con la imagen y la lista
   const sent = await conn.sendMessage(m.chat, {
     image: { url: 'https://cdn.russellxz.click/16b3faeb.jpeg'},
     caption: `╭─❍ *4 VS 4 | RETO SASUKE* 🔥\n│\n│⏳ *Horario:*\n│🇲🇽 MÉXICO: ${args[0]}\n│🇨🇴 COLOMBIA: ${args[0]}\n│\n│🎮 *Modalidad:*\n│👥 *Jugadores:*\n│\n│🏆 *Escuadra 1:*\n│   👑 • \n│   🥷🏻 • \n│   🥷🏻 • \n│   🥷🏻 • \n│\n│🧱 *Suplentes:*\n│   🥷🏻 • \n│   🥷🏻 • \n╰───────────────❍`,
     mentions: []
   }, { quoted: fkontak})
 
-  // --- LÓGICA DE REACCIÓN AUTOMÁTICA AL PROPIO MENSAJE ---
-  // Reaccionamos con el corazón (Titular) y el pulgar (Suplente)
-  // Usamos un pequeño delay para que no sea instantáneo y parezca más natural
-  
-  setTimeout(async () => {
-      // Reacción de ❤️
-      await conn.sendMessage(m.chat, { 
-          react: { text: "❤️", key: sent.key } 
-      })
-      
-      // Reacción de 👍 (opcional, puedes poner ambas o elegir una)
-      await conn.sendMessage(m.chat, { 
-          react: { text: "👍", key: sent.key } 
-      })
-  }, 1500) 
+  // 3. Lógica de Reacciones Automáticas
+  // Usamos setTimeout para que las reacciones entren una tras otra suavemente
+  if (sent.key) {
+      setTimeout(async () => {
+          // Reacción para Titulares
+          await conn.sendMessage(m.chat, { react: { text: "❤️", key: sent.key } })
+      }, 1000)
+
+      setTimeout(async () => {
+          // Reacción para Suplentes
+          await conn.sendMessage(m.chat, { react: { text: "👍", key: sent.key } })
+      }, 2000)
+  }
 }
 
 handler.help = ['4vs4']
