@@ -1,43 +1,50 @@
+import { readFileSync, existsSync } from 'fs'
+import { join } from 'path'
 
-let handler = async (m, { isPrems, conn, }) => {
-  let time = global.db.data.users[m.sender].lastcofre + 0; // 36000000 10 Horas // 86400000 24 Horas
-  if (new Date - global.db.data.users[m.sender].lastcofre < 0) {
-    throw `[❗𝐈𝐍𝐅𝐎❗] 𝚈𝙰 𝚁𝙴𝙲𝙻𝙰𝙼𝙰𝚂𝚃𝙴 𝚃𝚄 𝙲𝙾𝙵𝚁𝙴\n𝚅𝚄𝙴𝙻𝚅𝙴 𝙴𝙽 *${msToTime(time - new Date())}* 𝙿𝙰𝚁𝙰 𝚅𝙾𝙻𝚅𝙴𝚁 𝙰 𝚁𝙴𝙲𝙻𝙰𝙼𝙰𝚁`;
-  }
+let handler = async (m, { conn, usedPrefix }) => {
+  // Imagen principal del menú
+  const pathImg = join(process.cwd(), 'storage', 'img', 'miniurl.jpg')
+  let img = existsSync(pathImg) ? readFileSync(pathImg) : 'https://i.ibb.co/J55dPST/garena-free-fire-logo-rosj9f102kpok60v.jpg'
 
-  let img = 'https://i.ibb.co/J55dPST/garena-free-fire-logo-rosj9f102kpok60v.jpg';
-  let texto = `> > 𝙈𝙀𝙉𝙐 𝘿𝙀 𝙁𝙍𝙀𝙀 𝙁𝙄𝙍𝙀 👑.
+  let texto = `╔══🔥 • 𝕾𝕬𝕾𝖀𝕶𝕰 𝕭𝕺𝕿 • 🔥══╗\n`
+  texto += `   👑  𝐌𝐄𝐍Ú 𝐅𝐑𝐄𝐄 𝐅𝐈𝐑𝐄  👑\n`
+  texto += `╚════════════════════╝\n\n`
 
-👑 𝙁𝙍𝙀𝙀 𝙁𝙄𝙍𝙀 👑
-🖤 ➺ 🎫.donarsala
-🖤 ➺ 🗼.𝘉𝘦𝘳𝘮𝘶𝘥𝘢
-🖤 ➺ 🏝️.𝘗𝘶𝘳𝘨𝘢𝘵𝘰𝘳𝘪𝘰
-🖤 ➺ 🏜️.𝘒𝘢𝘭𝘢𝘩𝘢𝘳𝘪
-🖤 ➺ 🏗️.𝘕𝘦𝘹𝘵𝘦𝘳𝘳𝘢
-🖤 ➺ 🏞️.𝘈𝘭𝘱𝘦𝘴
+  texto += `┏━━━━━━━━━━━━━━━━━━━━┓\n`
+  texto += `┃ 🎮 *COMANDOS DE CLAN* \n`
+  texto += `┗━━━━━━━━━━━━━━━━━━━━┛\n`
+  texto += `🖤 ➺ ${usedPrefix}donarsala\n`
+  texto += `🖤 ➺ ${usedPrefix}reglas (Ver reglamento)\n`
+  texto += `🖤 ➺ ${usedPrefix}setreglas (Configurar)\n`
+  texto += `🖤 ➺ ${usedPrefix}borrareglas\n\n`
 
-👑 𝙍𝙀𝙂𝙇𝘼𝙎 𝙂𝙀𝙉𝙀𝙍𝘼𝙇𝙀𝙎 👑
-🖤 ➺ 🎮.𝘳𝘦𝘨𝘭𝘢𝘴𝘭𝘪𝘥𝘦𝘳𝘦𝘴
-🖤 ➺ 🎮.𝘳𝘦𝘨𝘭𝘢𝘴𝘭𝘪𝘥𝘦𝘳𝘦𝘴2
+  texto += `┏━━━━━━━━━━━━━━━━━━━━┓\n`
+  texto += `┃ 🗺️ *EXPLORACIÓN DE MAPAS*\n`
+  texto += `┗━━━━━━━━━━━━━━━━━━━━┛\n`
+  texto += `🖤 ➺ ${usedPrefix}mapa bermuda\n`
+  texto += `🖤 ➺ ${usedPrefix}mapa purgatorio\n`
+  texto += `🖤 ➺ ${usedPrefix}mapa kalahari\n`
+  texto += `🖤 ➺ ${usedPrefix}mapa nexterra\n`
+  texto += `🖤 ➺ ${usedPrefix}mapa alpes\n\n`
 
-▸▸ 𝙇𝙄𝙎𝙏𝘼 𝙑𝙀𝙍𝙎𝙐𝙎 👑 ◂◂
-⚔ ➺.4𝘷𝘴4 
-⚔ ➺.6𝘷𝘴6 
-⚔ ➺.8𝘷𝘴8 
-⚔ ➺.𝘴𝘤𝘳𝘪𝘮 
-⚔ ➺.12𝘷𝘴12 
-⚔ ➺.16𝘷𝘴16 
-⚔ ➺.20𝘷𝘴20 
-⚔ ➺.24𝘷𝘴24 
+  texto += `┏━━━━━━━━━━━━━━━━━━━━┓\n`
+  texto += `┃ ⚔️ *LISTA DE VERSUS*\n`
+  texto += `┗━━━━━━━━━━━━━━━━━━━━┛\n`
+  texto += `⚔ ➺ .4vs4 | .6vs6 | .8vs8\n`
+  texto += `⚔ ➺ .12vs12 | .16vs16\n`
+  texto += `⚔ ➺ .20vs20 | .24vs24\n`
+  texto += `⚔ ➺ .scrim\n\n`
 
-🔗 [canal oficial](https://whatsapp.com/channel/0029Vb8kvXUBfxnzYWsbS81I)`;
+  texto += `*◈────────── • ☄️ • ──────────◈*\n`
+  texto += `📢 [Canal Oficial](https://whatsapp.com/channel/0029Vb8kvXUBfxnzYWsbS81I)\n`
+  texto += `✨ 𝑺𝒂𝒔𝒖𝒌𝒆 𝑩𝒐𝒕 | 𝑳𝒂 𝒗𝒐𝒛 𝒅𝒆𝒍 𝑰𝒏𝒇ِي𝒆𝒓𝒏𝒐 ✨`
 
   const fkontak = {
     "key": {
       "participants": "0@s.whatsapp.net",
       "remoteJid": "status@broadcast",
       "fromMe": false,
-      "id": "Halo"
+      "id": "MenuFF"
     },
     "message": {
       "contactMessage": {
@@ -45,14 +52,14 @@ let handler = async (m, { isPrems, conn, }) => {
       }
     },
     "participant": "0@s.whatsapp.net"
-  };
+  }
 
-  await conn.sendFile(m.chat, img, 'img.jpg', texto, fkontak);
-  global.db.data.users[m.sender].lastcofre = new Date * 1;
-};
+  await conn.sendMessage(m.chat, { image: (typeof img === 'string' ? { url: img } : img), caption: texto }, { quoted: fkontak })
+}
 
-handler.help = ['menuff'];
-handler.tags = ['freefire', 'main'];
-handler.command = ['menuff', 'menufreefire', 'rcanal'];
-handler.register = false
-export default handler;
+handler.help = ['menuff']
+handler.tags = ['freefire', 'main']
+handler.command = /^(menuff|menufreefire|ffmenu)$/i
+handler.register = true
+
+export default handler
