@@ -2,48 +2,37 @@ import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 
 let handler = async (m, { conn }) => {
-    // Ruta de la imagen local
+    // Ruta de la imagen local con validación
     const pathImg = join(process.cwd(), 'storage', 'img', 'miniurl.jpg')
-    
-    // Cargar imagen con respaldo por si falla la ruta
-    let menuImg
-    if (existsSync(pathImg)) {
-        menuImg = readFileSync(pathImg)
-    } else {
-        menuImg = { url: 'https://cdn.russellxz.click/16b3faeb.jpeg' } 
-    }
+    let menuImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://cdn.russellxz.click/16b3faeb.jpeg' }
 
-    let txt = `╔══🔥 • 𝕾𝕬𝕾𝖀𝕶𝕰 𝕭𝕺𝕿 • 🔥══╗\n`
-    txt += `   ⚔️  𝐁𝐀𝐒𝐄𝐒 𝐏𝐀𝐑𝐀 𝐋Í𝐃𝐄𝐑𝐄𝐒  ⚔️\n`
-    txt += `╚════════════════════╝\n\n`
+    let txt = `『 🎴 *𝐒𝐀𝐒𝐔𝐊𝐄 𝐁𝐎𝐓 | 𝐄𝐃𝐈𝐂𝐓𝐎* 🎴 』\n`
+    txt += `\n*◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤*\n`
+    txt += `  ⚔️ *ORDENANZA PARA LÍDERES* ⚔️\n`
+    txt += `*◥◣◥◣◥◣◥◣◥◣◥◣◥◣◥◣◥◣*\n\n`
 
-    txt += `┏━━━━━━━━━━━━━━━━━━━━┓\n`
-    txt += `┃ 📜 *REGLAMENTO OFICIAL* \n`
-    txt += `┗━━━━━━━━━━━━━━━━━━━━┛\n\n`
+    txt += `│ 💠 *ESTATUTO I:* La palabra del líder es ley, pero la falta de respeto a la escuadra rival causa sanción inmediata.\n\n`
+    
+    txt += `│ 💠 *ESTATUTO II:* Puntualidad militar. 10 minutos de retraso y la victoria se entrega al oponente.\n\n`
+    
+    txt += `│ 💠 *ESTATUTO III:* Prohibido el uso de archivos externos, scripts o cualquier ventaja desleal. Honor ante todo.\n\n`
+    
+    txt += `│ 💠 *ESTATUTO IV:* El líder debe garantizar que sus jugadores estén correctamente registrados en la lista.\n\n`
+    
+    txt += `│ 💠 *ESTATUTO V:* Abandono de sala sin causa justificada resultará en veto permanente del clan.\n\n`
 
-    txt += `> 🥷🏻 *1. RESPETO:* No se tolera toxicidad ni insultos en el chat de versus.\n\n`
+    txt += `*【 ❗ 】 EL INCUMPLIMIENTO ANULA LA GLORIA*\n\n`
     
-    txt += `> 🏮 *2. ESPERA:* Máximo 10 minutos de tolerancia. Pasado el tiempo es victoria automática.\n\n`
-    
-    txt += `> ⚡ *3. LEGALIDAD:* Uso de hacks, macros o archivos es ban inmediato del clan.\n\n`
-    
-    txt += `> 🛡️ *4. ESPECIFICACIONES:* Solo se permiten los jugadores anotados en la lista oficial.\n\n`
-    
-    txt += `> 🚫 *5. DESCALIFICACIÓN:* Líder que abandone el versus sin terminar las salas, queda vetado.\n\n`
-
     txt += `*◈────────── • ☄️ • ──────────◈*\n`
-    txt += `   ❗ *EL HONOR ES NUESTRA LEY* ❗\n`
-    txt += `*◈────────── • ☄️ • ──────────◈*\n\n`
+    txt += `   ✨ 𝑺𝒂𝒔𝒖𝒌𝒆 𝑩𝒐𝒕 | 𝑺𝒖𝒑𝒓𝒆𝒎𝒂𝒄𝒊𝒂 𝑼𝒄𝒉𝒊𝒉𝒂 ✨\n`
+    txt += `*◈────────── • ☄️ • ──────────◈*`
 
-    txt += `✨ 𝑺𝒂𝒔𝒖𝒌𝒆 𝑩𝒐𝒕 | 𝑳𝒂 𝒗𝒐𝒛 𝒅𝒆𝒍 𝑰𝒏𝒇ِي𝒆𝒓𝒏𝒐 ✨`
-
-    // Mensaje de contacto falso
     const fkontak = {
         "key": {
             "participants":"0@s.whatsapp.net",
             "remoteJid": "status@broadcast",
             "fromMe": false,
-            "id": "BasesLideres"
+            "id": "EdictoLider"
         },
         "message": {
             "contactMessage": {
@@ -59,9 +48,9 @@ let handler = async (m, { conn }) => {
     }, { quoted: fkontak })
 }
 
-handler.help = ['bases']
+handler.help = ['liderazgo']
 handler.tags = ['clanes']
-handler.command = /^(bases|normas|reglaslider)$/i
+handler.command = /^(liderazgo|edicto|lideres|bases)$/i
 handler.register = true
 
 export default handler
