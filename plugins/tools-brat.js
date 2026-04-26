@@ -1,62 +1,55 @@
+
+
 import axios from 'axios'
 import fs from 'fs'
 import { exec } from 'child_process'
 
 var handler = async (m, { conn, usedPrefix, command, text }) => {
-    // Separamos el texto y el color mediante el pipe "|"
+    // Separamos el texto y el color
     let [txt, color] = text.split('|')
     let textoFinal = txt ? txt.trim() : (m.quoted?.text || null)
 
     if (!textoFinal) return conn.reply(m.chat, '⚡ *Escribe el texto para tu sticker brat*\n> Ejemplo: .brat Sasuke Bot', m)
 
-    // Validación de longitud para evitar errores de renderizado
+    // Validación de longitud
     if (textoFinal.length > 35) {
         return conn.reply(m.chat, `⚠️ *Texto muy largo.*\n\n📌 Máximo: *35 letras*`, m)
     }
 
-    // Mapeo de nombres de colores a valores aceptados por la API (Inglés/Español)
-    const colorMap = {
-        "blanco": "Blanco",
-        "verde": "Verde",
-        "rojo": "Rojo",
-        "azul": "Azul",
-        "amarillo": "Amarillo",
-        "rosa": "Rosa",
-        "cian": "Cian",
-        "naranja": "Naranja",
-        "morado": "Morado",
-        "negro": "Negro"
-    }
-
-    // Si no se especifica color, mostramos el menú de botones
+    // Si no hay color, mandamos los botones con tu marca
     if (!color) {
-        const botones = Object.keys(colorMap).filter(c => c !== 'negro').map(c => ({
-            buttonId: `${usedPrefix + command} ${textoFinal}|${c}`,
-            buttonText: { displayText: c.charAt(0).toUpperCase() + c.slice(1) },
-            type: 1
-        }))
+        const colores = [
+            { buttonId: `${usedPrefix + command} ${textoFinal}|blanco`, buttonText: { displayText: "Blanco 🤍" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|verde`, buttonText: { displayText: "Verde 💚" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|rojo`, buttonText: { displayText: "Rojo ❤️" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|azul`, buttonText: { displayText: "Azul 💙" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|amarillo`, buttonText: { displayText: "Amarillo 💛" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|rosa`, buttonText: { displayText: "Rosa 🩷" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|cian`, buttonText: { displayText: "Cian 🩵" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|naranja`, buttonText: { displayText: "Naranja 🧡" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|morado`, buttonText: { displayText: "Morado 💜" }, type: 1 }
+        ]
 
         const buttonMessage = {
-            text: `👤 *𝖲𝖺𝗌𝗎𝗄𝖾 𝖡𝗈𝗍 𝖬𝖣 — 𝖡𝗋𝖺𝗍 𝢢𝗈𝗅𝗈𝗋*\n\n📝 *Texto:* ${textoFinal}\n\n*Seleccione el color de fondo:*`,
-            footer: "𝖡by 𝖡𝖺𝗋𝖻𝗈𝗓𝖺-𝖳𝖾𝖺𝗆 ⚡",
-            buttons: botones,
+            text: `👤 *𝖲𝖺𝗌𝗎𝗄𝖾 𝖡𝗈𝗍 𝖬𝖣 — 𝖡𝗋𝖺𝗍 𝖢𝗈𝗅𝗈𝗋*\n\n📝 *Texto:* ${textoFinal}\n\n*Seleccione el color de fondo:*`,
+            footer: "𝖡𝗒 𝖡𝖺𝗋𝖻𝗈𝗓𝖺-𝖳𝖾𝖺𝗆 ⚡",
+            buttons: colores,
             headerType: 1
         }
         return await conn.sendMessage(m.chat, buttonMessage, { quoted: m })
     }
 
-    let { key } = await conn.sendMessage(m.chat, { text: '⏳ *Generando sticker estilo Brat...*' }, { quoted: m })
+    let { key } = await conn.sendMessage(m.chat, { text: '⏳ *Procesando con la tecnología de Sasuke Bot...*' }, { quoted: m })
 
     try {
         await m.react('🕒')
 
-        // Configuración de la nueva API
-        const apiKey = "sylphy-6f150d"
-        const selectedColor = colorMap[color.trim().toLowerCase()] || "Blanco"
-        
-        // La API parece requerir fondo para el color y el texto en un formato específico
-        // Según tu URL: text=...&color=Negro&fondo=Blanco
-        const apiUrl = `https://sylphyy.xyz/tools/brat?text=${encodeURIComponent(textoFinal)}&color=Negro&fondo=${selectedColor}&type=Nose&api_key=${apiKey}`
+        // API configurada para Sasuke Bot
+        const apiKey = "yosoyyo_sk_u8qjoidy"
+        const colorFondo = color.trim().toLowerCase()
+        const textoFormateado = wrapText(textoFinal, 28)
+
+        const apiUrl = `https://yosoyyo-api-ofc.onrender.com/api/brat?text=${encodeURIComponent(textoFormateado)}&color=${colorFondo}&apiKey=${apiKey}`
 
         const response = await axios.get(apiUrl, { responseType: 'arraybuffer' })
 
@@ -64,7 +57,7 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
         const webp = `./tmp-${Date.now()}.webp`
         fs.writeFileSync(img, response.data)
 
-        // Conversión FFmpeg a WebP (Sticker)
+        // Conversión FFmpeg optimizada
         await new Promise((resolve, reject) => {
             exec(`ffmpeg -i ${img} -vcodec libwebp -vf "scale=512:512:force_original_aspect_ratio=decrease,format=rgba,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=#00000000" ${webp}`, (err) => {
                 if (err) reject(err)
@@ -72,25 +65,40 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
             })
         })
 
-        // Envío del sticker con créditos
+        // Envío con tus créditos exclusivos
         await conn.sendMessage(m.chat, { 
             sticker: fs.readFileSync(webp), 
             packname: "𝖲𝖺𝗌𝗎𝗄𝖾 𝖡𝗈𝗍 𝖬𝖣 👤", 
             author: "𝖡𝗒 𝖡𝖺𝗋𝖻𝗈𝗓𝖺-𝖳𝖾𝖺𝗆 ⚡" 
         }, { quoted: m })
 
-        await conn.sendMessage(m.chat, { text: '✅ *¡Sticker creado con éxito!*', edit: key })
+        await conn.sendMessage(m.chat, { text: '✅ *Sticker generado por Barboza-Team!*', edit: key })
         await m.react('✔️')
 
-        // Limpieza de archivos temporales
         if (fs.existsSync(img)) fs.unlinkSync(img)
         if (fs.existsSync(webp)) fs.unlinkSync(webp)
 
     } catch (e) {
         console.error(e)
         await m.react('✖️')
-        await conn.sendMessage(m.chat, { text: '❌ *Error al conectar con la API de Sylphyy.*', edit: key })
+        await conn.sendMessage(m.chat, { text: '❌ *Error en Sasuke Bot API.*', edit: key })
     }
+}
+
+function wrapText(text, max = 22) {
+    let words = text.split(' ')
+    let lines = []
+    let current = []
+    for (let w of words) {
+        if ((current.join(' ').length + w.length + 1) > max) {
+            lines.push(current.join(' '))
+            current = [w]
+        } else {
+            current.push(w)
+        }
+    }
+    if (current.length) lines.push(current.join(' '))
+    return lines.join('\n')
 }
 
 handler.help = ['brat']
