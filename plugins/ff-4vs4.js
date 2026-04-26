@@ -1,72 +1,86 @@
+import fetch from "node-fetch"
 
-import fg from 'api-dylux'
-import fetch from 'node-fetch'
-import axios from 'axios'
+const handler = async (m, { conn, usedPrefix, command }) => {
+    // Configuración de la imagen y contacto
+    const img = 'https://cdn.russellxz.click/16b3faeb.jpeg'
+    const fkontak = { key: { participant: '0@s.whatsapp.net', remoteJid: 'status@broadcast', fromMe: false, id: 'AlienMenu' }, message: { locationMessage: { name: '🔱 RETO 4 VS 4 🔱', jpegThumbnail: await (await fetch('https://files.catbox.moe/1j784p.jpg')).buffer() } } }
 
-let handler = async (m, { conn, args, command, usedPrefix}) => {
-  if (!args[0]) throw `
-╭─❍ *🔱 RETO 4 VS 4 🔱*
-│
-│⏳ *Horario:*
-│🇲🇽 MÉXICO:
-│🇨🇴 COLOMBIA:
-│
-│🎮 *Modalidad:*
-│👥 *Jugadores:*
+    const caption = `╭─❍ *4 VS 4 | RETO SASUKE* 🔥
 │
 │🏆 *Escuadra 1:*
-│   👑 •
-│   🥷🏻 •
-│   🥷🏻 •
-│   🥷🏻 •
+│   👑 • Por definir
+│   🥷🏻 • Por definir
+│   🥷🏻 • Por definir
+│   🥷🏻 • Por definir
 │
 │🧱 *Suplentes:*
-│   🥷🏻 •
-│   🥷🏻 •
-╰───────────────❍
-`
+│   🥷🏻 • Por definir
+│   🥷🏻 • Por definir
+╰───────────────❍`
 
-  const fkontak = {
-    key: {
-      participant: '0@s.whatsapp.net',
-      remoteJid: 'status@broadcast',
-      fromMe: false,
-      id: 'AlienMenu'
-    },
-    message: {
-      locationMessage: {
-        name: '🛸 INVOCACIÓN GRUPAL | Sasuke Bot MD',
-        jpegThumbnail: await (await fetch('https://files.catbox.moe/1j784p.jpg')).buffer(),
-        vcard: 'BEGIN:VCARD\nVERSION:3.0\nN:;Sasuke;;;\nFN:Sasuke Bot\nORG:Kaneki Developers\nEND:VCARD'
-      }
+    // Estructura de botones igual a la que pasaste
+    const buttons = [
+        { buttonId: `vs_titular`, buttonText: { displayText: "Anotar Titular ❤️" }, type: 1 },
+        { buttonId: `vs_suplente`, buttonText: { displayText: "Anotar Suplente 👍" }, type: 1 }
+    ]
+
+    let msg = await conn.sendMessage(m.chat, { 
+        image: { url: img }, 
+        caption: caption, 
+        footer: "By Barboza-Team ⚡", 
+        buttons: buttons, 
+        headerType: 4 
+    }, { quoted: fkontak })
+
+    // Guardar ID para que los botones funcionen editando este mensaje
+    conn.vs4 = conn.vs4 ? conn.vs4 : {}
+    conn.vs4[msg.key.id] = { titulares: [], suplentes: [] }
+}
+
+// Lógica para procesar los botones y editar la lista
+export async function all(m) {
+    if (!m.msg || !m.msg.selectedButtonId) return
+    const id = m.msg.selectedButtonId
+    const chat = m.chat
+    const user = m.sender
+    const msgId = m.msg.contextInfo.stanzaId
+
+    if (this.vs4 && this.vs4[msgId]) {
+        let data = this.vs4[msgId]
+
+        // Evitar que se anote doble
+        if (data.titulares.includes(user) || data.suplentes.includes(user)) return
+
+        if (id === 'vs_titular' && data.titulares.length < 4) {
+            data.titulares.push(user)
+        } else if (id === 'vs_suplente' && data.suplentes.length < 2) {
+            data.suplentes.push(user)
+        } else {
+            return // Cupo lleno o ID no válido
+        }
+
+        const newCaption = `╭─❍ *4 VS 4 | RETO SASUKE* 🔥
+│
+│🏆 *Escuadra 1:*
+${data.titulares.map((v, i) => `│   ${i === 0 ? '👑' : '🥷🏻'} • @${v.split('@')[0]}`).join('\n')}
+${Array(4 - data.titulares.length).fill('│   🥷🏻 • Por definir').join('\n')}
+│
+│🧱 *Suplentes:*
+${data.suplentes.map(v => `│   🥷🏻 • @${v.split('@')[0]}`).join('\n')}
+${Array(2 - data.suplentes.length).fill('│   🥷🏻 • Por definir').join('\n')}
+╰───────────────❍`
+
+        // Editar el mensaje con los nuevos datos y menciones
+        await this.sendMessage(chat, { 
+            text: newCaption, 
+            edit: { 
+                remoteJid: chat, 
+                fromMe: true, 
+                id: msgId 
+            }, 
+            mentions: [...data.titulares, ...data.suplentes] 
+        })
     }
-  }
-
-  // 1. Mensaje de texto inicial
-  await conn.sendMessage(m.chat, {
-    text: '🎯 *Reto grupal activo | Sasuke Bot MD*',
-  }, { quoted: fkontak})
-
-  // 2. Mensaje principal con la imagen y la lista
-  const sent = await conn.sendMessage(m.chat, {
-    image: { url: 'https://cdn.russellxz.click/16b3faeb.jpeg'},
-    caption: `╭─❍ *4 VS 4 | RETO SASUKE* 🔥\n│\n│⏳ *Horario:*\n│🇲🇽 MÉXICO: ${args[0]}\n│🇨🇴 COLOMBIA: ${args[0]}\n│\n│🎮 *Modalidad:*\n│👥 *Jugadores:*\n│\n│🏆 *Escuadra 1:*\n│   👑 • \n│   🥷🏻 • \n│   🥷🏻 • \n│   🥷🏻 • \n│\n│🧱 *Suplentes:*\n│   🥷🏻 • \n│   🥷🏻 • \n╰───────────────❍`,
-    mentions: []
-  }, { quoted: fkontak})
-
-  // 3. Lógica de Reacciones Automáticas
-  // Usamos setTimeout para que las reacciones entren una tras otra suavemente
-  if (sent.key) {
-      setTimeout(async () => {
-          // Reacción para Titulares
-          await conn.sendMessage(m.chat, { react: { text: "❤️", key: sent.key } })
-      }, 1000)
-
-      setTimeout(async () => {
-          // Reacción para Suplentes
-          await conn.sendMessage(m.chat, { react: { text: "👍", key: sent.key } })
-      }, 2000)
-  }
 }
 
 handler.help = ['4vs4']
