@@ -1,97 +1,89 @@
-import fetch from "node-fetch"
+import axios from 'axios'
 
-let handler = async (m, { conn, usedPrefix, command }) => {
-    const img = 'https://cdn.russellxz.click/16b3faeb.jpeg'
-    // Fake contact para el diseño
-    const fkontak = { 
-        key: { participant: '0@s.whatsapp.net', remoteJid: 'status@broadcast', fromMe: false, id: 'AlienMenu' }, 
-        message: { locationMessage: { name: '🔱 RETO 4 VS 4 🔱', jpegThumbnail: await (await fetch('https://files.catbox.moe/1j784p.jpg')).buffer() } } 
+let handler = async (m, { conn, command }) => {
+    // Definir capacidad según el comando
+    let capacidad = 4
+    if (command.includes('6')) capacidad = 6
+    if (command.includes('8')) capacidad = 8
+    if (command.includes('12')) capacidad = 12
+    if (command.includes('16')) capacidad = 16
+    if (command.includes('20')) capacidad = 20
+    if (command.includes('24')) capacidad = 24
+    if (command.includes('guerra')) capacidad = 12 // Por defecto para guerra, ajustable
+
+    const titulos = {
+        4: "𝟒 𝐕𝐒 𝟒", 6: "𝟔 𝐕𝐒 𝟔", 8: "𝟖 𝐕𝐒 𝟖",
+        12: "𝟏𝟐 𝐕𝐒 𝟏𝟐", 16: "𝟏𝟔 𝐕𝐒 𝟏𝟔", 20: "𝟐𝟎 𝐕𝐒 𝟐𝟎", 24: "𝟐𝟒 𝐕𝐒 𝟐𝟒",
+        'guerra': "🔱 𝐆𝐔𝐄𝐑𝐑𝐀 𝐃𝐄 𝐂𝐋𝐀𝐍𝐄𝐒 🔱"
     }
 
-    const caption = `╭─❍ *4 VS 4 | RETO SASUKE* 🔥
-│
-│🏆 *Escuadra 1:*
-│   👑 1. • Por definir
-│   🥷🏻 2. • Por definir
-│   🥷🏻 3. • Por definir
-│   🥷🏻 4. • Por definir
-│
-│🧱 *Suplentes:*
-│   🥷🏻 5. • Por definir
-│   🥷🏻 6. • Por definir
-╰───────────────❍
-👉 *Responde a este mensaje con el número de tu posición para anotarte.*`
+    const tituloActivo = command.includes('guerra') ? titulos['guerra'] : titulos[capacidad]
 
-    let msg = await conn.sendMessage(m.chat, { image: { url: img }, caption: caption }, { quoted: fkontak })
+    // DISEÑO PREMIUM RECARGADO
+    const diseñoBase = (lista = []) => {
+        let txt = `╔══🔥 • 𝕾𝕬𝕾𝖀𝕶𝕰 𝕭𝕺𝕿 • 🔥══╗\n`
+        txt += `   ⚔️ ${tituloActivo} ⚔️\n`
+        txt += `╚════════════════════╝\n\n`
+        
+        txt += `┏━━━━━━━━━━━━━━━━━━━━┓\n`
+        txt += `┃ ✨  *ESCUADRA DE ÉLITE* ✨\n`
+        txt += `┗━━━━━━━━━━━━━━━━━━━━┛\n`
+        
+        for (let i = 0; i < capacidad; i++) {
+            let emoji = i === 0 ? '👑' : (i < 4 ? '⚡' : '🥷🏻')
+            let nombre = lista[i] ? `*${lista[i].name}*` : '𝘗𝘰𝘳 𝘥𝘦𝘧𝘪𝘯𝘪𝘳...'
+            txt += `  🏮 ${i + 1}. • ${emoji} ${nombre}\n`
+        }
 
-    // Guardar el estado de la lista en la base de datos global usando el ID del mensaje
-    global.db.data.vs4 = global.db.data.vs4 ? global.db.data.vs4 : {}
-    global.db.data.vs4[msg.key.id] = {
-        1: null, 2: null, 3: null, 4: null, 5: null, 6: null
+        txt += `\n┏━━━━━━━━━━━━━━━━━━━━┓\n`
+        txt += `┃ 🛡️  *RESERVAS MÉDICAS* 🛡️\n`
+        txt += `┗━━━━━━━━━━━━━━━━━━━━┛\n`
+        
+        // 4 Suplentes fijos
+        for (let i = capacidad; i < capacidad + 4; i++) {
+            let nombre = lista[i] ? `*${lista[i].name}*` : '𝘗𝘰𝘳 𝘥𝘦𝘧𝘪𝘯𝘪𝘳...'
+            txt += `  🧪 ${i + 1}. • 🧱 ${nombre}\n`
+        }
+        
+        txt += `\n*⊱───────────────────⊰*\n`
+        txt += `   🔥 𝑼𝒏𝒆𝒕𝒆 𝒂𝒍 𝑰𝒏𝒇ِي𝒆𝒓𝒏𝒐 𝑪𝒍𝒂𝒏 🔥\n`
+        txt += `*⊱───────────────────⊰*`
+        return txt
+    }
+
+    let msg = await conn.sendMessage(m.chat, {
+        image: { url: 'https://cdn.russellxz.click/16b3faeb.jpeg' },
+        caption: diseñoBase()
+    })
+
+    global.db.data.listaVs = global.db.data.listaVs ? global.db.data.listaVs : {}
+    global.db.data.listaVs[msg.key.id] = {
+        capacidad: capacidad + 4,
+        inscritos: [],
+        render: diseñoBase
     }
 }
 
 handler.all = async function (m) {
-    // Validar que sea una respuesta a un mensaje de lista activo
-    if (!m.quoted || !m.quoted.id || !global.db.data.vs4 || !global.db.data.vs4[m.quoted.id]) return
-    
-    let slot = parseInt(m.text)
-    // Solo actuar si el mensaje es un número del 1 al 6
-    if (isNaN(slot) || slot < 1 || slot > 6) return
+    if (!m.quoted || !m.quoted.id || !global.db.data.listaVs || !global.db.data.listaVs[m.quoted.id]) return
 
-    let data = global.db.data.vs4[m.quoted.id]
-    let user = m.sender
-    let name = m.pushName || 'Sin nombre'
+    let data = global.db.data.listaVs[m.quoted.id]
+    if (data.inscritos.length >= data.capacidad || data.inscritos.some(u => u.id === m.sender)) return
 
-    // Evitar que un usuario se anote dos veces
-    if (Object.values(data).some(v => v?.id === user)) {
-        return this.reply(m.chat, `⚠️ Ya estás anotado en esta lista.`, m)
-    }
-    
-    // Verificar si el lugar ya está ocupado
-    if (data[slot]) {
-        return this.reply(m.chat, `❌ El lugar ${slot} ya está ocupado por ${data[slot].name}.`, m)
-    }
+    data.inscritos.push({ id: m.sender, name: m.pushName || 'S/N' })
 
-    // Registrar al usuario
-    data[slot] = { id: user, name: name }
-
-    // Generar el nuevo texto con los nombres actualizados
-    const newCaption = `╭─❍ *4 VS 4 | RETO SASUKE* 🔥
-│
-│🏆 *Escuadra 1:*
-│   👑 1. • ${data[1] ? `*${data[1].name}*` : 'Por definir'}
-│   🥷🏻 2. • ${data[2] ? `*${data[2].name}*` : 'Por definir'}
-│   🥷🏻 3. • ${data[3] ? `*${data[3].name}*` : 'Por definir'}
-│   🥷🏻 4. • ${data[4] ? `*${data[4].name}*` : 'Por definir'}
-│
-│🧱 *Suplentes:*
-│   🥷🏻 5. • ${data[5] ? `*${data[5].name}*` : 'Por definir'}
-│   🥷🏻 6. • ${data[6] ? `*${data[6].name}*` : 'Por definir'}
-╰───────────────❍
-👉 *Responde con un número para anotarte.*`
-
-    // EDITAR el mensaje original para mostrar el nombre
     await this.sendMessage(m.chat, { 
-        text: newCaption, 
-        edit: m.quoted.vM.key,
-        mentions: Object.values(data).filter(v => v !== null).map(v => v.id)
+        text: data.render(data.inscritos), 
+        edit: m.quoted.vM ? m.quoted.vM.key : m.quoted,
+        mentions: data.inscritos.map(u => u.id)
     })
 
-    // Confirmación visual para el usuario
-    await this.reply(m.chat, `✅ *¡Anotado correctamente!*
-👤 *Jugador:* ${name}
-📍 *Posición:* ${slot <= 4 ? 'Titular' : 'Suplente'} #${slot}`, m)
-
-    // Opcional: Borrar el número que envió el usuario para mantener limpio el chat
-    try {
-        await this.sendMessage(m.chat, { delete: m.key })
-    } catch {
-        // Ignorar si no hay permisos de admin para borrar
-    }
+    try { await this.sendMessage(m.chat, { delete: m.key }) } catch { }
 }
 
-handler.command = /^(vs4|4vs4|masc4)$/i
+handler.help = ['4vs4', '6vs6', '8vs8', '12vs12', '16vs16', '20vs20', '24vs24', 'guerraclanes']
+handler.tags = ['clanes']
+handler.command = /^(4vs4|6vs6|8vs8|12vs12|16vs16|20vs20|24vs24|guerraclanes|guerra)$/i
 handler.group = true
 
 export default handler
