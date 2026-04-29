@@ -4,9 +4,19 @@ import delay from 'delay'
 
 const canal = '120363409416185213@newsletter'
 
+// Agregamos términos de Sasuke para que el bot tenga su esencia
 const query = [
-  'videos graciosos', 'memes random', 'funny tik tok',
-  'carros edits', 'edits series phonk', 'memes de risa'
+  'sasuke uchiha edit', 'sasuke vs itachi', 'sasuke amv phonk',
+  'videos graciosos', 'memes random', 'carros edits', 
+  'edits series phonk', 'sasuke renegado edit'
+]
+
+const frasesSasuke = [
+  '🐍 El camino de la venganza es solitario...',
+  '👁️ Solo aquellos que sufren entienden la verdadera paz.',
+  '⚡ Chidori!',
+  '🔥 No me importa lo que piensen los demás.',
+  '🌀 El Sharingan lo ve todo.'
 ]
 
 async function obtenerVideo() {
@@ -30,34 +40,33 @@ async function obtenerVideo() {
 
 async function enviarConSimulacion(conn, contenido) {
   try {
-    // 1. Simula que el bot está "conectado"
     await conn.sendPresenceUpdate('available', canal)
-    await delay(2000)
+    await delay(Math.floor(Math.random() * 3000) + 2000)
+
+    const status = contenido.video ? 'recording' : 'composing'
+    await conn.sendPresenceUpdate(status, canal)
     
-    // 2. Simula que está "subiendo" o "escribiendo"
-    await conn.sendPresenceUpdate('composing', canal)
-    await delay(5000) // Tiempo de espera para parecer humano
+    await delay(Math.floor(Math.random() * 8000) + 5000) 
 
     await conn.sendMessage(canal, contenido)
-    
-    // 3. Quita el estado de "escribiendo"
     await conn.sendPresenceUpdate('paused', canal)
   } catch (e) { console.error('Error en envío:', e) }
 }
 
 async function autopost(conn) {
-  console.log('🛡️ Sistema Anti-Baneo Activo para Sasuke Bot')
+  console.log('🛡️ Sasuke Bot: Modo Renegado (Anti-Baneo) Activo');
 
   while (true) {
     try {
       const tipo = Math.random() < 0.5 ? 'meme' : 'video'
+      const frase = frasesSasuke[Math.floor(Math.random() * frasesSasuke.length)]
 
       if (tipo === 'meme') {
         const meme = await hispamemes.meme()
         if (meme) {
           await enviarConSimulacion(conn, {
             image: { url: meme },
-            caption: '🌟 Contenido del día'
+            caption: frase
           })
         }
       } else {
@@ -65,23 +74,21 @@ async function autopost(conn) {
         if (video?.url) {
           await enviarConSimulacion(conn, {
             video: { url: video.url },
-            caption: video.title || '🔥 Check esto'
+            caption: video.title ? `${frase}\n\n— ${video.title}` : frase
           })
         }
       }
 
-      // --- ESTRATEGIA DE TIEMPOS DINÁMICOS ---
-      // En lugar de 15 min fijos, usamos un rango entre 20 y 45 minutos.
-      // Los patrones fijos son la causa #1 de baneos.
-      const min = 20;
-      const max = 45;
+      // Tiempos dinámicos para evitar detección
+      const min = 30; 
+      const max = 75;
       const esperaAleatoria = Math.floor(Math.random() * (max - min + 1) + min) * 60 * 1000;
-      
-      console.log(`🕒 Patrón aleatorio: Siguiente post en ${esperaAleatoria / 60000} minutos.`);
+
+      console.log(`🕒 Siguiente movimiento en ${Math.round(esperaAleatoria / 60000)} minutos.`);
       await delay(esperaAleatoria);
 
     } catch (err) {
-      await delay(120000); // Si falla, espera 2 minutos
+      await delay(300000); 
     }
   }
 }
