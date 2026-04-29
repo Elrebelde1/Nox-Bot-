@@ -38,6 +38,6 @@ handler.before = async (m, { conn }) => {
     }
 }
 
-handler.command = ['chatgpt', 'ia', 'barboza']
+handler.command = ['chatgpt', 'ia', 'barbozaa']
 
 export default handler
