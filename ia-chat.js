@@ -1,47 +1,52 @@
-import axios from "axios";
+import axios from "axios"
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    const query = text || (m.quoted && m.quoted.text);
+    const input = text || (m.quoted && m.quoted.text)
+    
+    if (!input) {
+        return conn.sendMessage(m.chat, { 
+            text: `✨ *SISTEMA IA* ✨\n\nPor favor, escribe una pregunta o petición.\n\n*Ejemplo:* ${usedPrefix}${command} ¿Cómo funciona el código binario?` 
+        }, { quoted: m })
+    }
 
-    if (!query) return conn.reply(m.chat, `*¿Qué necesitas, Ninja?*\n\nUso: ${usedPrefix}${command} <pregunta>`, m);
-
-    await m.react('🌌');
+    await m.react('🪄')
 
     try {
-        const { data } = await axios.get(`https://api.delirius.store/ia/chatgpt?q=${encodeURIComponent(query)}`);
+        const api = `https://api.delirius.store/ia/chatgpt?q=${encodeURIComponent(input)}`
+        const { data: res } = await axios.get(api)
 
-        if (!data.status || !data.data) throw "Error";
+        if (!res.status || !res.data) throw new Error()
 
-        const res = data.data
-            .replace(/Current Conditions/g, "Condiciones Actuales")
-            .replace(/Feels Like/g, "Sensación")
-            .replace(/Wind/g, "Viento")
-            .replace(/Humidity/g, "Humedad")
-            .replace(/Precipitation/g, "Precipitación")
-            .replace(/Today's Forecast/g, "Pronóstico")
-            .replace(/light snow/g, "nieve ligera");
+        const cleanRes = res.data
+            .replace(/Current Conditions/g, "Condiciones:")
+            .replace(/Feels Like/g, "Sensación:")
+            .replace(/Today's Forecast/g, "Pronóstico:")
 
-        global.sasukeSession = global.sasukeSession || {};
-        global.sasukeSession[m.chat] = {
-            content: res,
-            time: Date.now()
-        };
+        await conn.sendMessage(m.chat, {
+            text: cleanRes,
+            contextInfo: {
+                externalAdReply: {
+                    title: 'INTELIGENCIA ARTIFICIAL',
+                    body: 'Respuesta procesada con éxito',
+                    mediaType: 1,
+                    showAdAttribution: true,
+                    renderLargerThumbnail: false,
+                    thumbnailUrl: 'https://api.delirius.store/favicon.ico',
+                    sourceUrl: 'https://api.delirius.store'
+                }
+            }
+        }, { quoted: m })
 
-        await conn.sendMessage(m.chat, { text: res }, { quoted: m });
-        await m.react('✅');
+        await m.react('✅')
 
     } catch (e) {
-        await m.react('❌');
+        await m.react('✖️')
+        return conn.reply(m.chat, `⚠️ No se pudo procesar la solicitud.`, m)
     }
-};
+}
 
-handler.before = async (m) => {
-    global.sasukeSession = global.sasukeSession || {};
-    if (global.sasukeSession[m.chat] && Date.now() - global.sasukeSession[m.chat].time > 60000) {
-        delete global.sasukeSession[m.chat];
-    }
-};
+handler.help = ['sasuke']
+handler.tags = ['ia']
+handler.command = ['sasuke']
 
-handler.command = ['sasuke'];
-
-export default handler;
+export default handler
