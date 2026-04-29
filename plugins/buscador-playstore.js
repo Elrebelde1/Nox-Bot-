@@ -1,50 +1,32 @@
-import fetch from 'node-fetch';
+import axios from "axios"
 
-const handler = async (m, { conn, args }) => {
-  if (!args[0]) {
-    return conn.reply(
-      m.chat,
-      '🤖 Por favor, proporciona el nombre de la aplicación que deseas buscar.\nEjemplo: .playstore WhatsApp',
-      m
-    );
-  }
+const handler = async (m, { conn, text, usedPrefix, command }) => {
+    if (!text) return conn.reply(m.chat, `*¡Hola!* ¿Qué imagen buscas en Pinterest?\n\n*Ejemplo:* ${usedPrefix}${command} Messi`, m)
 
-  const query = args.join(' ');
-  // Usamos la API de Delirius
-  const apiUrl = `https://api.delirius.store/search/playstore?q=${encodeURIComponent(query)}`;
+    await m.react('🔍')
 
-  try {
-    await m.react('⏳');
+    try {
+        const { data } = await axios.get(`https://api.delirius.store/search/pinterest?text=${encodeURIComponent(text)}`)
 
-    const response = await fetch(apiUrl);
-    const data = await response.json();
+        if (!data.status || !data.results || data.results.length === 0) throw new Error()
 
-    if (!data || !data.data || data.data.length === 0) {
-      return conn.reply(m.chat, '❌ No se encontraron aplicaciones. Intenta con otro nombre.', m);
+        const imagen = data.results[Math.floor(Math.random() * data.results.length)]
+
+        await conn.sendMessage(m.chat, { 
+            image: { url: imagen }, 
+            caption: `*〔 PINTEREST 〕*\n\n*Resultado de:* ${text}` 
+        }, { quoted: m })
+
+        await m.react('✅')
+
+    } catch (e) {
+        await m.react('❌')
+        await conn.reply(m.chat, `⚠️ No encontré imágenes.`, m)
     }
+}
 
-    let results = `📱 *Resultados de la búsqueda en Play Store para:* ${query}\n\n`;
-    data.data.forEach((app, index) => {
-      results += `*${index + 1}. ${app.name}*\n`;
-      results += `👨‍💻 Desarrollador: ${app.developer}\n`;
-      results += `⭐ Rating: ${app.rating}\n`;
-      results += `🔗 Enlace: ${app.link}\n`;
-      results += `🖼️ Imagen: ${app.image}\n\n`;
-    });
+handler.help = ['pinterest']
+handler.tags = ['busquedas']
+handler.command = ['pinterest3', 'pin2']
 
-    await conn.reply(m.chat, results.trim(), m);
-    await m.react('✅');
-
-  } catch (error) {
-    console.error('Error al realizar la búsqueda:', error);
-    await m.react('❌'); 
-
-    conn.reply(m.chat, `❌ Ocurrió un error al realizar la búsqueda: ${error.message}`, m);
-  }
-};
-
-handler.command = ['playstore'];
-handler.help = ['playstore <nombre>'];
-handler.tags = ['search'];
-
-export default handler;
+export default handler
