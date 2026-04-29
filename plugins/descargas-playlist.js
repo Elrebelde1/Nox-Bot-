@@ -24,6 +24,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
 handler.help = ['copilot']
 handler.tags = ['ia']
-handler.command = ['copilot', 'microsoft']
+handler.command = ['copilot2', 'microsoft']
 
 export default handler
