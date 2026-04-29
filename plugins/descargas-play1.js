@@ -119,5 +119,5 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 }
 
-handler.command = /^(play|yta|ytmp|play2|ytv|mp4|ytmp4|ytmp3doc|ytmp4doc)$/i
+handler.command = /^(play|yta|ytmp3|play2|ytv|mp4|ytmp4|ytmp3doc|ytmp4doc)$/i
 export default handler
