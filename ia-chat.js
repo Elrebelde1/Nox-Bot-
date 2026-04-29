@@ -1,48 +1,42 @@
-import fetch from "node-fetch"; // Import para hacer la petición HTTP
+import fetch from "node-fetch";
 
-const timeout = 30000; // 30 segundos
+let handler = async (m, { conn, text, usedPrefix, command }) => {
+    const query = text || (m.quoted && m.quoted.text);
+    
+    if (!query) {
+        return conn.reply(m.chat, `*¡Hola!* Por favor ingresa una pregunta.\n\n*Ejemplo:* ${usedPrefix}${command} ¿Quién es Simón Bolívar?`, m);
+    }
 
-const handler = async (m, { conn }) => {
+    await m.react('✨');
+
     try {
-        // Llamada a la API de Delirius IA
-        const response = await fetch(`https://delirius-apiofc.vercel.app/ia/chatgpt?q=${encodeURIComponent(m.text)}`);
+        const response = await fetch(`https://api.delirius.store/ia/chatgpt?q=${encodeURIComponent(query)}`);
         const json = await response.json();
 
-        if (json.status && json.data) {
-            // Guardamos la respuesta en memoria con timeout
-            conn.iaSession = conn.iaSession || {};
-            conn.iaSession[m.chat] = {
-                respuesta: json.data,
-                timeout: setTimeout(() => {
-                    if (conn.iaSession[m.chat]) {
-                        conn.reply(m.chat, `⏳ *Tiempo agotado!*`, m);
-                        delete conn.iaSession[m.chat];
-                    }
-                }, timeout),
-            };
+        if (!json.status || !json.data) throw "Error en la respuesta";
 
-            // Enviamos la respuesta de la IA
-            await conn.reply(m.chat, `🤖 *IA Delirius*\n\n${json.data}`, m);
-        } else {
-            await conn.reply(m.chat, `⚠️ No se pudo obtener respuesta de la IA.`, m);
-        }
-    } catch (e) {
-        console.error(e);
-        await conn.reply(m.chat, `❌ Error al conectar con la IA.`, m);
+        let resultado = json.data
+            .replace(/Current Conditions/g, "Condiciones Actuales")
+            .replace(/Feels Like/g, "Sensación térmica")
+            .replace(/Wind/g, "Viento")
+            .replace(/Humidity/g, "Humedad")
+            .replace(/Precipitation/g, "Precipitación")
+            .replace(/Today's Forecast/g, "Pronóstico de Hoy")
+            .replace(/light snow/g, "nieve ligera")
+            .replace(/partly cloudy/g, "parcialmente nublado")
+            .replace(/United States/g, "Estados Unidos");
+
+        await conn.sendMessage(m.chat, { text: resultado }, { quoted: m });
+        await m.react('✅');
+
+    } catch (error) {
+        await m.react('✖️');
+        await conn.reply(m.chat, `*Ocurrió un error:* ${error}`, m);
     }
 };
 
-// Antes de cada mensaje, verificamos si hay sesión activa
-handler.before = async (m, { conn }) => {
-    if (conn.iaSession && conn.iaSession[m.chat]) {
-        const respuesta = conn.iaSession[m.chat].respuesta;
-        clearTimeout(conn.iaSession[m.chat].timeout);
-        delete conn.iaSession[m.chat];
+handler.help = ['chatgpt', 'ia'];
+handler.tags = ['main'];
+handler.command = ['chatgpt', 'ia'];
 
-        return conn.reply(m.chat, `✅ Respuesta recibida:\n\n${respuesta}`, m);
-    }
-};
-
-// Comando para activar
-handler.command = ["chatgpt"];
 export default handler;
