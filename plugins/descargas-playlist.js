@@ -4,7 +4,7 @@
 import axios from "axios"
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) return conn.reply(m.chat, `*¡Hola!* ¿En qué puedo ayudarte hoy?\n\n*Ejemplo:* ${usedPrefix}${command} ¿Quién es Sasuke Uchiha?`, m)
+    if (!text) return conn.reply(m.chat, `*¡Hola!* ¿En qué puedo ayudarte hoy?\n\n*Ejemplo:* ${usedPrefix}${command} ¿Quién es Dios?`, m)
 
     await m.react('💬')
 
