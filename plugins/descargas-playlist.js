@@ -4,40 +4,26 @@
 import axios from "axios"
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) return conn.reply(m.chat, `*¡Hola!* Ingresa el enlace de YouTube.\n\n*Ejemplo:* ${usedPrefix}${command} https://youtu.be/5M_n2UCe7DQ`, m)
+    if (!text) return conn.reply(m.chat, `*¡Hola!* ¿En qué puedo ayudarte hoy?\n\n*Ejemplo:* ${usedPrefix}${command} ¿Quién es Sasuke Uchiha?`, m)
 
-    await m.react('⏳')
+    await m.react('💬')
 
     try {
-        const { data } = await axios.get(`https://api.delirius.store/download/ytmp3?url=${text}`)
+        const { data } = await axios.get(`https://api.delirius.store/ia/copilot?query=${encodeURIComponent(text)}`)
 
-        if (!data.status || !data.data) throw new Error()
+        if (!data.text) throw new Error()
 
-        const { title, author, image, download } = data.data
-
-        const info = `*〔 YOUTUBE MP3 〕*\n\n*Título:* ${title}\n*Canal:* ${author}\n\n_Enviando audio..._`
-
-        await conn.sendMessage(m.chat, { 
-            image: { url: image }, 
-            caption: info 
-        }, { quoted: m })
-
-        await conn.sendMessage(m.chat, { 
-            audio: { url: download }, 
-            mimetype: 'audio/mpeg', 
-            fileName: `${title}.mp3` 
-        }, { quoted: m })
-
+        await conn.reply(m.chat, data.text, m)
         await m.react('✅')
 
     } catch (e) {
         await m.react('❌')
-        await conn.reply(m.chat, `⚠️ No se pudo procesar la descarga.`, m)
+        await conn.reply(m.chat, `⚠️ Lo siento, no pude obtener una respuesta de Copilot en este momento.`, m)
     }
 }
 
-handler.help = ['ytmp3']
-handler.tags = ['descargas']
-handler.command = ['ytmp2', 'audio']
+handler.help = ['copilot']
+handler.tags = ['ia']
+handler.command = ['copilot', 'microsoft']
 
 export default handler
