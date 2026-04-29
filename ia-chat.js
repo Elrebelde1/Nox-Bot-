@@ -1,43 +1,47 @@
-import fetch from "node-fetch"
-
-const timeout = 30000
+import axios from "axios";
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    const query = text || (m.quoted && m.quoted.text)
-    
-    if (!query) return conn.reply(m.chat, `*Escribe tu pregunta.*\n\n*Ejemplo:* ${usedPrefix}${command} hola`, m)
+    const query = text || (m.quoted && m.quoted.text);
+
+    if (!query) return conn.reply(m.chat, `*¿Qué necesitas, Ninja?*\n\nUso: ${usedPrefix}${command} <pregunta>`, m);
+
+    await m.react('🌌');
 
     try {
-        const response = await fetch(`https://api.delirius.store/ia/chatgpt?q=${encodeURIComponent(query)}`)
-        const json = await response.json()
+        const { data } = await axios.get(`https://api.delirius.store/ia/chatgpt?q=${encodeURIComponent(query)}`);
 
-        if (json.status && json.data) {
-            conn.iaSession = conn.iaSession || {}
-            conn.iaSession[m.chat] = {
-                respuesta: json.data,
-                timeout: setTimeout(() => {
-                    if (conn.iaSession[m.chat]) {
-                        delete conn.iaSession[m.chat]
-                    }
-                }, timeout),
-            }
+        if (!data.status || !data.data) throw "Error";
 
-            await conn.reply(m.chat, json.data, m)
-        } else {
-            await conn.reply(m.chat, `⚠️ Sin respuesta de la IA.`, m)
-        }
+        const res = data.data
+            .replace(/Current Conditions/g, "Condiciones Actuales")
+            .replace(/Feels Like/g, "Sensación")
+            .replace(/Wind/g, "Viento")
+            .replace(/Humidity/g, "Humedad")
+            .replace(/Precipitation/g, "Precipitación")
+            .replace(/Today's Forecast/g, "Pronóstico")
+            .replace(/light snow/g, "nieve ligera");
+
+        global.sasukeSession = global.sasukeSession || {};
+        global.sasukeSession[m.chat] = {
+            content: res,
+            time: Date.now()
+        };
+
+        await conn.sendMessage(m.chat, { text: res }, { quoted: m });
+        await m.react('✅');
+
     } catch (e) {
-        await conn.reply(m.chat, `❌ Error en el servidor.`, m)
+        await m.react('❌');
     }
-}
+};
 
-handler.before = async (m, { conn }) => {
-    if (conn.iaSession && conn.iaSession[m.chat] && !m.fromMe && m.text && !m.text.startsWith('.')) {
-        clearTimeout(conn.iaSession[m.chat].timeout)
-        delete conn.iaSession[m.chat]
+handler.before = async (m) => {
+    global.sasukeSession = global.sasukeSession || {};
+    if (global.sasukeSession[m.chat] && Date.now() - global.sasukeSession[m.chat].time > 60000) {
+        delete global.sasukeSession[m.chat];
     }
-}
+};
 
-handler.command = ['chatgpt', 'ia', 'barbozaa']
+handler.command = ['sasuke'];
 
-export default handler
+export default handler;
