@@ -1,6 +1,5 @@
 let handler = async (m, { conn, text, participants }) => {
     let member = participants.map(u => u.id)
-    let now = new Date().getTime() // Tiempo actual
     
     if (!text) {
         var sum = member.length
@@ -16,28 +15,32 @@ let handler = async (m, { conn, text, participants }) => {
         let users = m.isGroup ? participants.find(u => u.id == id) : {}
         let userDb = global.db.data.users[id]
 
-        // Filtro: No está en DB o chat es 0, y NO es admin
-        if ((typeof userDb == 'undefined' || userDb.chat == 0) && !users.isAdmin && !users.isSuperAdmin) {
+        // Filtro de inactivos (No están en DB, chat en 0 y NO son admins)
+        if ((typeof userDb == 'undefined' || userDb.chat == 0) && !users.isAdmin && !users.isSuperAdmin) { 
             if (typeof userDb !== 'undefined') {
                 if (userDb.whitelist == false) {
                     total++
-                    sider.push({ id, lastChat: userDb.lastseen || 0 }) // Usamos lastseen o un valor por defecto
+                    sider.push(id)
                 }
             } else {
                 total++
-                sider.push({ id, lastChat: 0 })
+                sider.push(id)
             }
         }
     }
 
-    if (total == 0) return conn.reply(m.chat, `*[❗𝙸𝙽𝙵𝙾❗]* 𝙴𝚂𝚃𝙴 𝙶𝚁𝚄𝙿𝙾 𝙽𝙾 𝚃𝙸𝙴𝙽𝙴 𝙵𝙰𝙽𝚃𝙰𝚂𝙼𝙰𝚂, 𝚀𝚄𝙴 𝙱𝚄𝙴𝙽 𝚃𝚁𝙰𝙱𝙰𝙹𝙾 𝙷𝙰𝙲𝙴 𝙴𝙻 𝙰𝙳𝙼𝙸𝙽`, m)
+    if (total == 0) return conn.reply(m.chat, `*[❗𝙸𝙽𝙵𝙾❗]* 𝙴𝚂𝚃𝙴 𝙶𝚁𝚄𝙿𝙾 𝙽𝙾 𝚃𝙸𝙴𝙽𝙴 𝙵𝙰𝙽𝚃𝙰𝚂𝙼𝙰𝚂, 𝚀𝚄𝙴 𝙱𝚄𝙴𝙽 𝚃𝚁𝙰𝙱𝙰𝙹𝙾 𝙷𝙰𝙲𝙴 𝙴𝙻 𝙰𝙳𝙼𝙸𝙽`, m) 
 
-    let list = sider.map(v => {
-        let tiempo = v.lastChat === 0 ? 'Sin registros' : msToTime(now - v.lastChat)
-        return `👻 @${v.id.replace(/@.+/, '')}\n   *Última vez:* ${tiempo}`
-    }).join('\n\n')
+    // Formato de lista con menciones directas
+    let txt = `[ ⚠ 𝚁𝙴𝚅𝙸𝙲𝙸𝙾𝙽 𝙸𝙽𝙰𝙲𝚃𝙸𝚅𝙰 ⚠ ]\n\n`
+    txt += `𝙶𝚁𝚄𝙿𝙾: ${await conn.getName(m.chat)}\n`
+    txt += `𝙼𝙸𝙴𝙼𝙱𝚁𝙾𝚂 𝙰𝙽𝙰𝙻𝙸𝚉𝙰𝙳𝙾𝚂: ${sum}\n\n`
+    txt += `[ ⇲ 𝙻𝙸𝚂𝚃𝙰 𝙳𝙴 𝙵𝙰𝙽𝚃𝙰𝚂𝙼𝙰𝚂 ⇱ ]\n`
+    txt += sider.map(v => `👻 @${v.replace(/@.+/, '')}`).join('\n')
+    txt += `\n\n𝙽𝙾𝚃𝙰: 𝙴𝚜𝚝𝚘𝚜 𝚞𝚜𝚞𝚊𝚛𝚒𝚘𝚜 𝚗𝚘 𝚑𝚊𝚗 𝚎𝚗𝚟𝚒𝚊𝚍𝚘 𝚖𝚎𝚗𝚜𝚊𝚓𝚎𝚜 𝚛𝚎𝚌𝚒𝚎𝚗𝚝𝚎𝚜.`
 
-    m.reply(`[ ⚠ 𝚁𝙴𝚅𝙸𝙲𝙸𝙾𝙽 𝙸𝙽𝙰𝙲𝚃𝙸𝚅𝙰  ⚠ ]\n\n𝙶𝚁𝚄𝙿𝙾: ${await conn.getName(m.chat)}\n𝙼𝙸𝙴𝙼𝙱𝚁𝙾𝚂 𝙰𝙽𝙰𝙻𝙸𝚉𝙰𝙳𝙾𝚂: ${sum}\n\n[ ⇲ 𝙻𝙸𝚂𝚃𝙰 𝙳𝙴 𝙵𝙰𝙽𝚃𝙰𝚂𝙼𝙰𝚂 ⇱ ]\n${list}\n\n𝙽𝙾𝚃𝙰: 𝙴𝚕 𝚝𝚒𝚎𝚖𝚙𝚘 se cuenta desde que el bot está activo en el grupo.`, null, { mentions: sider.map(v => v.id) })
+    // Se envían las menciones de todos los inactivos
+    await conn.sendMessage(m.chat, { text: txt, mentions: sider }, { quoted: m })
 }
 
 handler.help = ['fantasmas']
@@ -46,19 +49,3 @@ handler.command = /^(verfantasmas|fantasmas|sider)$/i
 handler.admin = true
 
 export default handler
-
-// Función para formatear el tiempo
-function msToTime(duration) {
-    if (duration < 0) return "Hace un momento"
-    let seconds = Math.floor((duration / 1000) % 60),
-        minutes = Math.floor((duration / (1000 * 60)) % 60),
-        hours = Math.floor((duration / (1000 * 60 * 60)) % 24),
-        days = Math.floor(duration / (1000 * 60 * 60 * 24))
-
-    let res = []
-    if (days > 0) res.push(`${days} días`)
-    if (hours > 0) res.push(`${hours} horas`)
-    if (minutes > 0) res.push(`${minutes} minutos`)
-    
-    return res.length > 0 ? res.join(', ') : "Hace un momento"
-}
