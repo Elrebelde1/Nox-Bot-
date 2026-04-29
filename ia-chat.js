@@ -39,6 +39,6 @@ handler.before = async (m, { conn }) => {
     }
 };
 
-handler.command = ['ia'];
+handler.command = ['barbox'];
 
 export default handler;
