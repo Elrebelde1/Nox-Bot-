@@ -9,7 +9,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
     ]
 
-    // 1. MENÚ INICIAL
+    // 1. MENÚ INICIAL (SI NO HAY TEXTO)
     if (!text.trim()) {
         const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
         let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
@@ -23,7 +23,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         }, { quoted: m })
     }
 
-    // 2. LÓGICA DE DESCARGA
+    // 2. LÓGICA DE DESCARGA (YTMP3 SIN V2)
     const isAudio = /^(yta|ytmp3)$/i.test(command)
     const isVideo = /^(ytv|ytmp4)$/i.test(command)
     const isDocMp3 = /^(ytmp3doc)$/i.test(command)
@@ -36,10 +36,10 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             let titulo = ''
 
             if (isAudio || isDocMp3) {
-                // CAMBIADO A YTMP3 (SIN V2)
+                // ENDPOINT ACTUALIZADO A YTMP3
                 let res = await fetch(`https://api.delirius.store/download/ytmp3?url=${encodeURIComponent(text)}`)
                 let json = await res.json()
-                if (json.status && json.data) { // Ajustado a json.status según el formato de la API
+                if (json.status && json.data) {
                     dlUrl = json.data.download
                     titulo = json.data.title || 'Audio'
                 }
@@ -75,7 +75,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         return 
     }
 
-    // 3. BUSCADOR
+    // 3. BUSCADOR (PLAY)
     try {
         if (m.react) await m.react('⏳')
         const search = await yts(text)
@@ -88,18 +88,21 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const { title, thumbnail, timestamp, videoId, author, ago } = result
         const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
 
+        // BOTONES CON "VER CANALES" INCLUIDO
         const buttons = [
             { buttonId: `${usedPrefix}ytmp3 ${videoUrl}`, buttonText: { displayText: "🎵 Audio" }, type: 1 },
             { buttonId: `${usedPrefix}ytv ${videoUrl}`, buttonText: { displayText: "🎥 Video" }, type: 1 },
             { buttonId: `${usedPrefix}ytmp3doc ${videoUrl}`, buttonText: { displayText: "📁 Documento MP3" }, type: 1 },
-            { buttonId: `${usedPrefix}ytmp4doc ${videoUrl}`, buttonText: { displayText: "📁 Documento MP4" }, type: 1 }
+            { buttonId: `${usedPrefix}ytmp4doc ${videoUrl}`, buttonText: { displayText: "📁 Documento MP4" }, type: 1 },
+            { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
         ]
 
         let info = `「 🎬 𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴 」\n─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n`
         info += `│ 👤 *𝙲𝙰𝙽𝙰𝙻:* ${author.name}\n`
         info += `│ 🎵 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${title}\n`
         info += `│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽:* ${timestamp}\n`
-        info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n*Seleccione una opción:*`
+        info += `│ 📅 *𝙿𝚄𝙱𝙻𝙸𝙲𝙰𝙳𝙾:* ${ago || 'Reciente'}\n`
+        info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n*Seleccione una opción para descargar:*`
 
         await conn.sendMessage(m.chat, { 
             image: { url: thumbnail }, 
