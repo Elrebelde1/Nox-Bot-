@@ -1,123 +1,64 @@
 import fetch from "node-fetch"
 import yts from 'yt-search'
-import { readFileSync, existsSync } from 'fs'
-import { join } from 'path'
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    const apiKey = 'sylphy-6f150d'
-    const botonesCanal = [
-        { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
-    ]
+    if (!text) return conn.reply(m.chat, `*Ingrese nombre o link*\n\n*Ejemplo:* ${usedPrefix}${command} Yan Block 444`, m)
 
-    // 1. MENÚ INICIAL (SI NO HAY TEXTO)
-    if (!text.trim()) {
-        const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
-        let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
-        let txt = `╭─〔 ♆ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴* ♆ 〕─╮\n│\n│ 🎬 *ᴜsᴏ ᴄᴏʀʀᴇᴄᴛᴏ:* \n│ ${usedPrefix + command} [nombre o link]\n│\n│ 🌑 "ʙᴜsᴄᴀ ᴛᴜ ᴅᴇsᴛɪɴᴏ ᴇɴ ʟᴀ ᴍᴜsɪᴄᴀ"\n╰────────────────────────────╯`
-        return await conn.sendMessage(m.chat, { 
-            image: catalogoImg.byteLength ? catalogoImg : { url: catalogoImg.url }, 
-            caption: txt, 
-            footer: "By Barboza-Team ⚡", 
-            buttons: botonesCanal, 
-            headerType: 4 
-        }, { quoted: m })
-    }
+    const isVideo = command === 'play4'
+    await m.react(isVideo ? '🎥' : '🎧')
 
-    // 2. LÓGICA DE DESCARGA (YTMP3 SIN V2)
-    const isAudio = /^(yta|ytmp3)$/i.test(command)
-    const isVideo = /^(ytv|ytmp4)$/i.test(command)
-    const isDocMp3 = /^(ytmp3doc)$/i.test(command)
-    const isDocMp4 = /^(ytmp4doc)$/i.test(command)
-
-    if (isAudio || isVideo || isDocMp3 || isDocMp4) {
-        if (m.react) await m.react('📥')
-        try {
-            let dlUrl = ''
-            let titulo = ''
-
-            if (isAudio || isDocMp3) {
-                // ENDPOINT ACTUALIZADO A YTMP3
-                let res = await fetch(`https://api.delirius.store/download/ytmp3?url=${encodeURIComponent(text)}`)
-                let json = await res.json()
-                if (json.status && json.data) {
-                    dlUrl = json.data.download
-                    titulo = json.data.title || 'Audio'
-                }
-            } else if (isVideo || isDocMp4) {
-                let res = await fetch(`https://api.delirius.store/download/ytmp4?url=${encodeURIComponent(text)}`)
-                let json = await res.json()
-                if (json.status && json.data) {
-                    dlUrl = json.data.download
-                    titulo = json.data.title || 'Video'
-                }
-            }
-
-            if (!dlUrl) throw 'No se pudo obtener el enlace de descarga'
-
-            if (isAudio) {
-                return await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: 'audio/mpeg' }, { quoted: m })
-            }
-            if (isVideo) {
-                return await conn.sendMessage(m.chat, { video: { url: dlUrl }, caption: `✅ *Video:* ${titulo}`, footer: "By Barboza-Team ⚡" }, { quoted: m })
-            }
-            if (isDocMp3) {
-                return await conn.sendMessage(m.chat, { document: { url: dlUrl }, mimetype: 'audio/mpeg', fileName: `${titulo}.mp3` }, { quoted: m })
-            }
-            if (isDocMp4) {
-                return await conn.sendMessage(m.chat, { document: { url: dlUrl }, mimetype: 'video/mp4', fileName: `${titulo}.mp4` }, { quoted: m })
-            }
-
-        } catch (e) {
-            console.error(e)
-            if (m.react) await m.react('❌')
-            return conn.reply(m.chat, `🛑 Error al descargar el archivo.`, m)
-        }
-        return 
-    }
-
-    // 3. BUSCADOR (PLAY)
     try {
-        if (m.react) await m.react('⏳')
-        const search = await yts(text)
-        if (!search || !search.all.length) {
-            if (m.react) await m.react('❌')
-            return conn.reply(m.chat, '❌ No se encontraron resultados.', m)
+        let videoUrl = text
+        let duration = ''
+
+        if (!text.match(/youtu/gi)) {
+            const search = await yts(text)
+            if (!search.all.length) {
+                await m.react('❌')
+                return m.reply('❌ Sin resultados')
+            }
+            videoUrl = search.videos[0].url
+            duration = search.videos[0].timestamp
         }
 
-        const result = search.videos[0]
-        const { title, thumbnail, timestamp, videoId, author, ago } = result
-        const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
+        const endpoint = isVideo ? 'ytmp4' : 'ytmp3'
+        const apiUrl = `https://api.delirius.store/download/${endpoint}?url=${encodeURIComponent(videoUrl)}${isVideo ? '&format=360p' : ''}`
+        
+        const res = await fetch(apiUrl)
+        const json = await res.json()
 
-        // BOTONES CON "VER CANALES" INCLUIDO
-        const buttons = [
-            { buttonId: `${usedPrefix}ytmp3 ${videoUrl}`, buttonText: { displayText: "🎵 Audio" }, type: 1 },
-            { buttonId: `${usedPrefix}ytv ${videoUrl}`, buttonText: { displayText: "🎥 Video" }, type: 1 },
-            { buttonId: `${usedPrefix}ytmp3doc ${videoUrl}`, buttonText: { displayText: "📁 Documento MP3" }, type: 1 },
-            { buttonId: `${usedPrefix}ytmp4doc ${videoUrl}`, buttonText: { displayText: "📁 Documento MP4" }, type: 1 },
-            { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
-        ]
+        if (!json.status || !json.data) {
+            await m.react('❌')
+            return m.reply('⚠️ Error API')
+        }
 
-        let info = `「 🎬 𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴 」\n─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n`
-        info += `│ 👤 *𝙲𝙰𝙽𝙰𝙻:* ${author.name}\n`
-        info += `│ 🎵 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${title}\n`
-        info += `│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽:* ${timestamp}\n`
-        info += `│ 📅 *𝙿𝚄𝙱𝙻𝙸𝙲𝙰𝙳𝙾:* ${ago || 'Reciente'}\n`
-        info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n*Seleccione una opción para descargar:*`
+        const { title, author, image, download } = json.data
 
-        await conn.sendMessage(m.chat, { 
-            image: { url: thumbnail }, 
-            caption: info, 
-            footer: "By Barboza-Team ⚡", 
-            buttons: buttons, 
-            headerType: 4 
-        }, { quoted: m })
+        let info = `📌 *${title}*\n👤 *${author}*\n⏱️ *${duration}*\n📦 *${isVideo ? 'MP4' : 'MP3'}*`
 
-        if (m.react) await m.react('✅')
+        if (isVideo) {
+            await conn.sendMessage(m.chat, { 
+                video: { url: download }, 
+                caption: info,
+                mimetype: 'video/mp4'
+            }, { quoted: m })
+        } else {
+            await conn.sendMessage(m.chat, { image: { url: image }, caption: info }, { quoted: m })
+            await conn.sendMessage(m.chat, { 
+                audio: { url: download }, 
+                mimetype: 'audio/mpeg',
+                fileName: `${title}.mp3`
+            }, { quoted: m })
+        }
+
+        await m.react('✅')
+
     } catch (e) {
-        console.error(e)
-        if (m.react) await m.react('❌')
+        await m.react('❌')
+        conn.reply(m.chat, '🛑 Error', m)
     }
 }
 
-handler.command = /^(play|yta|ytmp3|play2|ytv|mp4|ytmp4|ytmp3doc|ytmp4doc)$/i
+handler.command = ['play3', 'play4']
+
 export default handler
