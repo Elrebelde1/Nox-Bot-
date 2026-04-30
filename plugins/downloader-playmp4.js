@@ -1,49 +1,62 @@
-// code creador por barboza 
-// Se te agradece que dejes mis créditos gracias disfruta el código
-
 import axios from "axios"
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) return conn.reply(m.chat, `*¡Hola!* ¿A qué usuario de TikTok quieres stalkear?\n\n*Ejemplo:* ${usedPrefix}${command} twice_tiktok_official`, m)
+    if (!text) return conn.reply(m.chat, `*¡Hola!* ¿Qué buscas en YouTube?\n\n*Ejemplo:* ${usedPrefix}${command} Lupita`, m)
 
-    await m.react('🔍')
+    const isVideo = command === 'play2'
+    await m.react(isVideo ? '🎥' : '🎧')
 
     try {
-        const apiUrl = `https://api.delirius.store/tools/tiktokstalk?q=${encodeURIComponent(text)}`
-        const { data } = await axios.get(apiUrl)
+        const searchApi = `https://api.delirius.store/search/ytsearch?text=${encodeURIComponent(text)}`
+        const { data: searchData } = await axios.get(searchApi)
 
-        if (!data.status || !data.result) throw new Error()
+        if (!searchData.status || !searchData.data || searchData.data.length === 0) throw new Error()
 
-        const { users, stats } = data.result
+        const videoUrl = searchData.data[0].url
+        const { title, image, author, views } = searchData.data[0]
+
+        // Aquí están las APIs de descarga integradas:
+        const endpoint = isVideo ? 'ytmp4' : 'ytmp3'
+        const downloadApi = `https://api.delirius.store/download/${endpoint}?url=${encodeURIComponent(videoUrl)}${isVideo ? '&format=360p' : ''}`
         
-        let txt = `*〔 TIKTOK STALK 〕*\n\n`
-        txt += `👤 *Nickname:* ${users.nickname}\n`
-        txt += `🆔 *Username:* @${users.username}\n`
-        txt += `✅ *Verificado:* ${users.verified ? 'Sí' : 'No'}\n`
-        txt += `📝 *Bio:* ${users.signature || 'Sin biografía'}\n\n`
-        txt += `📊 *ESTADÍSTICAS*\n`
-        txt += `👥 *Seguidores:* ${stats.followerCount.toLocaleString()}\n`
-        txt += `👣 *Siguiendo:* ${stats.followingCount.toLocaleString()}\n`
-        txt += `❤️ *Likes:* ${stats.heartCount.toLocaleString()}\n`
-        txt += `🎬 *Videos:* ${stats.videoCount.toLocaleString()}\n\n`
-        txt += `🔗 *Link:* ${users.url}\n\n`
-        txt += `*By: Barboza Developer*`
+        const { data: res } = await axios.get(downloadApi)
+        if (!res.status || !res.data) throw new Error()
 
-        await conn.sendMessage(m.chat, { 
-            image: { url: users.avatarLarger }, 
-            caption: txt 
-        }, { quoted: m })
+        const downloadUrl = res.data.download
+
+        let caption = `*〔 YOUTUBE PLAY 〕*\n\n`
+        caption += `📌 *Título:* ${title}\n`
+        caption += `👤 *Canal:* ${author}\n`
+        caption += `👀 *Vistas:* ${views}\n`
+        caption += `📦 *Tipo:* ${isVideo ? 'Video' : 'Audio'}\n\n`
+        caption += `*By: Barboza Developer*`
+
+        if (isVideo) {
+            await conn.sendMessage(m.chat, { 
+                video: { url: downloadUrl }, 
+                caption: caption,
+                mimetype: 'video/mp4'
+            }, { quoted: m })
+        } else {
+            await conn.sendMessage(m.chat, { image: { url: image }, caption: caption }, { quoted: m })
+            
+            await conn.sendMessage(m.chat, { 
+                audio: { url: downloadUrl }, 
+                mimetype: 'audio/mpeg',
+                fileName: `${title}.mp3`
+            }, { quoted: m })
+        }
 
         await m.react('✅')
 
     } catch (e) {
         await m.react('❌')
-        await conn.reply(m.chat, `⚠️ No logré encontrar al usuario. Verifica que el nombre esté bien escrito.`, m)
+        await conn.reply(m.chat, `⚠️ Error al obtener el archivo de la API.`, m)
     }
 }
 
-handler.help = ['tiktokstalk']
-handler.tags = ['tools']
-handler.command = ['tiktokuser1', 'ttstalk']
+handler.help = ['play', 'play2']
+handler.tags = ['downloader']
+handler.command = ['play3', 'play4']
 
 export default handler
