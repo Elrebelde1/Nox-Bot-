@@ -1,33 +1,27 @@
-// code creador por barboza 
-// Se te agradece que dejes mis créditos gracias disfruta el código
-
 import axios from 'axios'
 import fs from 'fs'
 import { exec } from 'child_process'
 
-
 var handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) return conn.reply(m.chat, `⚡ *Escribe el texto para tu sticker brat*\n\n> *Ejemplo:* ${usedPrefix + command} Sasuke Bot | verde`, m)
+    let final = text ? text.trim() : (m.quoted?.text || null)
+    if (!final) return conn.reply(m.chat, `⚡ *Escribe el contenido para tu sticker*\n\n> *Ejemplo:* ${usedPrefix + command} Sasuke Bot`, m)
 
-    let [txt, color] = text.split('|')
-    let textoFinal = txt ? txt.trim() : (m.quoted?.text || null)
-    let colorFondo = color ? color.trim().toLowerCase() : 'white'
-
-    if (textoFinal.length > 35) {
-        return conn.reply(m.chat, `⚠️ *Texto muy largo.*\n\n📌 Máximo: *35 letras*`, m)
+    if (final.length > 35) {
+        return conn.reply(m.chat, `⚠️ *Demasiado largo.*\n\n📌 Máximo: *35 letras*`, m)
     }
 
     await m.react('🕒')
 
     try {
-        const textoFormateado = wrapText(textoFinal, 28)
-        const apiUrl = `https://sylphyy.xyz/tools/brat?text=${encodeURIComponent(textoFormateado)}&color=black&fondo=${colorFondo}&type=Nose&api_key=${apiKey}`
+        const formatted = wrap(final, 28)
+        const key = Buffer.from('c3lscGh5LTZmMTUwZA==', 'base64').toString('utf-8')
+        const url = `https://sylphyy.xyz/tools/brat?text=${encodeURIComponent(formatted)}&color=black&fondo=white&type=Nose&api_key=${key}`
 
-        const response = await axios.get(apiUrl, { responseType: 'arraybuffer' })
+        const res = await axios.get(url, { responseType: 'arraybuffer' })
 
         const img = `./tmp-${Date.now()}.png`
         const webp = `./tmp-${Date.now()}.webp`
-        fs.writeFileSync(img, response.data)
+        fs.writeFileSync(img, res.data)
 
         await new Promise((resolve, reject) => {
             exec(`ffmpeg -i ${img} -vcodec libwebp -vf "scale=512:512:force_original_aspect_ratio=decrease,format=rgba,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=#00000000" ${webp}`, (err) => {
@@ -48,30 +42,29 @@ var handler = async (m, { conn, text, usedPrefix, command }) => {
         if (fs.existsSync(webp)) fs.unlinkSync(webp)
 
     } catch (e) {
-        console.error(e)
         await m.react('❌')
-        m.reply('⚠️ Error al generar el sticker.')
+        m.reply('⚠️ Error en la generación.')
     }
 }
 
-function wrapText(text, max = 22) {
+function wrap(text, max = 22) {
     let words = text.split(' ')
     let lines = []
-    let current = []
+    let cur = []
     for (let w of words) {
-        if ((current.join(' ').length + w.length + 1) > max) {
-            lines.push(current.join(' '))
-            current = [w]
+        if ((cur.join(' ').length + w.length + 1) > max) {
+            lines.push(cur.join(' '))
+            cur = [w]
         } else {
-            current.push(w)
+            cur.push(w)
         }
     }
-    if (current.length) lines.push(current.join(' '))
+    if (cur.length) lines.push(cur.join(' '))
     return lines.join('\n')
 }
 
 handler.help = ['brat']
 handler.tags = ['sticker']
-handler.command = /^(brat|bratcolor)$/i
+handler.command = /^(brat)$/i
 
 export default handler
