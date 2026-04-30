@@ -1,27 +1,56 @@
+// code creador por barboza 
+// Se te agradece que dejes mis créditos gracias disfruta el código
+
 import axios from 'axios'
 import fs from 'fs'
 import { exec } from 'child_process'
 
-var handler = async (m, { conn, text, usedPrefix, command }) => {
-    let final = text ? text.trim() : (m.quoted?.text || null)
-    if (!final) return conn.reply(m.chat, `⚡ *Escribe el contenido para tu sticker*\n\n> *Ejemplo:* ${usedPrefix + command} Sasuke Bot`, m)
+var handler = async (m, { conn, usedPrefix, command, text }) => {
+    let [txt, color] = text.split('|')
+    let textoFinal = txt ? txt.trim() : (m.quoted?.text || null)
 
-    if (final.length > 35) {
-        return conn.reply(m.chat, `⚠️ *Demasiado largo.*\n\n📌 Máximo: *35 letras*`, m)
+    if (!textoFinal) return conn.reply(m.chat, '⚡ *Escribe el texto para tu sticker brat*\n> Ejemplo: .brat Sasuke Bot', m)
+
+    if (textoFinal.length > 35) {
+        return conn.reply(m.chat, `⚠️ *Texto muy largo.*\n\n📌 Máximo: *35 letras*`, m)
+    }
+
+    if (!color) {
+        const colores = [
+            { buttonId: `${usedPrefix + command} ${textoFinal}|white`, buttonText: { displayText: "Blanco 🤍" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|green`, buttonText: { displayText: "Verde 💚" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|red`, buttonText: { displayText: "Rojo ❤️" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|blue`, buttonText: { displayText: "Azul 💙" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|yellow`, buttonText: { displayText: "Amarillo 💛" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|pink`, buttonText: { displayText: "Rosa 🩷" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|cyan`, buttonText: { displayText: "Cian 🩵" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|orange`, buttonText: { displayText: "Naranja 🧡" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|purple`, buttonText: { displayText: "Morado 💜" }, type: 1 }
+        ]
+
+        const buttonMessage = {
+            text: `👤 *𝖲𝖺𝗌𝗎𝗄𝖾 𝖡𝗈𝗍 𝖬𝖣 — 𝖡𝗋𝖺𝗍 𝖢𝗈𝗅𝗈𝗋*\n\n📝 *Texto:* ${textoFinal}\n\n*Seleccione el color de fondo:*`,
+            footer: "𝖡𝗒 𝖡𝖺𝗋𝖻𝗈𝘇𝗮-𝖳𝖾𝖺𝗆 ⚡",
+            buttons: colores,
+            headerType: 1
+        }
+        return await conn.sendMessage(m.chat, buttonMessage, { quoted: m })
     }
 
     await m.react('🕒')
 
     try {
-        const formatted = wrap(final, 28)
-        const key = Buffer.from('c3lscGh5LTZmMTUwZA==', 'base64').toString('utf-8')
-        const url = `https://sylphyy.xyz/tools/brat?text=${encodeURIComponent(formatted)}&color=black&fondo=white&type=Nose&api_key=${key}`
+        const apiKey = "sylphy-6f150d"
+        const colorFondo = color.trim().toLowerCase()
+        const textoFormateado = wrapText(textoFinal, 28)
 
-        const res = await axios.get(url, { responseType: 'arraybuffer' })
+        const apiUrl = `https://sylphyy.xyz/tools/brat?text=${encodeURIComponent(textoFormateado)}&color=black&fondo=${colorFondo}&type=Nose&api_key=${apiKey}`
+
+        const response = await axios.get(apiUrl, { responseType: 'arraybuffer' })
 
         const img = `./tmp-${Date.now()}.png`
         const webp = `./tmp-${Date.now()}.webp`
-        fs.writeFileSync(img, res.data)
+        fs.writeFileSync(img, response.data)
 
         await new Promise((resolve, reject) => {
             exec(`ffmpeg -i ${img} -vcodec libwebp -vf "scale=512:512:force_original_aspect_ratio=decrease,format=rgba,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=#00000000" ${webp}`, (err) => {
@@ -33,7 +62,7 @@ var handler = async (m, { conn, text, usedPrefix, command }) => {
         await conn.sendMessage(m.chat, { 
             sticker: fs.readFileSync(webp), 
             packname: "𝖲𝖺𝗌𝗎𝗄𝖾 𝖡𝗈𝗍 𝖬𝖣 👤", 
-            author: "Dev Barboza x Zona Developers ⚡" 
+            author: "𝖡𝗒 𝖡𝖺𝗋𝖻𝗈𝗓𝖺-𝖳𝖾𝖺𝗆 ⚡" 
         }, { quoted: m })
 
         await m.react('✔️')
@@ -42,29 +71,30 @@ var handler = async (m, { conn, text, usedPrefix, command }) => {
         if (fs.existsSync(webp)) fs.unlinkSync(webp)
 
     } catch (e) {
-        await m.react('❌')
-        m.reply('⚠️ Error en la generación.')
+        console.error(e)
+        await m.react('✖️')
+        m.reply('❌ *Error al generar el sticker.*')
     }
 }
 
-function wrap(text, max = 22) {
+function wrapText(text, max = 22) {
     let words = text.split(' ')
     let lines = []
-    let cur = []
+    let current = []
     for (let w of words) {
-        if ((cur.join(' ').length + w.length + 1) > max) {
-            lines.push(cur.join(' '))
-            cur = [w]
+        if ((current.join(' ').length + w.length + 1) > max) {
+            lines.push(current.join(' '))
+            current = [w]
         } else {
-            cur.push(w)
+            current.push(w)
         }
     }
-    if (cur.length) lines.push(cur.join(' '))
+    if (current.length) lines.push(current.join(' '))
     return lines.join('\n')
 }
 
 handler.help = ['brat']
 handler.tags = ['sticker']
-handler.command = /^(brat)$/i
+handler.command = /^(brat|bratcolor)$/i
 
 export default handler
