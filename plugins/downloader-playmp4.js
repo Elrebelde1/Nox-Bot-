@@ -1,62 +1,44 @@
+//código de ytmp3
+// code creador por barboza 
+// Se te agradece que dejes mis créditos gracias disfruta el código
 
-import yts from "yt-search";
-import fetch from "node-fetch";
+import axios from "axios"
 
-const handler = async (m, { conn, text}) => {
-  if (!text) {
-    return m.reply("🎧 *Ingresa el nombre de un video o una URL de YouTube para descargar el audio.*");
+const handler = async (m, { conn, text, usedPrefix, command }) => {
+    if (!text) return conn.reply(m.chat, `*¡Hola!* Ingresa el enlace de YouTube.\n\n*Ejemplo:* ${usedPrefix}${command} https://youtu.be/5M_n2UCe7DQ`, m)
+
+    await m.react('⏳')
+
+    try {
+        const { data } = await axios.get(`https://api.delirius.store/download/ytmp3?url=${text}`)
+
+        if (!data.status || !data.data) throw new Error()
+
+        const { title, author, image, download } = data.data
+
+        const info = `*〔 YOUTUBE MP3 〕*\n\n*Título:* ${title}\n*Canal:* ${author}\n\n_Enviando audio..._`
+
+        await conn.sendMessage(m.chat, { 
+            image: { url: image }, 
+            caption: info 
+        }, { quoted: m })
+
+        await conn.sendMessage(m.chat, { 
+            audio: { url: download }, 
+            mimetype: 'audio/mpeg', 
+            fileName: `${title}.mp3` 
+        }, { quoted: m })
+
+        await m.react('✅')
+
+    } catch (e) {
+        await m.react('❌')
+        await conn.reply(m.chat, `⚠️ No se pudo procesar la descarga.`, m)
+    }
 }
 
-  await m.react("🔎");
+handler.help = ['ytmp3']
+handler.tags = ['descargas']
+handler.command = ['ytmp2', 'audio']
 
-  try {
-    const search = await yts(text);
-    const video = search?.videos?.[0];
-
-    if (!video) {
-      return m.reply("❌ *No se encontró ningún resultado para tu búsqueda.*");
-}
-
-    const apiUrl = `https://api.sylphy.xyz/download/ytmp3/?url=${video.url}&apikey=sylphy-e321`;
-    const response = await fetch(apiUrl);
-    const data = await response.json();
-
-    if (!data?.res?.url) {
-      return m.reply("⚠️ *No se pudo obtener el audio desde la API.*");
-}
-
-    const caption = `
-╭─🎶 *Sasuke Bot - Audio YouTube* 🎶─╮
-│
-│ 🎵 *Título:* ${video.title}
-│ 👤 *Autor:* ${video.author.name}
-│ ⏱️ *Duración:* ${video.duration.timestamp}
-│ 📥 *Descargando archivo de audio...*
-╰──────────────────────────────────╯
-`;
-
-    const thumbnail = await (await fetch(video.thumbnail)).buffer();
-    await conn.sendFile(m.chat, thumbnail, "thumb.jpg", caption, m);
-
-    const audioRes = await fetch(data.res.url);
-    const audioBuffer = await audioRes.buffer();
-
-    await conn.sendMessage(m.chat, {
-      audio: audioBuffer,
-      mimetype: 'audio/mpeg',
-      fileName: `${video.title}.mp3`
-}, { quoted: m});
-
-    await m.react("✅");
-
-} catch (err) {
-    console.error(err);
-    return m.reply("💥 *Ocurrió un error al procesar tu solicitud.*");
-}
-};
-
-handler.help = ["play"];
-handler.tags = ["descargas", "youtube"];
-handler.command = ["play"];
-
-export default handler;
+export default handler
