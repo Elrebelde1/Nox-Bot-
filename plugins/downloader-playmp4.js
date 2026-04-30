@@ -1,55 +1,53 @@
 import axios from "axios"
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) return conn.reply(m.chat, `*¡Hola!* ¿Qué deseas buscar?\n\n*Ejemplo:* ${usedPrefix}${command} Yan Block 444`, m)
+    // Validamos que el usuario envíe un link
+    if (!text) return conn.reply(m.chat, `*¡Oye!* Necesito un link de YouTube para descargar.\n\n*Ejemplo:* ${usedPrefix}${command} https://www.youtube.com/watch?v=5M_n2UCe7DQ`, m)
 
+    // Reacción de procesando
     await m.react('⏳')
 
     try {
-        // 1. BUSQUEDA: Usamos el endpoint de búsqueda primero
-        const searchApi = `https://api.delirius.store/search/ytsearch?text=${encodeURIComponent(text)}`
-        const { data: searchData } = await axios.get(searchApi)
-
-        if (!searchData.status || !searchData.data || searchData.data.length === 0) {
-            await m.react('❌')
-            return conn.reply(m.chat, `❌ No se encontraron resultados para: ${text}`, m)
-        }
-
-        const videoUrl = searchData.data[0].url
-        const { title, image, author, views, timestamp } = searchData.data[0]
-
-        // 2. DESCARGA MP3: Obtenemos el audio
-        const mp3Api = `https://api.delirius.store/download/ytmp3?url=${encodeURIComponent(videoUrl)}`
+        const urlYouTube = encodeURIComponent(text)
+        
+        // 1. LLAMADA A MP3
+        const mp3Api = `https://api.delirius.store/download/ytmp3?url=${urlYouTube}`
         const { data: resMp3 } = await axios.get(mp3Api)
 
-        // 3. DESCARGA MP4: Obtenemos el video (360p por defecto)
-        const mp4Api = `https://api.delirius.store/download/ytmp4?url=${encodeURIComponent(videoUrl)}&format=360p`
+        // 2. LLAMADA A MP4 (360p)
+        const mp4Api = `https://api.delirius.store/download/ytmp4?url=${urlYouTube}&format=360p`
         const { data: resMp4 } = await axios.get(mp4Api)
 
-        if (!resMp3.status || !resMp4.status) throw new Error("Error en las APIs de descarga")
+        // Validamos que ambas APIs respondieron con status: true
+        if (!resMp3.status || !resMp4.status) {
+            throw new Error("La API no devolvió una respuesta válida.")
+        }
 
-        let caption = `*〔 YOUTUBE DOWNLOADER 〕*\n\n`
-        caption += `📌 *Título:* ${title}\n`
-        caption += `👤 *Canal:* ${author}\n`
-        caption += `👀 *Vistas:* ${views}\n`
-        caption += `⏱️ *Duración:* ${timestamp}\n\n`
-        caption += `_Se enviará Audio y Video..._`
+        // Extraemos la info del JSON de cualquiera de las dos (son iguales en metadata)
+        const info = resMp3.data
+        
+        let caption = `*〔 DOWNLOAD COMPLETED 〕*\n\n`
+        caption += `📌 *Título:* ${info.title}\n`
+        caption += `👤 *Autor:* ${info.author}\n`
+        caption += `👀 *Vistas:* ${info.views}\n`
+        caption += `👍 *Likes:* ${info.likes}\n\n`
+        caption += `*By: Barboza Developer*`
 
-        // Enviamos la imagen con la info
-        await conn.sendMessage(m.chat, { image: { url: image }, caption: caption }, { quoted: m })
+        // Enviamos la miniatura con la info
+        await conn.sendMessage(m.chat, { image: { url: info.image }, caption: caption }, { quoted: m })
 
         // Enviamos el Audio (MP3)
         await conn.sendMessage(m.chat, { 
             audio: { url: resMp3.data.download }, 
             mimetype: 'audio/mpeg',
-            fileName: `${title}.mp3`
+            fileName: `${info.title}.mp3`
         }, { quoted: m })
 
         // Enviamos el Video (MP4)
         await conn.sendMessage(m.chat, { 
             video: { url: resMp4.data.download }, 
             mimetype: 'video/mp4',
-            fileName: `${title}.mp4`
+            fileName: `${info.title}.mp4`
         }, { quoted: m })
 
         await m.react('✅')
@@ -57,7 +55,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     } catch (e) {
         console.error(e)
         await m.react('❌')
-        await conn.reply(m.chat, `⚠️ Hubo un fallo al obtener los archivos.`, m)
+        await conn.reply(m.chat, `⚠️ *Error:* No se pudo procesar el link. Asegúrate de que sea una URL válida de YouTube.`, m)
     }
 }
 
