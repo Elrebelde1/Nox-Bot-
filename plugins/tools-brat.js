@@ -1,54 +1,50 @@
+// code creador por barboza 
+// Se te agradece que dejes mis créditos gracias disfruta el código
+
 import axios from 'axios'
 import fs from 'fs'
 import { exec } from 'child_process'
 
 var handler = async (m, { conn, usedPrefix, command, text }) => {
-    // Separamos el texto y el color
     let [txt, color] = text.split('|')
     let textoFinal = txt ? txt.trim() : (m.quoted?.text || null)
 
     if (!textoFinal) return conn.reply(m.chat, '⚡ *Escribe el texto para tu sticker brat*\n> Ejemplo: .brat Sasuke Bot', m)
 
-    // Validación de longitud
     if (textoFinal.length > 35) {
         return conn.reply(m.chat, `⚠️ *Texto muy largo.*\n\n📌 Máximo: *35 letras*`, m)
     }
 
-    // Si no hay color, mandamos los botones con tu marca
     if (!color) {
         const colores = [
-            { buttonId: `${usedPrefix + command} ${textoFinal}|blanco`, buttonText: { displayText: "Blanco 🤍" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|verde`, buttonText: { displayText: "Verde 💚" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|rojo`, buttonText: { displayText: "Rojo ❤️" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|azul`, buttonText: { displayText: "Azul 💙" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|amarillo`, buttonText: { displayText: "Amarillo 💛" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|rosa`, buttonText: { displayText: "Rosa 🩷" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|cian`, buttonText: { displayText: "Cian 🩵" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|naranja`, buttonText: { displayText: "Naranja 🧡" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|morado`, buttonText: { displayText: "Morado 💜" }, type: 1 }
+            { buttonId: `${usedPrefix + command} ${textoFinal}|white`, buttonText: { displayText: "Blanco 🤍" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|green`, buttonText: { displayText: "Verde 💚" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|red`, buttonText: { displayText: "Rojo ❤️" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|blue`, buttonText: { displayText: "Azul 💙" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|yellow`, buttonText: { displayText: "Amarillo 💛" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|pink`, buttonText: { displayText: "Rosa 🩷" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|cyan`, buttonText: { displayText: "Cian 🩵" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|orange`, buttonText: { displayText: "Naranja 🧡" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|purple`, buttonText: { displayText: "Morado 💜" }, type: 1 }
         ]
 
         const buttonMessage = {
             text: `👤 *𝖲𝖺𝗌𝗎𝗄𝖾 𝖡𝗈𝗍 𝖬𝖣 — 𝖡𝗋𝖺𝗍 𝖢𝗈𝗅𝗈𝗋*\n\n📝 *Texto:* ${textoFinal}\n\n*Seleccione el color de fondo:*`,
-            footer: "𝖡𝗒 𝖡𝖺𝗋𝖻𝗈𝗺𝖺-𝖳𝖾𝖺𝗆 ⚡",
+            footer: "𝖡𝗒 𝖡𝖺𝗋𝖻𝗈𝘇𝗮-𝖳𝖾𝖺𝗆 ⚡",
             buttons: colores,
             headerType: 1
         }
         return await conn.sendMessage(m.chat, buttonMessage, { quoted: m })
     }
 
-    let { key } = await conn.sendMessage(m.chat, { text: '⏳ *Procesando con la tecnología de Sasuke Bot...*' }, { quoted: m })
+    await m.react('🕒')
 
     try {
-        await m.react('🕒')
-
-        // CAMBIO DE API SOLAMENTE
         const apiKey = "sylphy-6f150d"
-        const colorFondo = color.trim().toLowerCase().replace(/[^a-z]/g, '') // Limpia emojis para que la API no falle
+        const colorFondo = color.trim().toLowerCase()
         const textoFormateado = wrapText(textoFinal, 28)
 
-        // URL actualizada a Sylphyy
-        const apiUrl = `https://sylphyy.xyz/tools/brat?text=${encodeURIComponent(textoFormateado)}&color=Negro&fondo=${colorFondo}&type=Nose&api_key=${apiKey}`
+        const apiUrl = `https://sylphyy.xyz/tools/brat?text=${encodeURIComponent(textoFormateado)}&color=black&fondo=${colorFondo}&type=Nose&api_key=${apiKey}`
 
         const response = await axios.get(apiUrl, { responseType: 'arraybuffer' })
 
@@ -56,7 +52,6 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
         const webp = `./tmp-${Date.now()}.webp`
         fs.writeFileSync(img, response.data)
 
-        // Conversión FFmpeg optimizada
         await new Promise((resolve, reject) => {
             exec(`ffmpeg -i ${img} -vcodec libwebp -vf "scale=512:512:force_original_aspect_ratio=decrease,format=rgba,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=#00000000" ${webp}`, (err) => {
                 if (err) reject(err)
@@ -64,14 +59,12 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
             })
         })
 
-        // Envío con tus créditos exclusivos
         await conn.sendMessage(m.chat, { 
             sticker: fs.readFileSync(webp), 
             packname: "𝖲𝖺𝗌𝗎𝗄𝖾 𝖡𝗈𝗍 𝖬𝖣 👤", 
             author: "𝖡𝗒 𝖡𝖺𝗋𝖻𝗈𝗓𝖺-𝖳𝖾𝖺𝗆 ⚡" 
         }, { quoted: m })
 
-        await conn.sendMessage(m.chat, { text: '✅ *Sticker generado por Barboza-Team!*', edit: key })
         await m.react('✔️')
 
         if (fs.existsSync(img)) fs.unlinkSync(img)
@@ -80,7 +73,7 @@ var handler = async (m, { conn, usedPrefix, command, text }) => {
     } catch (e) {
         console.error(e)
         await m.react('✖️')
-        await conn.sendMessage(m.chat, { text: '❌ *Error en la API.*', edit: key })
+        m.reply('❌ *Error al generar el sticker.*')
     }
 }
 
