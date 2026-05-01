@@ -1,48 +1,65 @@
+/**
+ * Code creado por Barboza Developer
+ * Se te agradece dejar los créditos.
+ * Disfruta el código de Barboza Developer x Zona Developers.
+ */
 
-import fetch from "node-fetch";
-const obtenerTikTok = async (query) => {
+import axios from 'axios'
+
+var handler = async (m, { conn, text, usedPrefix, command }) => {
+    if (!text) return conn.reply(m.chat, `✨ *¿Qué imágenes de TikTok buscas?*\n\n> *Ejemplo:* ${usedPrefix + command} Chaewon`, m)
+
+    await m.react('📸')
+
     try {
-        const apiUrl = `https://api.siputzx.my.id/api/s/tiktok?query=${encodeURIComponent(query)}`;
-        const response = await fetch(apiUrl);
-        const data = await response.json();
+        // Llamada a la API de búsqueda de imágenes de TikTok
+        const { data } = await axios.get(`https://api.delirius.store/search/tiktoksearchimages?query=${encodeURIComponent(text)}`)
 
-        if (data.status && data.data && data.data.length> 0) {
-            return data.data.slice(0, 5);
+        if (!data.status || !data.data.length) {
+            await m.react('❌')
+            return m.reply('⚠️ No se encontraron resultados para esa búsqueda.')
+        }
+
+        // Tomamos el primer resultado del carrusel
+        const primerResultado = data.data[0]
+        const imagenes = primerResultado.download // Array de links de fotos
+
+        let info = `✨ *TIKTOK IMAGES — BARBOZA*\n\n`
+        info += `📝 *Título:* ${primerResultado.title}\n`
+        info += `👤 *Autor:* ${primerResultado.author}\n`
+        info += `📊 *Likes:* ${primerResultado.likes}\n`
+        info += `📸 *Fotos encontradas:* ${imagenes.length}\n\n`
+        info += `> *By: Barboza Developer x Zona Developers*`
+
+        // Enviamos la primera imagen con la información
+        await conn.sendMessage(m.chat, { 
+            image: { url: imagenes[0] }, 
+            caption: info 
+        }, { quoted: m })
+
+        // Si hay más imágenes, las enviamos una por una (opcional: puedes limitar a 5 para no saturar)
+        if (imagenes.length > 1) {
+            for (let i = 1; i < imagenes.length; i++) {
+                // Pequeña espera para evitar spam-ban del bot
+                await new Promise(resolve => setTimeout(resolve, 1000))
+                await conn.sendMessage(m.chat, { image: { url: imagenes[i] } }, { quoted: m })
+                
+                // Limitamos a 6 fotos para que el grupo no se llene de golpe
+                if (i >= 5) break 
+            }
+        }
+
+        await m.react('✅')
+
+    } catch (e) {
+        console.error(e)
+        await m.react('❌')
+        m.reply('⚠️ Error al buscar imágenes en TikTok.')
+    }
 }
-        return null;
-} catch (error) {
-        console.error("❌ Error al obtener videos de TikTok:", error);
-        return null;
-}
-};
-const handler = async (m, { conn, text}) => {
-    if (!text) {
-        return m.reply("🔍 *Por favor, ingresa el nombre del video de TikTok.*");
-}
 
-    m.react("⏳");
+handler.help = ['tiktokimg', 'ttimg']
+handler.tags = ['search']
+handler.command = /^(tiktokimg|ttimg|ttsearch)$/i
 
-    const resultados = await obtenerTikTok(text);
-
-    if (resultados) {
-        m.reply(`✅ *Se encontraron ${resultados.length} videos de TikTok.* Enviando ahora...`);
-
-        for (const resultado of resultados) {
-            let mensaje = `
-🎥 *Título:* ${resultado.title}
-📅 *Fecha:* ${resultado.date}
-
-👤 *Autor:*
-- 🏷️ *Nombre:* ${resultado.author.nickname}
-- ✨ *Username:* @${resultado.author.unique_id}
-`;
-
-            await conn.sendFile(m.chat, resultado.play, "tiktok.mp4", mensaje, m);
-}
-} else {
-        m.reply("⚠️ *No se encontraron resultados, intenta con otro término.*");
-}
-};
-
-handler.command = ["tik"];
-export default handler;
+export default handler
