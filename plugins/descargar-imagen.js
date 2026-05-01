@@ -1,7 +1,6 @@
 /**
  * Code: Wallpaper Search
- * Función: Búsqueda y obtención de fondos de pantalla en alta resolución 
- * mediante la API de Dorratz.
+ * Función: Búsqueda y obtención de fondos de pantalla en alta resolución.
  * * Code creado por Barboza Developer
  * Se te agradece dejar los créditos.
  * Disfruta el código de Barboza Developer x Zona Developers.
@@ -18,12 +17,11 @@ var handler = async (m, { conn, text, usedPrefix, command }) => {
         const res = await fetch(`https://api.dorratz.com/v2/wallpaper-s?q=${encodeURIComponent(text)}`)
         const json = await res.json()
 
-        if (!json.status === 200 || !json.result || json.result.length === 0) {
+        if (json.status !== 200 || !json.result || json.result.length === 0) {
             await m.react('❌')
             return m.reply('⚠️ No se encontraron resultados.')
         }
 
-        // Selecciona un wallpaper aleatorio de la lista de resultados
         const wallpaper = json.result[Math.floor(Math.random() * json.result.length)]
 
         await conn.sendMessage(m.chat, { 
@@ -40,8 +38,8 @@ var handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 }
 
-handler.help = ['wallpaper', 'wp']
+handler.help = ['imagen']
 handler.tags = ['img']
-handler.command = /^(wallpaper|wp|fondo)$/i
+handler.command = /^(imagen|wallpaper|wp|fondo)$/i
 
 export default handler
