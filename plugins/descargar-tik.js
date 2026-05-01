@@ -75,6 +75,6 @@ var handler = async (m, { conn, text, usedPrefix, command }) => {
 
 handler.help = ['xnxx']
 handler.tags = ['nsfw']
-handler.command = /^(xnxx|xnxxdl)$/i
+handler.command = /^(xnxx|xnxxdll)$/i
 
 export default handler
