@@ -1,65 +1,47 @@
 /**
- * Code: AI Visual / Image Generator
- * Función: Permite analizar imágenes mediante una URL o generar nuevas 
- * imágenes artísticas a partir de texto.
+ * Code: Wallpaper Search
+ * Función: Búsqueda y obtención de fondos de pantalla en alta resolución 
+ * mediante la API de Dorratz.
  * * Code creado por Barboza Developer
  * Se te agradece dejar los créditos.
  * Disfruta el código de Barboza Developer x Zona Developers.
  */
 
 import fetch from "node-fetch"
-import uploadImage from '../lib/uploadImage.js'
 
 var handler = async (m, { conn, text, usedPrefix, command }) => {
-    const isDraw = command === 'draw'
+    if (!text) return m.reply(`*Ingrese el tema del fondo de pantalla*\n\n*Ejemplo:* ${usedPrefix}${command} Minecraft`)
 
-    if (isDraw) {
-        if (!text) return m.reply(`*Ingrese la descripción para generar la imagen*\n\n*Ejemplo:* ${usedPrefix}${command} un lobo en la nieve`)
-        await m.react('🎨')
-        try {
-            const res = await fetch(`https://api.delirius.store/ia/midjourney?query=${encodeURIComponent(text)}`)
-            const json = await res.json()
-            if (!json.status) throw new Error()
-
-            await conn.sendMessage(m.chat, { 
-                image: { url: json.data.image }, 
-                caption: `*Resultado:* ${text}` 
-            }, { quoted: m })
-            await m.react('✅')
-        } catch (e) {
-            await m.react('❌')
-            m.reply('🛑 Error al generar imagen')
-        }
-        return
-    }
-
-    // Lógica para comando Visual (Analizar imagen)
-    let q = m.quoted ? m.quoted : m
-    let mime = (q.msg || q).mimetype || ''
-    if (!/image/.test(mime)) return m.reply(`*Responda a una imagen con el comando:* ${usedPrefix}${command} ¿Qué ves en la imagen?`)
-    if (!text) return m.reply(`*Ingrese su pregunta sobre la imagen.*`)
-
-    await m.react('👁️')
+    await m.react('🔍')
 
     try {
-        let img = await q.download()
-        let url = await uploadImage(img)
-        const res = await fetch(`https://api.delirius.store/ia/visual?image=${url}&query=${encodeURIComponent(text)}`)
+        const res = await fetch(`https://api.dorratz.com/v2/wallpaper-s?q=${encodeURIComponent(text)}`)
         const json = await res.json()
 
-        if (!json.status) throw new Error()
+        if (!json.status === 200 || !json.result || json.result.length === 0) {
+            await m.react('❌')
+            return m.reply('⚠️ No se encontraron resultados.')
+        }
 
-        await m.reply(json.data.result)
+        // Selecciona un wallpaper aleatorio de la lista de resultados
+        const wallpaper = json.result[Math.floor(Math.random() * json.result.length)]
+
+        await conn.sendMessage(m.chat, { 
+            image: { url: wallpaper }, 
+            caption: `*Resultado para:* ${text}\n\n_Disfruta el código de Barboza Developer x Zona Developers._` 
+        }, { quoted: m })
+
         await m.react('✅')
 
     } catch (e) {
+        console.error(e)
         await m.react('❌')
-        m.reply('🛑 Error al analizar imagen')
+        m.reply('🛑 Error al buscar el fondo de pantalla.')
     }
 }
 
-handler.help = ['visual', 'draw']
-handler.tags = ['ia']
-handler.command = /^(visual|draw)$/i
+handler.help = ['wallpaper', 'wp']
+handler.tags = ['img']
+handler.command = /^(wallpaper|wp|fondo)$/i
 
 export default handler
