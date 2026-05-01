@@ -31,6 +31,6 @@ var handler = async (m, { text, usedPrefix, command }) => {
 
 handler.help = ['chatgpt']
 handler.tags = ['ia']
-handler.command = /^(chatgpt|ia|)$/i
+handler.command = /^(chatgpt2|ia2)$/i
 
 export default handler
