@@ -1,64 +1,62 @@
 /**
- * Code creado por Barboza Developer
- * Se te agradece dejar los créditos.
- * Disfruta el código de Barboza Developer x Zona Developers.
+ * 📂 COMANDO: xnxx
+ * 📝 DESCRIPCIÓN: Busca y descarga contenido de XNXX de forma directa.
+ * 👤 CREADOR: Barboza Developer
+ * ⚡ CANAL: Barboza Developer x Zona Developers
  */
 
 import axios from 'axios'
 
 var handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) return conn.reply(m.chat, `✨ *¿Qué imágenes de TikTok buscas?*\n\n> *Ejemplo:* ${usedPrefix + command} Chaewon`, m)
+    if (!m.isGroup) return m.reply('🚀 Por seguridad, usa este comando en un grupo.')
+    
+    let query = text ? text.trim() : (m.quoted?.text || null)
+    if (!query) return conn.reply(m.chat, `✨ *¿Qué deseas buscar?*\n\n> *Ejemplo:* ${usedPrefix + command} Rusas`, m)
 
-    await m.react('📸')
+    await m.react('🔍')
 
     try {
-        // Llamada a la API de Delirius para imágenes de TikTok
-        const { data } = await axios.get(`https://api.delirius.store/search/tiktoksearchimages?query=${encodeURIComponent(text)}`)
-
-        if (!data.status || !data.data.length) {
+        const searchRes = await axios.get(`https://api.delirius.store/search/xnxxsearch?query=${encodeURIComponent(query)}`)
+        
+        if (!searchRes.data.status || !searchRes.data.data.length) {
             await m.react('❌')
-            return m.reply('⚠️ No encontré resultados para esa búsqueda.')
+            return m.reply('⚠️ No se encontraron resultados.')
         }
 
-        // Seleccionamos el primer resultado (el más relevante)
-        const res = data.data[0]
-        const fotos = res.download // Array con los links de las imágenes
+        const videoInfo = searchRes.data.data[0]
+        const downloadRes = await axios.get(`https://api.delirius.store/download/xnxxdl?url=${videoInfo.link}`)
+        
+        if (!downloadRes.data.status) {
+            await m.react('❌')
+            return m.reply('⚠️ El contenido no está disponible.')
+        }
 
-        // Información breve y en español
-        let info = `✨ *TIKTOK SEARCH — BARBOZA*\n\n`
-        info += `📝 *Descripción:* ${res.title || 'Sin descripción'}\n`
-        info += `👤 *Usuario:* ${res.author}\n`
-        info += `❤️ *Likes:* ${res.likes.toLocaleString()}\n`
-        info += `📸 *Total de fotos:* ${fotos.length}\n\n`
-        info += `> *By: Barboza Developer x Zona Developers*`
+        const dl = downloadRes.data.data
+        const videoFinal = dl.download.high || dl.download.low
 
-        // Enviamos la PRIMERA FOTO con la información
+        let caption = `🔞 *XNXX CONTENT — BARBOZA*\n\n`
+        caption += `📌 *Título:* ${dl.title}\n`
+        caption += `⏱️ *Duración:* ${dl.duration}\n`
+        caption += `⚙️ *Calidad:* ${dl.quality}\n\n`
+        caption += `> *By: Barboza Developer x Zona Developers*`
+
         await conn.sendMessage(m.chat, { 
-            image: { url: fotos[0] }, 
-            caption: info 
+            video: { url: videoFinal }, 
+            caption: caption,
+            mimetype: 'video/mp4',
+            fileName: `video_barboza.mp4`
         }, { quoted: m })
-
-        // Enviamos el RESTO de las fotos del carrusel (máximo 5 para no saturar el bot)
-        if (fotos.length > 1) {
-            for (let i = 1; i < fotos.length; i++) {
-                if (i >= 6) break // Límite de seguridad
-                
-                await new Promise(resolve => setTimeout(resolve, 800)) // Pausa para evitar spam
-                await conn.sendMessage(m.chat, { image: { url: fotos[i] } }, { quoted: m })
-            }
-        }
 
         await m.react('✅')
 
     } catch (e) {
-        console.error(e)
         await m.react('❌')
-        m.reply('⚠️ Hubo un error al procesar la búsqueda.')
+        m.reply('⚠️ Error al procesar la solicitud.')
     }
 }
 
-handler.help = ['tiktokimg']
-handler.tags = ['search']
-handler.command = /^(tiktokimg|ttimg|ttsearch)$/i
+handler.help = ['xnxx']
+handler.tags = ['nsfw']
+handler.command = /^(xnxx|xnxxdll)$/i
 
 export default handler
