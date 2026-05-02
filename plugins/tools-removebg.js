@@ -13,7 +13,7 @@ const handler = async (m, { conn, text }) => {
 
     try {
         const formData = new FormData();
-        let api = `https://api.evogb.org/tools/removebg?key=Jotaa.hrzkey`;
+        let api = `https://api.evogb.org/tools/removebg?key=sasuke`;
 
         if (/image/.test(mime)) {
             let img = await q.download();
