@@ -1,6 +1,6 @@
 /**
  * 📂 COMANDO: claude
- * 📝 DESCRIPCIÓN: Consultas avanzadas con inteligencia artificial.
+ * 📝 DESCRIPCIÓN: Consultas con IA (Versión solo texto)
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  * 🔌 API: https://api.evogb.org
@@ -10,7 +10,7 @@ import axios from 'axios'
 
 var handler = async (m, { conn, text, usedPrefix, command }) => {
     let query = text ? text.trim() : (m.quoted?.text || null)
-    if (!query) return conn.reply(m.chat, `✨ *¿Qué deseas consultar hoy?*\n\n> *Ejemplo:* ${usedPrefix + command} ¿Qué es la física cuántica?`, m)
+    if (!query) return conn.reply(m.chat, `✨ *Escribe tu consulta*\n\n> *Ejemplo:* ${usedPrefix + command} ¿Quién es Messi?`, m)
 
     await m.react('🧠')
 
@@ -22,16 +22,15 @@ var handler = async (m, { conn, text, usedPrefix, command }) => {
 
         if (!data.status) {
             await m.react('❌')
-            return m.reply('⚠️ *No se pudo obtener una respuesta.*')
+            return m.reply('⚠️ *Sin respuesta del servidor.*')
         }
 
         let response = `┏━━━━━━━━━━━━━━━━┓\n`
-        response += `┃   🤖 *CLAUDE AI — INFO* ┃\n`
+        response += `┃   🤖 *CLAUDE AI* ┃\n`
         response += `┗━━━━━━━━━━━━━━━━┛\n\n`
-        response += `💬 *CONSULTA:* ${query}\n\n`
         response += `💡 *RESPUESTA:*\n${data.result}\n\n`
         response += `━━━━━━━━━━━━━━━━━━━━\n`
-        response += `🔌 *FUENTE:* https://api.evogb.org\n`
+        response += `🔌 *API:* https://api.evogb.org\n`
         response += `⚡ *By: Barboza Developer*`
 
         await conn.reply(m.chat, response, m)
@@ -39,7 +38,7 @@ var handler = async (m, { conn, text, usedPrefix, command }) => {
 
     } catch (e) {
         await m.react('❌')
-        m.reply('⚠️ *Error de conexión con el servidor.*')
+        m.reply('⚠️ *Error de conexión.*')
     }
 }
 
