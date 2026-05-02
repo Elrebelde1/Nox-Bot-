@@ -1,8 +1,9 @@
 /**
  * 📂 COMANDO: claude
- * 📝 DESCRIPCIÓN: Consultas con IA Claude (Diseño Limpio).
+ * 📝 DESCRIPCIÓN: Consultas con IA Claude.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
+ * 🔌 API: https://api.evogb.org
  */
 
 import axios from 'axios'
@@ -14,10 +15,10 @@ var handler = async (m, { conn, text, usedPrefix, command }) => {
     await m.react('🧠')
 
     try {
-        const key64 = 'c2FzdWtl'
-        const decodedKey = Buffer.from(key64, 'base64').toString('utf-8')
+        const _0x4a1b = 'ZWt1c2Fz' 
+        const key = Buffer.from(_0x4a1b, 'base64').toString('utf-8').split('').reverse().join('')
 
-        const { data } = await axios.get(`https://api.evogb.org/ai/claude?text=${encodeURIComponent(query)}&key=${decodedKey}`)
+        const { data } = await axios.get(`https://api.evogb.org/ai/claude?text=${encodeURIComponent(query)}&key=${key}`)
 
         if (!data.status) {
             await m.react('❌')
