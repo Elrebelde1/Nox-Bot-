@@ -1,9 +1,8 @@
 /**
  * 📂 COMANDO: claude
- * 📝 DESCRIPCIÓN: Consultas con IA (Versión solo texto)
+ * 📝 DESCRIPCIÓN: Consultas con IA Claude (Diseño Limpio).
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
- * 🔌 API: https://api.evogb.org
  */
 
 import axios from 'axios'
@@ -30,8 +29,8 @@ var handler = async (m, { conn, text, usedPrefix, command }) => {
         response += `┗━━━━━━━━━━━━━━━━┛\n\n`
         response += `💡 *RESPUESTA:*\n${data.result}\n\n`
         response += `━━━━━━━━━━━━━━━━━━━━\n`
-        response += `🔌 *API:* https://api.evogb.org\n`
-        response += `⚡ *By: Barboza Developer*`
+        response += `⚡ *By: Barboza Developer*\n`
+        response += `🌐 *Zona Developers*`
 
         await conn.reply(m.chat, response, m)
         await m.react('✅')
