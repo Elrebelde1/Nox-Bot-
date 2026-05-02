@@ -60,7 +60,8 @@ global.estilo = { key: {  fromMe: false, participant: `0@s.whatsapp.net`, ...(fa
 global.ch = {
 ch1: '120363414007802886@newsletter',
 ch2: '120363423619689248@newsletter',
-ch3: '120363409416185213@newsletter'
+ch3: '120363409416185213@newsletter',
+ch4: '120363426372470669@newsletter'
 
 }
 
