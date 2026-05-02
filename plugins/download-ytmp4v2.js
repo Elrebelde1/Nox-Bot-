@@ -1,49 +1,53 @@
 /**
- * 📂 COMANDO: ytmp4
- * 📝 DESCRIPCIÓN: Descarga videos de YouTube en formato MP4.
+ * 📂 YT-SEARCH & DOWNLOAD SCRAPER
+ * 📝 DESCRIPCIÓN: Busca y descarga videos de YouTube por nombre o link.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  */
 
-import axios from 'axios'
+import yts from 'yt-search'
+import ytdl from 'ytdl-core'
 
 var handler = async (m, { conn, text, usedPrefix, command }) => {
-    let query = text ? text.trim() : (m.quoted?.text || null)
-    if (!query) return conn.reply(m.chat, `✨ *¿Qué video de YouTube deseas descargar?*\n\n> *Ejemplo:* ${usedPrefix + command} https://www.youtube.com/watch?v=5M_n2UCe7DQ`, m)
+    if (!text) return m.reply(`✨ *¿Qué video deseas buscar?*\n\n> *Ejemplo:* ${usedPrefix + command} Yan Block 444`)
 
-    if (!query.includes('youtu')) return m.reply('⚠️ Por favor, ingresa un enlace válido de YouTube.')
-
-    await m.react('⏳')
+    await m.react('🔍')
 
     try {
-        const { data } = await axios.get(`https://api.delirius.store/download/ytmp4?url=${query}`)
+        // 1. SCRAPER DE BÚSQUEDA: Buscamos el video en YouTube
+        const search = await yts(text)
+        const video = search.videos[0]
 
-        if (!data.status) {
+        if (!video) {
             await m.react('❌')
-            return m.reply('⚠️ No se pudo procesar la descarga.')
+            return m.reply('⚠️ No se encontraron resultados.')
         }
 
-        const vid = data.data
-        const linkDescarga = vid.download
+        // 2. SCRAPER DE EXTRACCIÓN: Obtenemos el link de descarga directo
+        const info = await ytdl.getInfo(video.url)
+        const format = ytdl.chooseFormat(info.formats, { quality: 'highestvideo', filter: 'audioandvideo' })
 
-        let info = `🎥 *YOUTUBE MP4 — BARBOZA*\n\n`
-        info += `📌 *Título:* ${vid.title}\n`
-        info += `👤 *Canal:* ${vid.author}\n`
-        info += `⚙️ *Calidad:* ${vid.format}\n\n`
-        info += `> *By: Barboza Developer x Zona Developers*`
+        let caption = `🎥 *BARBOZA YT-SEARCH SCRAPER*\n\n`
+        caption += `📌 *Título:* ${video.title}\n`
+        caption += `👤 *Canal:* ${video.author.name}\n`
+        caption += `⏱️ *Duración:* ${video.timestamp}\n`
+        caption += `👁️ *Vistas:* ${video.views.toLocaleString()}\n\n`
+        caption += `> *By: Barboza Developer x Zona Developers*`
 
+        // 3. ENVÍO DEL CONTENIDO
         await conn.sendMessage(m.chat, { 
-            video: { url: linkDescarga }, 
-            caption: info,
+            video: { url: format.url }, 
+            caption: caption,
             mimetype: 'video/mp4',
-            fileName: `${vid.title}.mp4`
+            fileName: `${video.title}.mp4`
         }, { quoted: m })
 
         await m.react('✅')
 
     } catch (e) {
+        console.error(e)
         await m.react('❌')
-        m.reply('⚠️ Error al obtener el video.')
+        m.reply('⚠️ Error al buscar o procesar el video.')
     }
 }
 
