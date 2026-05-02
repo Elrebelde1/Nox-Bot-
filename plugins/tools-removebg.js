@@ -3,8 +3,12 @@ import { FormData, Blob } from 'formdata-node';
 
 const handler = async (m, { conn, text }) => {
     let q = m.quoted ? m.quoted : m;
-    let mime = (q.msg || q).mimetype || '';
+    let mime = (q.msg || q || {}).mimetype || '';
     
+    if (!/image/.test(mime) && !text) {
+        throw `*🧑‍💻 Responda a una imagen o ingrese una URL para quitar el fondo.*`;
+    }
+
     m.react('🕒');
 
     try {
@@ -19,9 +23,6 @@ const handler = async (m, { conn, text }) => {
         } else if (text && text.startsWith('http')) {
             formData.append("method", "url");
             formData.append("url", text);
-        } else {
-            m.react('✖️');
-            throw `Responda a una imagen o proporcione una URL.`;
         }
 
         const response = await fetch(api, {
@@ -32,14 +33,14 @@ const handler = async (m, { conn, text }) => {
         if (!response.ok) throw new Error('API Error');
 
         const buffer = await response.arrayBuffer();
-        if (buffer.byteLength < 500) throw new Error('Imagen no procesada');
+        if (buffer.byteLength < 500) throw new Error('No se pudo procesar la imagen');
 
         m.react('☑️');
         await conn.sendMessage(m.chat, { image: Buffer.from(buffer) }, { quoted: m });
 
     } catch (error) {
         m.react('✖️');
-        throw `Error: ${error.message}`;
+        throw `*⚠️ Error:* ${error.message}`;
     }
 }
 
