@@ -1,55 +1,70 @@
-const handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text || !text.includes('|')) {
-        let txt = `╭─〔 ♆ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚁𝙴𝙼𝙸𝙽𝙳𝙴𝚁* ♆ 〕─╮\n│\n`
-        txt += `│ ⏰ *𝚄𝚂𝙾 𝙲𝙾𝚁𝚁𝙴𝙲𝚃𝙾:* \n`
-        txt += `│ ${usedPrefix + command} [mensaje] | [tiempo]\n│\n`
-        txt += `│ 💡 *𝙴𝙹𝙴𝙼𝙿𝙻𝙾:* \n`
-        txt += `│ ${usedPrefix + command} voy a dormir | 10 minutos\n│\n`
-        txt += `│ 🌑 "𝙹𝚊𝚖á𝚜 𝚘𝚕𝚟𝚒𝚍𝚎𝚜 𝚝𝚞 𝚍𝚎𝚜𝚝𝚒𝚗𝚘"\n╰────────────────────────────╯`
-        return conn.reply(m.chat, txt, m)
-    }
+/**
+ * 📂 COMANDO: tiktok2
+ * 📝 DESCRIPCIÓN: Descarga avanzada de TikTok con UI Premium y apikey oculta.
+ * 👤 CREADOR: Barboza Developer
+ * ⚡ CANAL: Barboza Developer x Zona Developers
+ */
 
-    let [mensaje, tiempoText] = text.split('|').map(v => v.trim().toLowerCase())
-    
-    // Lógica mejorada para detectar tiempo
-    let milisegundos = 0
-    let valor = parseInt(tiempoText)
+import axios from 'axios'
 
-    if (tiempoText.includes('segundo') || tiempoText.endsWith('s')) {
-        milisegundos = valor * 1000
-    } else if (tiempoText.includes('minuto') || tiempoText.endsWith('m')) {
-        milisegundos = valor * 60000
-    } else if (tiempoText.includes('hora') || tiempoText.endsWith('h')) {
-        milisegundos = valor * 3600000
-    } else {
-        // Si solo puso el número, asumimos minutos
-        milisegundos = valor * 60000
-    }
-
-    if (isNaN(milisegundos) || milisegundos <= 0) return m.reply('❌ Tiempo inválido. Usa: 10 minutos, 1 hora, etc.')
-
-    if (m.react) await m.react('⏳')
-    
-    m.reply(`✅ *Recordatorio programado*\n\n🔔 *Motivo:* ${mensaje}\n⏱️ *En:* ${tiempoText}\n\n*Te mencionaré cuando el tiempo termine.*`)
-
-    setTimeout(async () => {
-        let tag = `@${m.sender.split('@')[0]}`
-        let alerta = `╭─〔 🔔 *𝙰𝙻𝙴𝚁𝚃𝙰 𝚄𝙲𝙷𝙸𝙷𝙰* 🔔 〕─╮\n│\n`
-        alerta += `│ 👤 *𝚄𝚂𝚄𝙰𝚁𝙸𝙾:* ${tag}\n`
-        alerta += `│ 📝 *𝙼𝙴𝙽𝚂𝙰𝙹𝙴:* ${mensaje}\n│\n`
-        alerta += `│ 🌑 "𝙴𝚕 𝚝𝚒𝚎𝚖𝚙𝚘 𝚜𝚎 𝚑𝚊 𝚌𝚞𝚖𝚙𝚕𝚒𝚍𝚘"\n╰──────────────────────────╯`
-
-        await conn.sendMessage(m.chat, { 
-            text: alerta, 
-            mentions: [m.sender] 
-        }, { quoted: m })
+async function tiktokScraper(url) {
+    try {
+        const key64 = 'c2FzdWtl' 
+        const decodedKey = Buffer.from(key64, 'base64').toString('utf-8')
         
-        if (m.react) await m.react('🔔')
-    }, milisegundos)
+        const { data } = await axios.get(`https://api.evogb.org/dl/tiktok?url=${encodeURIComponent(url)}&key=${decodedKey}`)
+        
+        if (!data.status) return { status: false }
+        return {
+            status: true,
+            title: data.data.title,
+            author: data.data.author.nickname,
+            user: data.data.author.unique_id,
+            duration: data.data.duration,
+            likes: data.data.stats.likes,
+            shares: data.data.stats.shares,
+            download: data.data.dl
+        }
+    } catch (e) {
+        return { status: false }
+    }
 }
 
-handler.help = ['recordar']
-handler.tags = ['tools']
-handler.command = /^(recordar|remind|alarm)$/i
+var handler = async (m, { conn, text, usedPrefix, command }) => {
+    let query = text ? text.trim() : (m.quoted?.text || null)
+    if (!query) return conn.reply(m.chat, `✨ *¿Qué video deseas bajar?*\n\n> *Ejemplo:* ${usedPrefix + command} https://vt.tiktok.com/...`, m)
+
+    await m.react('⚡')
+
+    const res = await tiktokScraper(query)
+
+    if (!res.status) {
+        await m.react('❌')
+        return m.reply('⚠️ *Error al procesar el enlace.*')
+    }
+
+    let ui = `┏━━━━━━━━━━━━━━━━┓\n`
+    ui += `┃  ⭐ *TIKTOK DOWNLOAD* ┃\n`
+    ui += `┗━━━━━━━━━━━━━━━━┛\n\n`
+    ui += `📝 *TÍTULO:* ${res.title.slice(0, 100)}...\n`
+    ui += `👤 *AUTOR:* ${res.author} (@${res.user})\n`
+    ui += `⏱️ *DURACIÓN:* ${res.duration}\n`
+    ui += `📊 *STATS:* ❤️ ${res.likes.toLocaleString()} | 🔄 ${res.shares.toLocaleString()}\n\n`
+    ui += `⚡ *Powered by Barboza Developer*\n`
+    ui += `🌐 *Zona Developers*`
+
+    await conn.sendMessage(m.chat, { 
+        video: { url: res.download }, 
+        caption: ui,
+        mimetype: 'video/mp4',
+        fileName: `tiktok_v2_barboza.mp4`
+    }, { quoted: m })
+
+    await m.react('✅')
+}
+
+handler.help = ['tiktok2']
+handler.tags = ['downloader']
+handler.command = /^(tiktok2|tt2)$/i
 
 export default handler
