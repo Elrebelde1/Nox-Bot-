@@ -10,10 +10,10 @@ var handler = async (m, { conn, text, usedPrefix, command }) => {
         const _0x4a1b = 'ZWt1c2Fz' 
         const key = Buffer.from(_0x4a1b, 'base64').toString('utf-8').split('').reverse().join('')
 
-        if (command === 'spotify' || command === 'spot') {
+        if (/spotify|spot$|spotify2/i.test(command)) {
             const { data } = await axios.get(`https://api.evogb.org/search/spotify?query=${encodeURIComponent(query)}&key=${key}`)
             
-            if (!data.status) {
+            if (!data.status || !data.result) {
                 await m.react('❌')
                 return m.reply('⚠️ *No se encontraron resultados.*')
             }
@@ -27,7 +27,7 @@ var handler = async (m, { conn, text, usedPrefix, command }) => {
             await conn.sendMessage(m.chat, { image: { url: data.result[0].image }, caption: ui }, { quoted: m })
             await m.react('✅')
 
-        } else if (command === 'spotdl' || command === 'spotifydl') {
+        } else if (/spotdl|spotifydl/i.test(command)) {
             const { data } = await axios.get(`https://api.evogb.org/dl/spotify?url=${encodeURIComponent(query)}&key=${key}`)
             
             if (!data.status) {
@@ -61,8 +61,8 @@ var handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 }
 
-handler.help = ['spotify', 'spotdl']
+handler.help = ['spotify', 'spotify2', 'spotdl']
 handler.tags = ['downloader']
-handler.command = /^(spotify2|spot|spotdl|spotifydl)$/i
+handler.command = /^(spot|spotify2|spotdl|spotifydl)$/i
 
 export default handler
