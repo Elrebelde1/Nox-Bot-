@@ -1,3 +1,11 @@
+/**
+ * 📂 COMANDO: Spotify Pro
+ * 📝 DESCRIPCIÓN: Descarga música de Spotify (Search & DL).
+ * 👤 CREADOR: Barboza Developer
+ * ⚡ CANAL: Barboza Developer x Zona Developers
+ * 🔌 API: https://api.evogb.org
+ */
+
 import axios from 'axios'
 
 var handler = async (m, { conn, text, usedPrefix, command }) => {
@@ -28,7 +36,9 @@ var handler = async (m, { conn, text, usedPrefix, command }) => {
         }
 
         const data = dlRes.data.data
-        let ui = `┏━━━━━━━━━━━━━━━━┓\n┃   🎵 *SPOTIFY DL* ┃\n┗━━━━━━━━━━━━━━━━┛\n\n`
+        let ui = `┏━━━━━━━━━━━━━━━━┓\n`
+        ui += `┃   🎵 *SPOTIFY DL* ┃\n`
+        ui += `┗━━━━━━━━━━━━━━━━┛\n\n`
         ui += `🎵 *TÍTULO:* ${data.name}\n`
         ui += `👤 *ARTISTA:* ${data.artist}\n`
         ui += `💿 *ALBUM:* ${data.album}\n`
@@ -56,7 +66,7 @@ var handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 }
 
-handler.help = ['spotify2']
+handler.help = ['spotify', 'spotify2']
 handler.tags = ['downloader']
 handler.command = /^(spotify2|spotdl|spotifydl)$/i
 
