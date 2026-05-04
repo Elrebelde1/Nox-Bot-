@@ -30,15 +30,17 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         if (m.react) await m.react('📥')
         try {
             let type = (isAudio || isDocMp3) ? 'audio' : 'video'
-            // Forzamos 360p para que no pese y reproduzca al instante en cualquier teléfono
             let quality = (isVideo || isDocMp4) ? '360' : 'auto'
-            let res = await fetch(`https://api.evogb.org/dl/youtubeplay?query=${encodeURIComponent(text)}&type=${type}&quality=${quality}&key=${key}`)
+            
+            // Usando el endpoint ytmp4 para mayor compatibilidad en video
+            let apiEndpoint = (isVideo || isDocMp4) ? 'ytmp4' : 'youtubeplay'
+            let res = await fetch(`https://api.evogb.org/dl/${apiEndpoint}?url=${encodeURIComponent(text)}&quality=${quality}&key=${key}`)
             let json = await res.json()
 
             if (!json.status || !json.data) throw 'Error en la descarga'
 
-            const { title, download } = json.data
-            const dlUrl = download.url
+            const { title, dl, download } = json.data
+            const dlUrl = dl || download?.url
 
             if (isAudio) {
                 return await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: 'audio/mpeg' }, { quoted: m })
@@ -90,7 +92,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         info += `│ 🎵 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${data.title}\n`
         info += `│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽:* ${data.duration.timestamp}\n`
         info += `│ 👁️ *𝚅𝙸𝚂𝚃𝙰𝚂:* ${data.views.toLocaleString()}\n`
-        info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n*Nota:* Calidad ajustada a 360p para asegurar reproducción rápida.\n\n⚡ *By: Barboza Developer*`
+        info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n*Nota:* Calidad optimizada a 360p para reproducción inmediata.\n\n⚡ *By: Barboza Developer*`
 
         await conn.sendMessage(m.chat, { 
             image: { url: data.image }, 
