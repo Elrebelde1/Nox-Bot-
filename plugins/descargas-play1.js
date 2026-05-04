@@ -1,6 +1,6 @@
 /**
  * 📂 COMANDO: Uchiha YouTube Pro
- * 📝 DESCRIPCIÓN: Sistema avanzado de búsqueda y descarga de YouTube.
+ * 📝 DESCRIPCIÓN: Sistema avanzado de búsqueda y descarga de YouTube (720p Fix).
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  * 🔌 API: https://api.evogb.org
@@ -30,7 +30,8 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         if (m.react) await m.react('📥')
         try {
             let type = (isAudio || isDocMp3) ? 'audio' : 'video'
-            let res = await fetch(`https://api.evogb.org/dl/youtubeplay?query=${encodeURIComponent(text)}&type=${type}&quality=auto&key=${key}`)
+            let quality = (isVideo || isDocMp4) ? '720' : 'auto'
+            let res = await fetch(`https://api.evogb.org/dl/youtubeplay?query=${encodeURIComponent(text)}&type=${type}&quality=${quality}&key=${key}`)
             let json = await res.json()
 
             if (!json.status || !json.data) throw 'Error en la descarga'
@@ -42,7 +43,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                 return await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: 'audio/mpeg' }, { quoted: m })
             }
             if (isVideo) {
-                return await conn.sendMessage(m.chat, { video: { url: dlUrl }, caption: `✅ *Video:* ${title}`, footer: "By Barboza-Team ⚡" }, { quoted: m })
+                return await conn.sendMessage(m.chat, { video: { url: dlUrl }, caption: `✅ *Video (720p):* ${title}`, footer: "By Barboza-Team ⚡" }, { quoted: m })
             }
             if (isDocMp3) {
                 return await conn.sendMessage(m.chat, { document: { url: dlUrl }, mimetype: 'audio/mpeg', fileName: `${title}.mp3` }, { quoted: m })
@@ -71,9 +72,9 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const data = json.data
         const buttons = [
             { buttonId: `${usedPrefix}ytmp3 ${data.url}`, buttonText: { displayText: "🎵 Audio" }, type: 1 },
-            { buttonId: `${usedPrefix}ytv ${data.url}`, buttonText: { displayText: "🎥 Video" }, type: 1 },
-            { buttonId: `${usedPrefix}ytmp3doc ${data.url}`, buttonText: { displayText: "📁 Documento MP3" }, type: 1 },
-            { buttonId: `${usedPrefix}ytmp4doc ${data.url}`, buttonText: { displayText: "📁 Documento MP4" }, type: 1 },
+            { buttonId: `${usedPrefix}ytv ${data.url}`, buttonText: { displayText: "🎥 Video 720p" }, type: 1 },
+            { buttonId: `${usedPrefix}ytmp3doc ${data.url}`, buttonText: { displayText: "📁 Doc MP3" }, type: 1 },
+            { buttonId: `${usedPrefix}ytmp4doc ${data.url}`, buttonText: { displayText: "📁 Doc MP4" }, type: 1 },
             { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
         ]
 
