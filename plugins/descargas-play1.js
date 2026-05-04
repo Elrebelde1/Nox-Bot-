@@ -36,15 +36,15 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             let titulo = ''
 
             if (isAudio || isDocMp3) {
-                // API GATA YTMP3 CON RESPUESTA JSON
-                let res = await fetch(`https://api.evogb.org/dl/ytmp3?url=${encodeURIComponent(text)}&key=${apiKey}`)
+                // API GATA YOUTUBEPLAY (AUDIO)
+                let res = await fetch(`https://api.evogb.org/dl/youtubeplay?query=${encodeURIComponent(text)}&type=audio&quality=auto&key=${apiKey}`)
                 let json = await res.json()
                 if (json.status && json.data) {
-                    dlUrl = json.data.dl
+                    dlUrl = json.data.download.url
                     titulo = json.data.title || 'Audio'
                 }
             } else if (isVideo || isDocMp4) {
-                // API GATA YTMP4 CON RESPUESTA JSON
+                // API GATA YTMP4 (VIDEO)
                 let res = await fetch(`https://api.evogb.org/dl/ytmp4?url=${encodeURIComponent(text)}&quality=360&key=${apiKey}`)
                 let json = await res.json()
                 if (json.status && json.data) {
@@ -59,7 +59,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                 return await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: 'audio/mpeg' }, { quoted: m })
             }
             if (isVideo) {
-                return await conn.sendMessage(m.chat, { video: { url: dlUrl }, caption: `✅ *Video:* ${titulo}`, footer: "By Barboza-Team ⚡" }, { quoted: m })
+                return await conn.sendMessage(m.chat, { video: { url: dlUrl }, caption: `✅ *Video:* ${titulo}\n⚡ *By: Barboza Developer*`, footer: "By Barboza-Team ⚡" }, { quoted: m })
             }
             if (isDocMp3) {
                 return await conn.sendMessage(m.chat, { document: { url: dlUrl }, mimetype: 'audio/mpeg', fileName: `${titulo}.mp3` }, { quoted: m })
@@ -89,9 +89,9 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const { title, thumbnail, timestamp, videoId, author, ago } = result
         const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
 
-        // BOTONES ORDENADOS SEGÚN TU SOLICITUD
+        // BOTONES ACTUALIZADOS
         const buttons = [
-            { buttonId: `${usedPrefix}yta ${videoUrl}`, buttonText: { displayText: "🎵 Audio" }, type: 1 },
+            { buttonId: `${usedPrefix}ytmp3 ${videoUrl}`, buttonText: { displayText: "🎵 Audio" }, type: 1 },
             { buttonId: `${usedPrefix}ytv ${videoUrl}`, buttonText: { displayText: "🎥 Video" }, type: 1 },
             { buttonId: `${usedPrefix}ytmp3doc ${videoUrl}`, buttonText: { displayText: "📁 Documento MP3" }, type: 1 },
             { buttonId: `${usedPrefix}ytmp4doc ${videoUrl}`, buttonText: { displayText: "📁 Documento MP4" }, type: 1 },
@@ -104,6 +104,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         info += `│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽:* ${timestamp}\n`
         info += `│ 📅 *𝙿𝚄𝙱𝙻𝙸𝙲𝙰𝙳𝙾:* ${ago || 'Reciente'}\n`
         info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n`
+        info += `⚡ *By: Barboza Developer*\n`
         info += `*Seleccione una opción para descargar:*`
 
         await conn.sendMessage(m.chat, { 
