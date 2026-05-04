@@ -1,6 +1,6 @@
 /**
- * 📂 COMANDO: Uchiha YouTube Pro
- * 📝 DESCRIPCIÓN: Sistema avanzado con fix de audio y video (360p).
+ * 📂 COMANDO: Uchiha YouTube Pro (Audio Fix)
+ * 📝 DESCRIPCIÓN: Fix de reproducción para errores de archivo de audio.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  * 🔌 API: https://api.evogb.org
@@ -30,7 +30,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         if (m.react) await m.react('📥')
         try {
             let apiEndpoint = (isAudio || isDocMp3) ? 'ytmp3' : 'ytmp4'
-            let quality = (isVideo || isDocMp4) ? '360' : 'auto'
+            let quality = (isVideo || isDocMp4) ? '360' : '128' // Forzamos 128k para audio estable
             
             let res = await fetch(`https://api.evogb.org/dl/${apiEndpoint}?url=${encodeURIComponent(text)}&quality=${quality}&key=${key}`)
             let json = await res.json()
@@ -41,7 +41,12 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             const dlUrl = dl || download?.url
 
             if (isAudio) {
-                return await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: 'audio/mpeg' }, { quoted: m })
+                // Enviamos como audio con ptt false para mejor compatibilidad
+                return await conn.sendMessage(m.chat, { 
+                    audio: { url: dlUrl }, 
+                    mimetype: 'audio/mp4', // Cambiado a audio/mp4 para fix de reproducción
+                    ptt: false 
+                }, { quoted: m })
             }
             if (isVideo) {
                 return await conn.sendMessage(m.chat, { 
@@ -59,14 +64,15 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
         } catch (e) {
             if (m.react) await m.react('❌')
-            return conn.reply(m.chat, `🛑 Error al descargar.`, m)
+            return conn.reply(m.chat, `🛑 Algo falló con el archivo. Intenta de nuevo.`, m)
         }
         return 
     }
 
     try {
         if (m.react) await m.react('⏳')
-        let res = await fetch(`https://api.evogb.org/dl/youtubeplay?query=${encodeURIComponent(text)}&type=video&quality=360&key=${key}`)
+        // Buscamos con calidad de audio optimizada
+        let res = await fetch(`https://api.evogb.org/dl/youtubeplay?query=${encodeURIComponent(text)}&type=audio&quality=128&key=${key}`)
         let json = await res.json()
 
         if (!json.status || !json.data) {
@@ -79,8 +85,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             { buttonId: `${usedPrefix}ytmp3 ${data.url}`, buttonText: { displayText: "🎵 Audio" }, type: 1 },
             { buttonId: `${usedPrefix}ytv ${data.url}`, buttonText: { displayText: "🎥 Video" }, type: 1 },
             { buttonId: `${usedPrefix}ytmp3doc ${data.url}`, buttonText: { displayText: "📁 Doc MP3" }, type: 1 },
-            { buttonId: `${usedPrefix}ytmp4doc ${data.url}`, buttonText: { displayText: "📁 Doc MP4" }, type: 1 },
-            { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
+            { buttonId: `${usedPrefix}ytmp4doc ${data.url}`, buttonText: { displayText: "📁 Doc MP4" }, type: 1 }
         ]
 
         let info = `「 🎬 𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴 」\n─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n`
@@ -88,7 +93,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         info += `│ 🎵 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${data.title}\n`
         info += `│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽:* ${data.duration.timestamp}\n`
         info += `│ 👁️ *𝚅𝙸𝚂𝚃𝙰𝚂:* ${data.views.toLocaleString()}\n`
-        info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n*Seleccione una opción:*\n\n⚡ *By: Barboza Developer*`
+        info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n⚡ *By: Barboza Developer*`
 
         await conn.sendMessage(m.chat, { 
             image: { url: data.image }, 
