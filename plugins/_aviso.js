@@ -1,9 +1,8 @@
 /**
- * 📂 COMANDO: Uchiha Sticker DL
- * 📝 DESCRIPCIÓN: Busca y descarga paquetes de stickers automáticamente.
+ * 📂 COMANDO: Uchiha Sticker Pro
+ * 📝 DESCRIPCIÓN: Busca en Sticker.ly y descarga los primeros 6 stickers.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
- * 🔌 API: https://api.evogb.org
  */
 
 import fetch from "node-fetch"
@@ -12,38 +11,37 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     const apiKey = 'sasuke'
 
     if (!text.trim()) {
-        let txt = `╭─〔 ♆ *𝚂𝚃𝙸𝙲𝙺𝙴𝚁 𝙳𝙾𝚆𝙽𝙻𝙾𝙰𝙳* ♆ 〕─╮\n│\n│ 🔍 *𝚄𝚂𝙾 𝙲𝙾𝚁𝚁𝙴𝙲𝚃𝙾:* \n│ ${usedPrefix + command} [nombre]\n│\n│ 🌑 "ɪɴᴠᴏᴄᴀɴᴅᴏ sᴛɪᴄᴋᴇʀs ᴅᴇʟ ᴘᴀǫᴜᴇᴛᴇ"\n╰────────────────────────────╯`
+        let txt = `╭─〔 ♆ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚂𝚃𝙸𝙲𝙺𝙴𝚁𝚂* ♆ 〕─╮\n│\n│ 🔍 *𝚄𝚂𝙾 𝙲𝙾𝚁𝚁𝙴𝙲𝚃𝙾:* \n│ ${usedPrefix + command} [nombre]\n│\n│ 🌑 "ɪɴᴠᴏᴄᴀɴᴅᴏ sᴛɪᴄᴋᴇʀs ᴅᴇʟ ᴘᴀǫᴜᴇᴛᴇ"\n╰────────────────────────────╯`
         return conn.reply(m.chat, txt, m)
     }
 
     if (m.react) await m.react('⏳')
 
     try {
-        // 1. Buscamos el paquete
-        let resSearch = await fetch(`https://api.evogb.org/stickerly/search?query=${encodeURIComponent(text)}&key=${apiKey}`)
-        let jsonSearch = await resSearch.json()
+        // 1. BUSCADOR USANDO API GATA
+        let searchRes = await fetch(`https://api.evogb.org/stickerly/search?query=${encodeURIComponent(text)}&key=${apiKey}`)
+        let searchJson = await searchRes.json()
 
-        if (!jsonSearch.status || !jsonSearch.resultados.length) {
+        if (!searchJson.status || !searchJson.resultados.length) {
             if (m.react) await m.react('❌')
             return conn.reply(m.chat, '❌ No encontré ningún paquete con ese nombre.', m)
         }
 
-        // Tomamos el primer resultado (el más relevante)
-        let packId = jsonSearch.resultados[0].url.split('/').pop()
-        
-        // 2. Obtenemos los stickers del paquete
-        let resPack = await fetch(`https://api.evogb.org/stickerly/pack?id=${packId}&key=${apiKey}`)
-        let jsonPack = await resPack.json()
+        // Seleccionamos el primer paquete encontrado
+        let pick = searchJson.resultados[0]
 
-        if (!jsonPack.status || !jsonPack.resultados.stickers) {
-            throw 'Error al obtener stickers'
+        // 2. DESCARGA USANDO API DELIRIUS
+        const downloadRes = await fetch(`https://api.delirius.store/download/stickerly?url=${encodeURIComponent(pick.url)}`)
+        const downloadJson = await downloadRes.json()
+
+        if (!downloadJson.status || !downloadJson.data.stickers) {
+            throw 'Error en la descarga'
         }
 
-        let stickers = jsonPack.resultados.stickers
-        // Limitamos a 6 stickers para no saturar/banear el bot
-        let limit = stickers.slice(0, 6)
+        let stickers = downloadJson.data.stickers
+        let limit = stickers.slice(0, 6) // Limitamos a 6 stickers
 
-        await conn.reply(m.chat, `📦 *Paquete:* ${jsonSearch.resultados[0].name}\n✨ *Enviando 6 stickers...*\n\n⚡ *By: Barboza Developer*`, m)
+        await conn.reply(m.chat, `📦 *Paquete:* ${pick.name}\n✨ *Enviando 6 stickers...*\n\n⚡ *By: Barboza Developer*`, m)
 
         for (let stickerUrl of limit) {
             await conn.sendMessage(m.chat, { sticker: { url: stickerUrl } }, { quoted: m })
@@ -58,8 +56,8 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 }
 
-handler.help = ['sget']
+handler.help = ['stickerly']
 handler.tags = ['sticker']
-handler.command = /^(sget|stickerlydl|stickers2)$/i
+handler.command = /^(stickerly2|sget|stisearch)$/i
 
 export default handler
