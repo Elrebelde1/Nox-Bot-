@@ -58,6 +58,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
 handler.help = ['stickerly']
 handler.tags = ['sticker']
-handler.command = /^(stickerly2|sget|stisearch)$/i
+handler.command = /^(stickerly2|sget|sticker2)$/i
 
 export default handler
