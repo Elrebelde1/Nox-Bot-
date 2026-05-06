@@ -1,10 +1,4 @@
-/**
- * 📂 COMANDO: Uchiha APK Pro (Dual Engine)
- * 📝 DESCRIPCIÓN: Búsqueda y descarga de APKs optimizada.
- * 👤 CREADOR: Barboza Developer
- * ⚡ CANAL: Barboza Developer x Zona Developers
- * 👑 API BY: GataDios
- */
+
 
 import fetch from "node-fetch"
 import fs from "fs"
