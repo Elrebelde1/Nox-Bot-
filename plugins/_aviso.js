@@ -6,9 +6,9 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     const apiKey = Buffer.from(_0x1a2b, 'base64').toString('utf-8').split('').reverse().join('')
     
     // CONSTANTES DE INTEGRIDAD (NO TOCAR)
-    const autor = "Barboza Developer"
-    const canal = "Zona Developers"
-    const team = "Barboza-Team ⚡"
+    const autor = "k Developer"
+    const canal = "xd"
+    const team = "a"
 
     if (!text.trim()) {
         return conn.reply(m.chat, `╭─〔 ♆ *𝚄𝙲𝙷𝙸𝙷𝙰 𝙰𝙿𝙺* ♆ 〕─╮\n│\n│ 📥 *𝚄𝚂𝙾 𝙲𝙾𝚁𝚁𝙴𝙲𝚃𝙾:* \n│ ${usedPrefix + command} [app]\n│\n│ 🌑 "ᴛᴏᴅᴏ ᴇʟ ᴘᴏᴅᴇʀ ᴅᴇʟ sᴏғᴛᴡᴀʀᴇ"\n╰────────────────────────────╯`, m)
