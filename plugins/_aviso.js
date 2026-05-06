@@ -1,4 +1,9 @@
-
+/**
+ * 📂 COMANDO: Uchiha APK Pro (Dual Engine)
+ * 📝 DESCRIPCIÓN: Búsqueda y descarga de APKs optimizada.
+ * 👤 CREADOR: Barboza Developer
+ * ⚡ CANAL: Barboza Developer x Zona Developers
+ * 👑 API BY: GataDios
  */
 
 import fetch from "node-fetch"
@@ -75,6 +80,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
 handler.help = ['apk']
 handler.tags = ['downloader']
-handler.command = /^(apk1|dapk|modapk)$/i
+handler.command = /^(apk|dapk|modapk)$/i
 
 export default handler
