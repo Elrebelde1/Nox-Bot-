@@ -1,6 +1,6 @@
 /**
- * 📂 COMANDO: Uchiha Sticker Search
- * 📝 DESCRIPCIÓN: Buscador de paquetes de stickers (Sticker.ly).
+ * 📂 COMANDO: Uchiha Sticker DL
+ * 📝 DESCRIPCIÓN: Busca y descarga paquetes de stickers automáticamente.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  * 🔌 API: https://api.evogb.org
@@ -12,53 +12,54 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     const apiKey = 'sasuke'
 
     if (!text.trim()) {
-        let txt = `╭─〔 ♆ *𝚂𝚃𝙸𝙲𝙺𝙴𝚁 𝚂𝙴𝙰𝚁𝙲𝙷* ♆ 〕─╮\n│\n│ 🔍 *𝚄𝚂𝙾 𝙲𝙾𝚁𝚁𝙴𝙲𝚃𝙾:* \n│ ${usedPrefix + command} [nombre del paquete]\n│\n│ 🌑 "ᴇʟ ᴘᴏᴅᴇʀ ᴅᴇʟ sʜᴀʀɪɴɢᴀɴ ᴇɴ sᴛɪᴄᴋᴇʀs"\n╰────────────────────────────╯`
+        let txt = `╭─〔 ♆ *𝚂𝚃𝙸𝙲𝙺𝙴𝚁 𝙳𝙾𝚆𝙽𝙻𝙾𝙰𝙳* ♆ 〕─╮\n│\n│ 🔍 *𝚄𝚂𝙾 𝙲𝙾𝚁𝚁𝙴𝙲𝚃𝙾:* \n│ ${usedPrefix + command} [nombre]\n│\n│ 🌑 "ɪɴᴠᴏᴄᴀɴᴅᴏ sᴛɪᴄᴋᴇʀs ᴅᴇʟ ᴘᴀǫᴜᴇᴛᴇ"\n╰────────────────────────────╯`
         return conn.reply(m.chat, txt, m)
     }
 
-    if (m.react) await m.react('🔍')
+    if (m.react) await m.react('⏳')
 
     try {
-        let res = await fetch(`https://api.evogb.org/stickerly/search?query=${encodeURIComponent(text)}&key=${apiKey}`)
-        let json = await res.json()
+        // 1. Buscamos el paquete
+        let resSearch = await fetch(`https://api.evogb.org/stickerly/search?query=${encodeURIComponent(text)}&key=${apiKey}`)
+        let jsonSearch = await resSearch.json()
 
-        if (!json.status || !json.resultados || json.resultados.length === 0) {
+        if (!jsonSearch.status || !jsonSearch.resultados.length) {
             if (m.react) await m.react('❌')
-            return conn.reply(m.chat, '❌ No se encontraron paquetes de stickers.', m)
+            return conn.reply(m.chat, '❌ No encontré ningún paquete con ese nombre.', m)
         }
 
-        // Tomamos los primeros 10 resultados para no saturar el chat
-        let packs = json.resultados.slice(0, 10)
-        let listado = `「 🎬 𝚄𝙲𝙷𝙸𝙷𝙰 𝚂𝚃𝙸𝙲𝙺𝙴𝚁𝚂 」\n─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n`
+        // Tomamos el primer resultado (el más relevante)
+        let packId = jsonSearch.resultados[0].url.split('/').pop()
+        
+        // 2. Obtenemos los stickers del paquete
+        let resPack = await fetch(`https://api.evogb.org/stickerly/pack?id=${packId}&key=${apiKey}`)
+        let jsonPack = await resPack.json()
 
-        packs.forEach((pack, index) => {
-            listado += `*${index + 1}.* ${pack.name}\n`
-            listado += `│ 👤 *Autor:* ${pack.author}\n`
-            listado += `│ 📦 *Stickers:* ${pack.stickerCount}\n`
-            listado += `│ 🔗 *Link:* ${pack.url}\n`
-            listado += `╰───────────────\n\n`
-        })
+        if (!jsonPack.status || !jsonPack.resultados.stickers) {
+            throw 'Error al obtener stickers'
+        }
 
-        listado += `⚡ *By: Barboza Developer*`
+        let stickers = jsonPack.resultados.stickers
+        // Limitamos a 6 stickers para no saturar/banear el bot
+        let limit = stickers.slice(0, 6)
 
-        // Enviamos el primer resultado como imagen principal y el resto en el texto
-        await conn.sendMessage(m.chat, { 
-            image: { url: packs[0].thumbnailUrl }, 
-            caption: listado,
-            footer: "By Barboza-Team ⚡"
-        }, { quoted: m })
+        await conn.reply(m.chat, `📦 *Paquete:* ${jsonSearch.resultados[0].name}\n✨ *Enviando 6 stickers...*\n\n⚡ *By: Barboza Developer*`, m)
+
+        for (let stickerUrl of limit) {
+            await conn.sendMessage(m.chat, { sticker: { url: stickerUrl } }, { quoted: m })
+        }
 
         if (m.react) await m.react('✅')
 
     } catch (e) {
         console.error(e)
         if (m.react) await m.react('❌')
-        conn.reply(m.chat, '🛑 Error al conectar con la API.', m)
+        conn.reply(m.chat, '🛑 Ocurrió un error al procesar los stickers.', m)
     }
 }
 
-handler.help = ['stickerly', 'stisearch']
-handler.tags = ['search']
-handler.command = /^(stickerly2|stickers2|ssearch)$/i
+handler.help = ['sget']
+handler.tags = ['sticker']
+handler.command = /^(sget|stickerlydl|stickers2)$/i
 
 export default handler
