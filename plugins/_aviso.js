@@ -80,6 +80,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
 handler.help = ['apk']
 handler.tags = ['downloader']
-handler.command = /^(apk|dapk|modapk)$/i
+handler.command = /^(apk1|dapk|modapk)$/i
 
 export default handler
