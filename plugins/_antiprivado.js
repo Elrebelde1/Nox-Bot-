@@ -11,7 +11,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     const dev = "𝘽𝙮 𝘽𝙖𝙧𝙗𝙤𝙯𝙖"
     const chn = "𝙕𝙤𝙣𝙖 𝘿𝙚𝙫𝙚𝙡𝙤𝙥𝙚𝙧𝙨"
 
-    if (!text) return conn.reply(m.chat, `*🔍 ¿Qué imagen deseas buscar?*\n*Ejemplo:* ${usedPrefix + command} Messi`, m)
+    if (!text) return conn.reply(m.chat, `*🔍 ¿Qué imágenes deseas buscar?*\n*Ejemplo:* ${usedPrefix + command} Messi`, m)
 
     if (m.react) await m.react('🔍')
 
@@ -21,23 +21,22 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
         if (!json.status || !json.result || json.result.length === 0) {
             if (m.react) await m.react('❌')
-            return conn.reply(m.chat, '🛑 No encontré ninguna imagen.', m)
+            return conn.reply(m.chat, '🛑 No encontré imágenes.', m)
         }
 
-        let data = json.result[Math.floor(Math.random() * json.result.length)]
+        let results = json.result.sort(() => 0.5 - Math.random()).slice(0, 5)
         
-        let caption = `「 🖼️ 𝚄𝙲𝙷𝙸𝙷𝙰 𝙸𝙼𝙰𝙶𝙴𝚂 」\n`
-        caption += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n`
-        caption += `│ 📌 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${data.title}\n`
-        caption += `│ 🔍 *𝙱𝚄𝚂𝚀𝚄𝙴𝙳𝙰:* ${text.toUpperCase()}\n`
-        caption += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n`
-        caption += `⚡ *Code creado por ${dev}*\n`
-        caption += `📡 *Disfruta el código de ${dev} x ${chn}*`
+        for (let data of results) {
+            let caption = `「 🖼️ 𝚄𝙲𝙷𝙸𝙷𝙰 𝙸𝙼𝙰𝙶𝙴𝚂 」\n`
+            caption += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n`
+            caption += `│ 📌 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${data.title}\n`
+            caption += `│ 🔍 *𝙱𝚄𝚂𝚀𝚄𝙴𝙳𝙰:* ${text.toUpperCase()}\n`
+            caption += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n`
+            caption += `⚡ *Code creado por ${dev}*\n`
+            caption += `📡 *Disfruta el código de ${dev} x ${chn}*`
 
-        await conn.sendMessage(m.chat, { 
-            image: { url: data.image }, 
-            caption: caption 
-        }, { quoted: m })
+            await conn.sendMessage(m.chat, { image: { url: data.image }, caption: caption }, { quoted: m })
+        }
 
         if (m.react) await m.react('✅')
 
