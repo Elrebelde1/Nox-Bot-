@@ -1,62 +1,61 @@
-import fetch from "node-fetch";
+/**
+ * 📂 COMANDO: YouTube Search
+ * 📝 DESCRIPCIÓN: Búsqueda de videos en YouTube.
+ * 👤 CREADOR: Barboza Developer
+ * ⚡ CANAL: Barboza Developer x Zona Developers
+ * 🔌 API: https://api.evogb.org
+ */
 
-let handler = async (m, { conn, text, usedPrefix, command }) => {
-  if (!text || !text.trim()) {
-    return m.reply(`📌 *Uso correcto:*\n${usedPrefix + command} <término de búsqueda>\n📍 *Ejemplo:* ${usedPrefix + command} Twice`);
-  }
+import axios from 'axios'
 
-  const query = text.trim();
-  // Nueva URL de la API de Delirius
-  const url = `https://api.delirius.store/search/ytsearch?q=${encodeURIComponent(query)}`;
+var handler = async (m, { conn, text, usedPrefix, command }) => {
+    let query = text ? text.trim() : (m.quoted?.text || null)
+    if (!query) return conn.reply(m.chat, `✨ *Ingresa lo que deseas buscar*\n\n> *Ejemplo:* ${usedPrefix + command} Lupita`, m)
 
-  try {
-    const res = await fetch(url);
-    const json = await res.json();
+    await m.react('🔍')
 
-    // Verificación basada en la estructura de la API de Delirius (status y data)
-    if (!json.status || !json.data || json.data.length === 0) {
-      return m.reply("❌ No se encontraron resultados.");
+    try {
+        const _0x4a1b = 'ZWt1c2Fz' 
+        const key = Buffer.from(_0x4a1b, 'base64').toString('utf-8').split('').reverse().join('')
+
+        const { data } = await axios.get(`https://api.evogb.org/search/yt?query=${encodeURIComponent(query)}&key=${key}`)
+
+        if (!data.status || !data.result.length) {
+            await m.react('❌')
+            return m.reply('⚠️ *No se encontraron resultados.*')
+        }
+
+        let ui = `┏━━━━━━━━━━━━━━━━┓\n`
+        ui += `┃   🎥 *YOUTUBE SEARCH* ┃\n`
+        ui += `┗━━━━━━━━━━━━━━━━┛\n\n`
+
+        data.result.slice(0, 6).forEach((vid, i) => {
+            ui += `*${i + 1}.* ${vid.title}\n`
+            ui += `👤 *Autor:* ${vid.autor}\n`
+            ui += `⏱️ *Duración:* ${vid.duration}\n`
+            ui += `👁️ *Vistas:* ${vid.views}\n`
+            ui += `🔗 *Link:* ${vid.url}\n\n`
+        })
+
+        ui += `━━━━━━━━━━━━━━━━━━━━\n`
+        ui += `⚡ *By: Barboza Developer*\n`
+        ui += `🌐 *Zona Developers*`
+
+        await conn.sendMessage(m.chat, { 
+            image: { url: data.result[0].banner }, 
+            caption: ui 
+        }, { quoted: m })
+
+        await m.react('✅')
+
+    } catch (e) {
+        await m.react('❌')
+        m.reply('⚠️ *Error al conectar con la API de YouTube.*')
     }
+}
 
-    // Tomamos los primeros 5 resultados
-    const videos = json.data.slice(0, 5);
+handler.help = ['yts', 'youtube']
+handler.tags = ['search']
+handler.command = /^(yts|ytsearch|youtube|yt)$/i
 
-    for (const video of videos) {
-      // Ajuste de variables según el JSON de Delirius
-      const caption = `
-╭─🎶 *Sasuke Bot - YouTube Search* 🎶─╮
-│ 🎵 *Título:* ${video.title}
-│ 👤 *Canal:* ${video.author.name}
-│ ⏱️ *Duración:* ${video.duration}
-│ 📅 *Publicado:* ${video.publishedAt}
-│ 👁️ *Vistas:* ${video.views.toLocaleString()}
-│ 🔗 *Enlace:* ${video.url}
-│
-│ 🎧 *Para descargar:*
-│ ${usedPrefix}ytmp3 ${video.url}
-│ ${usedPrefix}ytmp4 ${video.url}
-╰──────────────────────────────────╯
-
-> © Código Adaptado de Delirius API
-`;
-
-      await conn.sendMessage(
-        m.chat,
-        { 
-          image: { url: video.image || video.thumbnail }, 
-          caption 
-        },
-        { quoted: m }
-      );
-    }
-  } catch (e) {
-    console.error(e);
-    m.reply("❌ Ocurrió un error al conectar con la API de Delirius.");
-  }
-};
-
-handler.help = ["ytsearch", "yts <texto>"];
-handler.tags = ["búsquedas"];
-handler.command = ["ytsearch", "yts"];
-
-export default handler;
+export default handler
