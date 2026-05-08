@@ -1,16 +1,54 @@
-export async function before(m, { conn, isOwner, isROwner }) {
-  // Ignorar si el mensaje es del propio bot o si es en un grupo
-  if (m.isBaileys && m.fromMe) return !0;
-  if (m.isGroup) return !1;
-  if (!m.message) return !0;
+/**
+ * 📂 COMANDO: Uchiha Google Image
+ * 📝 DESCRIPCIÓN: Buscador de imágenes de Google con visualización aleatoria.
+ * 👤 CREADOR: Barboza Developer
+ * ⚡ CANAL: Barboza Developer x Zona Developers
+ */
 
-  const bot = global.db.data.settings[this.user.jid] || {};
+import fetch from "node-fetch"
 
-  // Si el antiPrivate está activo y quien escribe NO es el dueño, bloquear.
-  if (bot.antiPrivate && !isOwner && !isROwner) {
-    await this.updateBlockStatus(m.chat, 'block');
-    return !0;
-  }
+const handler = async (m, { conn, text, usedPrefix, command }) => {
+    const dev = "𝘽𝙮 𝘽𝙖𝙧𝙗𝙤𝙯𝙖"
+    const chn = "𝙕𝙤𝙣𝙖 𝘿𝙚𝙫𝙚𝙡𝙤𝙥𝙚𝙧𝙨"
 
-  return !1;
+    if (!text) return conn.reply(m.chat, `*🔍 ¿Qué imagen deseas buscar?*\n*Ejemplo:* ${usedPrefix + command} Messi`, m)
+
+    if (m.react) await m.react('🔍')
+
+    try {
+        let res = await fetch(`https://api.evogb.org/search/googleimage?query=${encodeURIComponent(text)}&key=sasuke`)
+        let json = await res.json()
+
+        if (!json.status || !json.result || json.result.length === 0) {
+            if (m.react) await m.react('❌')
+            return conn.reply(m.chat, '🛑 No encontré ninguna imagen.', m)
+        }
+
+        let data = json.result[Math.floor(Math.random() * json.result.length)]
+        
+        let caption = `「 🖼️ 𝚄𝙲𝙷𝙸𝙷𝙰 𝙸𝙼𝙰𝙶𝙴𝚂 」\n`
+        caption += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n`
+        caption += `│ 📌 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${data.title}\n`
+        caption += `│ 🔍 *𝙱𝚄𝚂𝚀𝚄𝙴𝙳𝙰:* ${text.toUpperCase()}\n`
+        caption += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n`
+        caption += `⚡ *Code creado por ${dev}*\n`
+        caption += `📡 *Disfruta el código de ${dev} x ${chn}*`
+
+        await conn.sendMessage(m.chat, { 
+            image: { url: data.image }, 
+            caption: caption 
+        }, { quoted: m })
+
+        if (m.react) await m.react('✅')
+
+    } catch (error) {
+        if (m.react) await m.react('❌')
+        conn.reply(m.chat, '⚠️ Error en el servidor.', m)
+    }
 }
+
+handler.help = ['imagen <texto>']
+handler.tags = ['internet']
+handler.command = /^(googleimage2|img2|imagen|foto)$/i
+
+export default handler
