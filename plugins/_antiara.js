@@ -1,6 +1,6 @@
 /**
- * 📂 COMANDO: Uchiha AI Image Single
- * 📝 DESCRIPCIÓN: Generador de una imagen con IA con diseño ninja.
+ * 📂 COMANDO: Uchiha AI Image Generator
+ * 📝 DESCRIPCIÓN: Generador de imágenes artísticas con IA (nanobanana).
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  * 🔗 API: https://api.evogb.org/ai/nanobanana
@@ -15,7 +15,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     const _0x5c4a = ["\x73\x61\x73\x75\x6b\x65"] 
     const key = _0x5c4a[0]
 
-    if (!text) return conn.reply(m.chat, `*🏮 [ SISTEMA UCHIHA ]*\n\n*Ingresa el concepto para generar la imagen.*\n*Ejemplo:* ${usedPrefix + command} Itachi Uchiha realismo`, m)
+    if (!text) return conn.reply(m.chat, `*🏮 [ SISTEMA UCHIHA ]*\n\n*Escribe el prompt para la IA.*\n*Ejemplo:* ${usedPrefix + command} Cyberpunk City`, m)
 
     if (m.react) await m.react('🧬')
 
@@ -24,15 +24,11 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         
         if (!res.ok) throw new Error()
 
-        let imageUrl
         const contentType = res.headers.get('content-type')
+        let imageUrl
 
         if (contentType && contentType.includes('application/json')) {
             let json = await res.json()
-            if (!json.status || !json.result) {
-                if (m.react) await m.react('❌')
-                return conn.reply(m.chat, '🛑 *Error:* No se pudo generar la imagen.', m)
-            }
             imageUrl = json.result
         } else {
             imageUrl = res.url 
@@ -42,11 +38,11 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         txt += `┃   🏮  *UCHIHA AI VISION* 🏮\n`
         txt += `┣━━━━━━━━━━━━━━━━━━┛\n`
         txt += `┃\n`
-        txt += `┃ 📝 *Pʀᴏᴍᴘᴛ:* \n`
+        txt += `┃ 📝 *Dᴇsᴄʀɪᴘᴄɪᴏ́ɴ:* \n`
         txt += `┃ » _${text}_ \n`
         txt += `┃\n`
         txt += `┃ ⚙️ *Esᴛᴀᴅᴏ:* 🟢 Finalizado\n`
-        txt += `┃ 🧫 *Núᴄʟᴇᴏ:* Nanobanana API\n`
+        txt += `┃ 🧪 *Mᴏᴅᴇʟᴏ:* Nanobanana v3\n`
         txt += `┃\n`
         txt += `┣━━━━━━━━━━━━━━━━━━┓\n`
         txt += `┃ ⚡ *${dev}*\n`
@@ -62,13 +58,12 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
     } catch (error) {
         if (m.react) await m.react('❌')
-        console.error(error)
-        conn.reply(m.chat, '🛑 *Error en la Matrix:* Falló la conexión con la IA.', m)
+        conn.reply(m.chat, '🛑 *Error en la Matrix:* No se pudo renderizar la imagen.', m)
     }
 }
 
-handler.help = ['airender <texto>']
+handler.help = ['aiimage <texto>']
 handler.tags = ['ai']
-handler.command = /^(airender|iaimg|gen)$/i
+handler.command = /^(aiimage|genimg|iaimg)$/i
 
 export default handler
