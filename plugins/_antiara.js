@@ -1,9 +1,9 @@
 /**
- * 📂 COMANDO: Uchiha Global Downloader PRO
- * 📝 DESCRIPCIÓN: Scraper directo de VidsSave con limpieza de URL.
+ * 📂 COMANDO: Uchiha AI Image Burst
+ * 📝 DESCRIPCIÓN: Generador de 6 imágenes con IA en ráfaga.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
- * 🔗 SOURCE: https://vidssave.com
+ * 🔗 API: https://api.evogb.org/ai/nanobanana
  */
 
 import fetch from "node-fetch"
@@ -11,63 +11,58 @@ import fetch from "node-fetch"
 const handler = async (m, { conn, text, usedPrefix, command }) => {
     const dev = "𝘽𝙮 𝘽𝙖𝙧𝙗𝙤𝙯𝙖"
     const chn = "𝙕𝙤𝙣𝙖 𝘿𝙚𝙫𝙚𝙡𝙤𝙥𝙚𝙧𝙨"
+    
+    const _0x5c4a = ["\x73\x61\x73\x75\x6b\x65"] 
+    const key = _0x5c4a[0]
 
-    // Limpieza de texto (extrae solo el link si el usuario pega todo el mensaje de TikTok)
-    const urlRegex = /https?:\/\/[^\s]+/g
-    const urlMatch = text.match(urlRegex)
-    const inputUrl = urlMatch ? urlMatch[0] : null
+    if (!text) return conn.reply(m.chat, `*🏮 [ SISTEMA UCHIHA ]*\n\n*Ingresa el concepto para generar 6 variantes.*\n*Ejemplo:* ${usedPrefix + command} Itachi Uchiha realismo`, m)
 
-    if (!inputUrl) return conn.reply(m.chat, `*✨ Ingresa un link válido*\n*Ejemplo:* ${usedPrefix + command} https://vt.tiktok.com/ZS...`, m)
-
-    if (m.react) await m.react('⏳')
+    if (m.react) await m.react('🧬')
 
     try {
-        const response = await fetch("https://vidssave.com/ajax.php", {
-            method: "POST",
-            headers: {
-                "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-                "user-agent": "Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-                "referer": "https://vidssave.com/",
-                "x-requested-with": "XMLHttpRequest"
-            },
-            body: `url=${encodeURIComponent(inputUrl)}`
-        })
+        let count = 6
+        for (let i = 0; i < count; i++) {
+            let res = await fetch(`https://api.evogb.org/ai/nanobanana?prompt=${encodeURIComponent(text + ' ' + Math.random())}&key=${key}`)
+            
+            let imageUrl
+            const contentType = res.headers.get('content-type')
 
-        const data = await response.json()
+            if (contentType && contentType.includes('application/json')) {
+                let json = await res.json()
+                imageUrl = json.result
+            } else {
+                imageUrl = res.url 
+            }
 
-        if (!data || data.status !== "success" || !data.links || data.links.length === 0) {
-            if (m.react) await m.react('❌')
-            return conn.reply(m.chat, '🛑 El servidor no pudo procesar este link. Intenta con otro.', m)
+            let txt = `┏━━━━━━━━━━━━━━━━━━┓\n`
+            txt += `┃   🏮  *UCHIHA AI BURST* 🏮\n`
+            txt += `┣━━━━━━━━━━━━━━━━━━┛\n`
+            txt += `┃\n`
+            txt += `┃ 📝 *Pʀᴏᴍᴘᴛ:* ${text}\n`
+            txt += `┃ 🖼️ *Vᴀʀɪᴀɴᴛᴇ:* ${i + 1} / ${count}\n`
+            txt += `┃ ⚙️ *Esᴛᴀᴅᴏ:* 🟢 Inyectado\n`
+            txt += `┃\n`
+            txt += `┣━━━━━━━━━━━━━━━━━━┓\n`
+            txt += `┃ ⚡ *${dev}*\n`
+            txt += `┃ 📡 *${chn}*\n`
+            txt += `┗━━━━━━━━━━━━━━━━━━┛`
+
+            await conn.sendMessage(m.chat, { 
+                image: { url: imageUrl }, 
+                caption: txt 
+            }, { quoted: m })
         }
 
-        // Selecciona la mejor calidad disponible
-        const videoUrl = data.links[0].url
-        const titulo = data.title || "Uchiha Video"
-
-        let caption = `「 📥 𝚄𝙲𝙷𝙸𝙷𝙰 𝙳𝙾𝚆𝙽𝙻𝙾𝙰𝙳𝙴𝚁 」\n`
-        caption += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n`
-        caption += `│ 📌 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${titulo}\n`
-        caption += `│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽:* ${data.duration || 'N/A'}\n`
-        caption += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n`
-        caption += `⚡ *Code creado por ${dev}*\n`
-        caption += `📡 *Disfruta el código de ${dev} x ${chn}*`
-
-        await conn.sendMessage(m.chat, { 
-            video: { url: videoUrl }, 
-            caption: caption 
-        }, { quoted: m })
-
-        if (m.react) await m.react('✅')
+        if (m.react) await m.react('✨')
 
     } catch (error) {
         if (m.react) await m.react('❌')
-        console.error(error)
-        conn.reply(m.chat, '⚠️ Error de conexión. El sitio vidssave.com podría estar caído o bloqueando la IP.', m)
+        conn.reply(m.chat, '🛑 *Fallo de Red:* No se pudo completar la ráfaga de imágenes.', m)
     }
 }
 
-handler.help = ['dl <url>']
-handler.tags = ['downloader']
-handler.command = /^(vidsave|dl|descargar|global)$/i
+handler.help = ['airender <texto>']
+handler.tags = ['ai']
+handler.command = /^(airender|iaimg6|gen6)$/i
 
 export default handler
