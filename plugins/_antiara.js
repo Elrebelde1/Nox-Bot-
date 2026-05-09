@@ -1,6 +1,6 @@
 /**
- * 📂 COMANDO: Uchiha AI Image Burst
- * 📝 DESCRIPCIÓN: Generador de 6 imágenes con IA en ráfaga.
+ * 📂 COMANDO: Uchiha AI Image Single
+ * 📝 DESCRIPCIÓN: Generador de una imagen con IA con diseño ninja.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  * 🔗 API: https://api.evogb.org/ai/nanobanana
@@ -15,54 +15,60 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     const _0x5c4a = ["\x73\x61\x73\x75\x6b\x65"] 
     const key = _0x5c4a[0]
 
-    if (!text) return conn.reply(m.chat, `*🏮 [ SISTEMA UCHIHA ]*\n\n*Ingresa el concepto para generar 6 variantes.*\n*Ejemplo:* ${usedPrefix + command} Itachi Uchiha realismo`, m)
+    if (!text) return conn.reply(m.chat, `*🏮 [ SISTEMA UCHIHA ]*\n\n*Ingresa el concepto para generar la imagen.*\n*Ejemplo:* ${usedPrefix + command} Itachi Uchiha realismo`, m)
 
     if (m.react) await m.react('🧬')
 
     try {
-        let count = 6
-        for (let i = 0; i < count; i++) {
-            let res = await fetch(`https://api.evogb.org/ai/nanobanana?prompt=${encodeURIComponent(text + ' ' + Math.random())}&key=${key}`)
-            
-            let imageUrl
-            const contentType = res.headers.get('content-type')
+        let res = await fetch(`https://api.evogb.org/ai/nanobanana?prompt=${encodeURIComponent(text)}&key=${key}`)
+        
+        if (!res.ok) throw new Error()
 
-            if (contentType && contentType.includes('application/json')) {
-                let json = await res.json()
-                imageUrl = json.result
-            } else {
-                imageUrl = res.url 
+        let imageUrl
+        const contentType = res.headers.get('content-type')
+
+        if (contentType && contentType.includes('application/json')) {
+            let json = await res.json()
+            if (!json.status || !json.result) {
+                if (m.react) await m.react('❌')
+                return conn.reply(m.chat, '🛑 *Error:* No se pudo generar la imagen.', m)
             }
-
-            let txt = `┏━━━━━━━━━━━━━━━━━━┓\n`
-            txt += `┃   🏮  *UCHIHA AI BURST* 🏮\n`
-            txt += `┣━━━━━━━━━━━━━━━━━━┛\n`
-            txt += `┃\n`
-            txt += `┃ 📝 *Pʀᴏᴍᴘᴛ:* ${text}\n`
-            txt += `┃ 🖼️ *Vᴀʀɪᴀɴᴛᴇ:* ${i + 1} / ${count}\n`
-            txt += `┃ ⚙️ *Esᴛᴀᴅᴏ:* 🟢 Inyectado\n`
-            txt += `┃\n`
-            txt += `┣━━━━━━━━━━━━━━━━━━┓\n`
-            txt += `┃ ⚡ *${dev}*\n`
-            txt += `┃ 📡 *${chn}*\n`
-            txt += `┗━━━━━━━━━━━━━━━━━━┛`
-
-            await conn.sendMessage(m.chat, { 
-                image: { url: imageUrl }, 
-                caption: txt 
-            }, { quoted: m })
+            imageUrl = json.result
+        } else {
+            imageUrl = res.url 
         }
+
+        let txt = `┏━━━━━━━━━━━━━━━━━━┓\n`
+        txt += `┃   🏮  *UCHIHA AI VISION* 🏮\n`
+        txt += `┣━━━━━━━━━━━━━━━━━━┛\n`
+        txt += `┃\n`
+        txt += `┃ 📝 *Pʀᴏᴍᴘᴛ:* \n`
+        txt += `┃ » _${text}_ \n`
+        txt += `┃\n`
+        txt += `┃ ⚙️ *Esᴛᴀᴅᴏ:* 🟢 Finalizado\n`
+        txt += `┃ 🧫 *Núᴄʟᴇᴏ:* Nanobanana API\n`
+        txt += `┃\n`
+        txt += `┣━━━━━━━━━━━━━━━━━━┓\n`
+        txt += `┃ ⚡ *${dev}*\n`
+        txt += `┃ 📡 *${chn}*\n`
+        txt += `┗━━━━━━━━━━━━━━━━━━┛`
+
+        await conn.sendMessage(m.chat, { 
+            image: { url: imageUrl }, 
+            caption: txt 
+        }, { quoted: m })
 
         if (m.react) await m.react('✨')
 
     } catch (error) {
         if (m.react) await m.react('❌')
-        conn.reply(m.chat, '🛑 *Fallo de Red:* No se pudo completar la ráfaga de imágenes.', m)
+        console.error(error)
+        conn.reply(m.chat, '🛑 *Error en la Matrix:* Falló la conexión con la IA.', m)
     }
 }
 
 handler.help = ['airender <texto>']
 handler.tags = ['ai']
-handler.command = /^(airender|iaimg6|gen6)$/i
+handler.command = /^(airender|iaimg|gen)$/i
 
 export default handler
