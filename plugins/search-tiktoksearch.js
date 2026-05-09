@@ -66,7 +66,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 };
 
-handler.command = /^(tiktoksearch|tts|tts_vid|tts_aud)$/i;
+handler.command = /^(tiktoksearch|tts_vid|tts_aud)$/i;
 export default handler;
 
 const tiktok = {
