@@ -1,6 +1,5 @@
 /**
  * 📂 COMANDO: Spotify Music Download
- * 📝 DESCRIPCIÓN: Descarga música de Spotify con estilo Uchiha.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  * 🔗 API: https://api.evogb.org/
@@ -9,11 +8,9 @@
 import fetch from 'node-fetch'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-    // Variables de identidad Barboza Dev
     const dev = "𝘽𝙮 𝘽𝙖𝙧𝙗𝙤𝙯𝙖"
     const chn = "𝙕𝙤𝙣𝙖 𝘿𝙚𝙫𝙚𝙡𝙤𝙥𝙚𝙧𝙨"
     
-    // Key Ofuscada para proteger el acceso
     const _0x1a2b = ["\x73\x61\x73\x75\x6b\x65"] 
     const key = _0x1a2b[0]
 
@@ -25,7 +22,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         let trackUrl = text
         const isUrl = text.match(/^(https?:\/\/)?(open\.spotify\.com|spotify\.link)\/.+$/gi)
 
-        // 1. Búsqueda si no es URL
         if (!isUrl) {
             const searchRes = await fetch(`https://api.evogb.org/search/spotify?query=${encodeURIComponent(text)}&key=${key}`)
             const searchData = await searchRes.json()
@@ -37,7 +33,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
             trackUrl = searchData.result[0].link
         }
 
-        // 2. Descarga y obtención de Datos
         const dlRes = await fetch(`https://api.evogb.org/dl/spotify?url=${encodeURIComponent(trackUrl)}&key=${key}`)
         const dlData = await dlRes.json()
 
@@ -48,7 +43,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
         const info = dlData.data
 
-        // 3. Diseño Visual (Uchiha Style)
         let txt = `┏━━━━━━━━━━━━━━━━━━┓\n`
         txt += `┃   🏮  *SPOTIFY UCHIHA* 🏮\n`
         txt += `┣━━━━━━━━━━━━━━━━━━┛\n`
@@ -63,13 +57,11 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         txt += `┃ 📡 *${chn}*\n`
         txt += `┗━━━━━━━━━━━━━━━━━━┛`
 
-        // Enviar Portada
         await conn.sendMessage(m.chat, { 
             image: { url: info.imageHD || info.image }, 
             caption: txt 
         }, { quoted: m })
 
-        // 4. Enviar Audio
         await conn.sendMessage(m.chat, { 
             audio: { url: info.url }, 
             mimetype: 'audio/mpeg', 
@@ -80,7 +72,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
     } catch (e) {
         if (m.react) await m.react('❌')
-        console.error(e)
         m.reply(`*❌ ERROR CRÍTICO:* \`${e.message}\``)
     }
 }
