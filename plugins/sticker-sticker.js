@@ -1,5 +1,5 @@
 /**
- * 📂 COMANDO: Uchiha Sticker Engine (Dynamic Crop)
+ * 📂 COMANDO: Uchiha Sticker Engine (Corte Perfecto)
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  */
@@ -16,16 +16,23 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
   let q = m.quoted ? m.quoted : m
   let mime = (q.msg || q).mimetype || q.mediaType || ''
   
-  // Lógica para detectar el formato en los argumentos (ej: .s 16:9)
+  // --- DEFINICIÓN DE FORMATOS Y FILTROS FFMPEG ---
   let ratio = args[0] || ''
   let filter = ''
 
-  if (ratio === '1:1') filter = `crop=w='min(iw,ih)':h='min(iw,ih)'`
-  else if (ratio === '16:9') filter = `crop=w='min(iw,ih*16/9)':h='min(ih,iw*9/16)'`
-  else if (ratio === '4:3') filter = `crop=w='min(iw,ih*4/3)':h='min(ih,iw*3/4)'`
-  else if (ratio === '3:2') filter = `crop=w='min(iw,ih*3/2)':h='min(ih,iw*2/3)'`
-  else if (ratio === '2:3') filter = `crop=w='min(iw,ih*2/3)':h='min(ih,iw*3/2)'`
-  else if (ratio === 'circle') filter = `format=yuva444p,geq=lum='p(x,y)':a='if(gt(hypot(x-w/2,y-h/2),min(w,h)/2),0,255)'`
+  if (ratio === '1:1') {
+    filter = `crop=w='min(iw,ih)':h='min(iw,ih)'` // Cuadrado perfecto
+  } else if (ratio === '16:9') {
+    filter = `crop=w='min(iw,ih*16/9)':h='min(ih,iw*9/16)'` // Panorámico (Cine)
+  } else if (ratio === '4:3') {
+    filter = `crop=w='min(iw,ih*4/3)':h='min(ih,iw*3/4)'` // TV Antigua / Estándar
+  } else if (ratio === '3:2') {
+    filter = `crop=w='min(iw,ih*3/2)':h='min(ih,iw*2/3)'` // Fotografía clásica
+  } else if (ratio === '2:3') {
+    filter = `crop=w='min(iw,ih*2/3)':h='min(ih,iw*3/2)'` // Vertical (Retrato)
+  } else if (ratio === 'circle') {
+    filter = `format=yuva444p,geq=lum='p(x,y)':a='if(gt(hypot(x-w/2,y-h/2),min(w,h)/2),0,255)'` // Redondo
+  }
 
   const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
   let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
@@ -44,7 +51,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
       let texto1 = packstickers.text1 || global.packsticker
       let texto2 = packstickers.text2 || global.packsticker2
 
-      // Generar sticker con o sin filtro
+      // Generar el sticker aplicando el filtro seleccionado
       stiker = await sticker(img, false, texto1, texto2, filter)
 
       if (!stiker) {
@@ -67,13 +74,14 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
       let txt = `╭─〔 ♆ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚂𝚃𝙸𝙲𝙺𝙴𝚁* ♆ 〕─╮\n`
       txt += `│\n`
       txt += `│ 💠 *ғᴏʀᴍᴀᴛᴏs ᴅɪsᴘᴏɴɪʙʟᴇs:* \n`
-      txt += `│ » ${usedPrefix + command} 1:1\n`
-      txt += `│ » ${usedPrefix + command} 16:9\n`
-      txt += `│ » ${usedPrefix + command} 4:3\n`
-      txt += `│ » ${usedPrefix + command} 3:2\n`
-      txt += `│ » ${usedPrefix + command} 2:3\n`
-      txt += `│ » ${usedPrefix + command} circle\n`
+      txt += `│ » ${usedPrefix + command} 1:1 (Cuadrado)\n`
+      txt += `│ » ${usedPrefix + command} 16:9 (Panorámico)\n`
+      txt += `│ » ${usedPrefix + command} 4:3 (Estándar TV)\n`
+      txt += `│ » ${usedPrefix + command} 3:2 (Foto Horizontal)\n`
+      txt += `│ » ${usedPrefix + command} 2:3 (Foto Vertical)\n`
+      txt += `│ » ${usedPrefix + command} circle (Círculo)\n`
       txt += `│\n`
+      txt += `│ 👁️ *ᴇɴᴠɪᴀ ᴏ ʀᴇᴘᴏɴᴅᴇ ᴀ ᴜɴᴀ ɪᴍᴀɢᴇɴ*\n`
       txt += `│ 🌑 "ʟᴀ ᴏsᴄᴜʀɪᴅᴀᴅ ᴇs ᴍɪ ɢᴜɪᴀ"\n`
       txt += `╰────────────────────────────╯`
 
@@ -92,7 +100,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
   }
 }
 
-handler.help = ['s <formato>', 'sticker <url>']
+handler.help = ['s <formato>']
 handler.tags = ['sticker']
 handler.command = /^(s|sticker|stiker)$/i
 
