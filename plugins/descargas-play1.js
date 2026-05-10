@@ -14,75 +14,83 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     const dev = "𝘽𝙮 𝘽𝙖𝙧𝙗𝙤𝙯𝙖"
     const chn = "𝙕𝙤𝙣𝙖 𝘿𝙚𝙫𝙚𝙡𝙤𝙥𝙚𝙧𝙨"
     
-    // Configuración Base64
     const b = (s) => Buffer.from(s, 'base64').toString('utf-8')
     const a = b("aHR0cHM6Ly9hcGkuZXZvZ2Iub3Jn")
     const k = b("c2FzdWtl")
 
-    if (!text) return conn.reply(m.chat, `*🏮 [ SISTEMA UCHIHA ]*\n\n*Ingresa el nombre o link de YouTube.*\n*Ejemplo:* ${usedPrefix + command} Hay Lupita`, m)
+    if (!text.trim()) {
+        let txt = `╭─〔 ♆ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴* ♆ 〕─╮\n│\n│ 🎬 *𝚄𝚂𝙾 𝙲𝙾𝚁𝚁𝙴𝙲𝚃𝙾:* \n│ ${usedPrefix + command} [nombre o link]\n│\n│ 🌑 "ʙᴜsᴄᴀ ᴛᴜ ᴅᴇsᴛɪɴᴏ ᴇɴ ʟᴀ ᴍᴜsɪᴄᴀ"\n╰────────────────────────────╯`
+        return await conn.sendMessage(m.chat, { 
+            image: { url: 'https://files.catbox.moe/t7uytz.png' }, 
+            caption: txt, 
+            footer: "By Barboza-Team ⚡"
+        }, { quoted: m })
+    }
 
-    // Lógica de descarga directa
-    const isAudio = /^(yta|ytmp3)$/i.test(command)
-    const isVideo = /^(ytv|ytmp4)$/i.test(command)
+    const isAudio = /^(yta|ytmp3|ytmp3doc)$/i.test(command)
+    const isVideo = /^(ytv|ytmp4|ytmp4doc)$/i.test(command)
 
     if (isAudio || isVideo) {
         if (m.react) await m.react('📥')
         try {
             const type = isAudio ? 'ytmp3' : 'ytmp4'
-            const res = await fetch(`${a}/dl/${type}?url=${encodeURIComponent(text)}&key=${k}`)
-            const json = await res.json()
+            let res = await fetch(`${a}/dl/${type}?url=${encodeURIComponent(text)}&key=${k}`)
+            let json = await res.json()
 
-            if (!json.status) throw new Error()
+            if (!json.status || !json.data.dl) throw 'Error'
+
+            const dlUrl = json.data.dl
+            const titulo = json.data.title || 'Uchiha-DL'
+
+            if (command.includes('doc')) {
+                const mime = isAudio ? 'audio/mpeg' : 'video/mp4'
+                const ext = isAudio ? 'mp3' : 'mp4'
+                return await conn.sendMessage(m.chat, { document: { url: dlUrl }, mimetype: mime, fileName: `${titulo}.${ext}` }, { quoted: m })
+            }
 
             if (isAudio) {
-                await conn.sendMessage(m.chat, { audio: { url: json.data.dl }, mimetype: 'audio/mpeg' }, { quoted: m })
+                return await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: 'audio/mpeg' }, { quoted: m })
             } else {
-                await conn.sendMessage(m.chat, { video: { url: json.data.dl }, caption: `✅ *Video:* ${json.data.title}` }, { quoted: m })
+                return await conn.sendMessage(m.chat, { video: { url: dlUrl }, caption: `✅ *Video:* ${titulo}` }, { quoted: m })
             }
-            if (m.react) await m.react('✅')
+
         } catch (e) {
             if (m.react) await m.react('❌')
-            return m.reply('🛑 Error en la extracción del video.')
+            return conn.reply(m.chat, `🛑 Error al procesar descarga.`, m)
         }
-        return 
     }
 
-    // Buscador principal (Play)
     try {
         if (m.react) await m.react('⏳')
         const search = await yts(text)
-        if (!search || !search.all.length) return m.reply('❌ Sin resultados.')
+        if (!search || !search.all.length) return conn.reply(m.chat, '❌ No hay resultados.', m)
 
         const v = search.videos[0]
-        const url = v.url
+        const videoUrl = v.url
 
-        let txt = `┏━━━━━━━━━━━━━━━━━━┓\n`
-        txt += `┃   🏮  *UCHIHA YOUTUBE* 🏮\n`
-        txt += `┣━━━━━━━━━━━━━━━━━━┛\n`
-        txt += `┃\n`
-        txt += `┃ 🎵 *Tɪ́ᴛᴜʟᴏ:* ${v.title}\n`
-        txt += `┃ 👤 *Cᴀɴᴀʟ:* ${v.author.name}\n`
-        txt += `┃ ⏱️ *Tɪᴇᴍᴘᴏ:* ${v.timestamp}\n`
-        txt += `┃\n`
-        txt += `┃ ⚙️ *Esᴛᴀᴅᴏ:* 🟢 Listo\n`
-        txt += `┃\n`
-        txt += `┣━━━━━━━━━━━━━━━━━━┓\n`
-        txt += `┃ ⚡ *${dev}*\n`
-        txt += `┃ 📡 *${chn}*\n`
-        txt += `┗━━━━━━━━━━━━━━━━━━┛\n\n`
-        txt += `> *Para descargar usa:*\n`
-        txt += `> *${usedPrefix}yta* (Audio)\n`
-        txt += `> *${usedPrefix}ytv* (Video)`
+        let info = `「 🎬 𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴 」\n`
+        info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n`
+        info += `│ 👤 *𝙲𝙰𝙽𝙰𝙻:* ${v.author.name}\n`
+        info += `│ 🎵 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${v.title}\n`
+        info += `│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽:* ${v.timestamp}\n`
+        info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n`
+        info += `*Seleccione una opción para descargar:*\n\n`
+        info += `> *${usedPrefix}yta* (Audio)\n`
+        info += `> *${usedPrefix}ytv* (Video)\n`
+        info += `> *${usedPrefix}ytmp3doc* (Doc MP3)\n`
+        info += `> *${usedPrefix}ytmp4doc* (Doc MP4)`
 
-        await conn.sendMessage(m.chat, { image: { url: v.thumbnail }, caption: txt }, { quoted: m })
-        if (m.react) await m.react('✨')
+        await conn.sendMessage(m.chat, { 
+            image: { url: v.thumbnail }, 
+            caption: info, 
+            footer: "By Barboza-Team ⚡"
+        }, { quoted: m })
+
+        if (m.react) await m.react('✅')
     } catch (e) {
         if (m.react) await m.react('❌')
     }
 }
 
-handler.help = ['play']
-handler.tags = ['dl']
-handler.command = /^(play|yta|ytmp3|ytv|ytmp4)$/i
-
+handler.command = /^(play|yta|ytmp3|ytv|ytmp4|ytmp3doc|ytmp4doc)$/i
 export default handler
