@@ -1,106 +1,61 @@
-import axios from "axios";
+import fetch from 'node-fetch';
 
-const handler = async (m, { conn, text, usedPrefix, command }) => {
-    // Manejador para los botones de la búsqueda
-    if (command === 'tts_vid' || command === 'tts_aud') {
-        // En tts_aud, el 'text' ahora es el ID del video para evitar el error 403
-        const target = text.split(' ')[0];
-        
-        try {
-            if (command === 'tts_vid') {
-                return await conn.sendMessage(m.chat, { video: { url: target }, caption: `✅ *Video en Alta Calidad (HD)*` }, { quoted: m });
-            } else {
-                // Si es audio, hacemos una petición rápida para obtener el link directo sin bloqueo
-                const res = await axios.get(`https://www.tikwm.com/api/?url=${target}`);
-                const musicUrl = res.data.data.music;
-                return await conn.sendMessage(m.chat, { 
-                    audio: { url: musicUrl }, 
-                    mimetype: 'audio/mp4', 
-                    fileName: 'tiktok.mp3' 
-                }, { quoted: m });
-            }
-        } catch (e) {
-            return m.reply("⚠️ *Error al obtener el archivo. Intenta de nuevo.*");
-        }
+const handler = async (m, { conn, text, command, usedPrefix }) => {
+  if (command === 'tt_vid' || command === 'tt_aud') {
+    const res = await fetch(`https://www.tikwm.com/api/?url=${text}`);
+    const json = await res.json();
+
+    if (command === 'tt_vid') {
+      const videoHd = json.data.hdplay || json.data.play; 
+      return await conn.sendMessage(m.chat, { video: { url: videoHd }, caption: `✅ *TIKTOK HD LISTO*` }, { quoted: m });
+    } else {
+      return await conn.sendMessage(m.chat, { audio: { url: json.data.music }, mimetype: 'audio/mp4', fileName: 'tiktok.mp3' }, { quoted: m });
     }
+  }
 
-    if (!text) return m.reply("🔍 *Por favor, ingresa un término de búsqueda.*");
+  if (!text) return conn.reply(m.chat, '❌ ¡Necesito un enlace de TikTok!', m);
 
-    try {
-        m.react("🔄");
-        let info = await tiktok.search(text);
-        
-        let videoAleatorio = Math.floor(Math.random() * info.length);
-        let { metadata, estadisticas, author, media, id } = info[videoAleatorio];
+  let cleanUrl = text.split('?')[0];
+  if (!cleanUrl.match(/(tiktok\.com\/|vt\.tiktok\.com\/)/i)) return conn.reply(m.chat, '🤔 Enlace no válido.', m);
 
-        let mensaje = `
-🎥 *Título:* ${metadata.titulo}
-⏳ *Duración:* ${metadata.duracion}s
-👤 *Autor:* ${author.name}
+  try {
+    const response = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(cleanUrl)}`);
+    const result = await response.json();
 
-📊 *Estadísticas:*
-👀 ${estadisticas.reproducciones} | ❤️ ${estadisticas.likes}
-`.trim();
+    if (!result || result.code !== 0 || !result.data) return conn.reply(m.chat, '❌ Error al descargar.', m);
 
-        // CONFIGURACIÓN DE BOTONES
-        const buttons = [
-            { buttonId: `${usedPrefix}tts ${text}`, buttonText: { displayText: '⏭️ Siguiente Video' }, type: 1 },
-            { buttonId: `${usedPrefix}tts_aud ${id}`, buttonText: { displayText: '🎵 Extraer Audio' }, type: 1 },
-            { buttonId: `${usedPrefix}tts_vid ${media.no_watermark}`, buttonText: { displayText: '📺 Ver en HD' }, type: 1 }
-        ];
+    const data = result.data;
+    const caption = `👤 *Autor:* ${data.author.nickname}\n📝 *Descripción:* ${data.title}\n\n_Usa los botones abajo:_`.trim();
 
-        await conn.sendMessage(m.chat, {
-            video: { url: media.no_watermark },
-            caption: mensaje,
-            footer: 'By Barboza-Team ⚡',
-            buttons: buttons,
-            headerType: 4
-        }, { quoted: m });
+    const buttons = [
+      {
+        name: "quick_reply",
+        buttonParamsJson: JSON.stringify({
+          display_text: "Video en HD 🎥",
+          id: `${usedPrefix}tt_vid ${cleanUrl}`
+        })
+      },
+      {
+        name: "quick_reply",
+        buttonParamsJson: JSON.stringify({
+          display_text: "Extraer Audio 🎵",
+          id: `${usedPrefix}tt_aud ${cleanUrl}`
+        })
+      }
+    ];
 
-        m.react("✅");
+    await conn.sendMessage(m.chat, {
+      video: { url: data.play },
+      caption: caption,
+      footer: 'By Barboza-Team ⚡',
+      buttons: buttons,
+      headerType: 4
+    }, { quoted: m });
 
-    } catch (error) {
-        console.error(error);
-        m.reply("⚠️ *Sin resultados para esta búsqueda.*");
-        m.react("❌");
-    }
+  } catch (error) {
+    conn.reply(m.chat, '❌ Error de conexión.', m);
+  }
 };
 
-handler.command = /^(tiktoksearch|tts_vid|tts_aud)$/i;
+handler.command = /^(tiktok|tt|tt_vid|tt_aud)$/i;
 export default handler;
-
-const tiktok = {
-    search: async function (q) {
-        try {
-            const data = { count: 20, cursor: 0, web: 1, hd: 1, keywords: q };
-            const config = {
-                method: "post",
-                url: "https://tikwm.com/api/feed/search",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                    "User-Agent": "Mozilla/5.0 (Linux; Android 10)",
-                },
-                data: data,
-            };
-            const response = await axios(config);
-            if (response.data.data) {
-                return response.data.data.videos.map((video) => ({
-                    id: video.video_id, // Guardamos el ID para el botón de audio
-                    metadata: { titulo: video.title, duracion: video.duration },
-                    estadisticas: {
-                        reproducciones: Number(video.play_count).toLocaleString(),
-                        likes: Number(video.digg_count).toLocaleString(),
-                    },
-                    author: { name: video.author.nickname },
-                    media: {
-                        no_watermark: "https://tikwm.com" + video.play,
-                    },
-                }));
-            } else {
-                throw new Error("Sin info");
-            }
-        } catch (error) {
-            throw new Error(error);
-        }
-    },
-};
