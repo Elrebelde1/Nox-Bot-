@@ -1,13 +1,18 @@
+
+
 import axios from "axios";
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    // Manejador para los botones de la búsqueda (Video HD y Audio)
+    // Manejador para los botones de la búsqueda
     if (command === 'tts_vid' || command === 'tts_aud') {
+        // En tts_aud, el 'text' ahora es el ID del video para evitar el error 403
         const target = text.split(' ')[0];
+
         try {
             if (command === 'tts_vid') {
-                return await conn.sendMessage(m.chat, { video: { url: target }, caption: `✅ *Video HD Listo*` }, { quoted: m });
+                return await conn.sendMessage(m.chat, { video: { url: target }, caption: `✅ *Video en Alta Calidad (HD)*` }, { quoted: m });
             } else {
+                // Si es audio, hacemos una petición rápida para obtener el link directo sin bloqueo
                 const res = await axios.get(`https://www.tikwm.com/api/?url=${target}`);
                 const musicUrl = res.data.data.music;
                 return await conn.sendMessage(m.chat, { 
@@ -17,112 +22,87 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                 }, { quoted: m });
             }
         } catch (e) {
-            return m.reply("⚠️ *Error al obtener el archivo.*");
+            return m.reply("⚠️ *Error al obtener el archivo. Intenta de nuevo.*");
         }
     }
 
-    if (!text) return m.reply("🔍 *Ingresa qué buscar.*");
+    if (!text) return m.reply("🔍 *Por favor, ingresa un término de búsqueda.*");
 
     try {
         m.react("🔄");
-        
         let info = await tiktok.search(text);
-        if (!info || info.length === 0) throw "Sin info";
 
         let videoAleatorio = Math.floor(Math.random() * info.length);
-        let { metadata, media, id } = info[videoAleatorio];
+        let { metadata, estadisticas, author, media, id } = info[videoAleatorio];
 
-        let mensaje = `┏━━━━━━━━━━━━━━┓\n┃     📥 DESCARGADOR |\n┗━━━━━━━━━━━━━━┛\n\n📝 *INFO:* ${metadata.titulo}\n\n━━━━━━━━━━━━━━━━\n⚡ *By: Barboza Developer*`.trim();
+        let mensaje = `
+🎥 *Título:* ${metadata.titulo}
+⏳ *Duración:* ${metadata.duracion}s
+👤 *Autor:* ${author.name}
 
-        // Configuración de botones modernos (Interactive Message)
+📊 *Estadísticas:*
+👀 ${estadisticas.reproducciones} | ❤️ ${estadisticas.likes}
+`.trim();
+
+        // CONFIGURACIÓN DE BOTONES
         const buttons = [
-            {
-                name: "quick_reply",
-                buttonParamsJson: JSON.stringify({
-                    display_text: "⏭️ Siguiente",
-                    id: `${usedPrefix}tts ${text}`
-                })
-            },
-            {
-                name: "quick_reply",
-                buttonParamsJson: JSON.stringify({
-                    display_text: "🎵 Audio",
-                    id: `${usedPrefix}tts_aud ${id}`
-                })
-            },
-            {
-                name: "quick_reply",
-                buttonParamsJson: JSON.stringify({
-                    display_text: "📺 Video HD",
-                    id: `${usedPrefix}tts_vid ${media.no_watermark}`
-                })
-            }
+            { buttonId: `${usedPrefix}tts ${text}`, buttonText: { displayText: '⏭️ Siguiente Video' }, type: 1 },
+            { buttonId: `${usedPrefix}tts_aud ${id}`, buttonText: { displayText: '🎵 Extraer Audio' }, type: 1 },
+            { buttonId: `${usedPrefix}tts_vid ${media.no_watermark}`, buttonText: { displayText: '📺 Ver en HD' }, type: 1 }
         ];
 
-        // Preparar el medio (video)
-        let msg = await conn.prepareWAMessageMedia({ video: { url: media.no_watermark } }, { upload: conn.waUploadToServer });
-
-        // Envío mediante relayMessage para que se vean los botones
-        await conn.relayMessage(m.chat, {
-            viewOnceMessage: {
-                message: {
-                    interactiveMessage: {
-                        body: { text: mensaje },
-                        footer: { text: 'Sasuke Bot ⚡' },
-                        header: {
-                            hasVideoMessage: true,
-                            videoMessage: msg.videoMessage
-                        },
-                        nativeFlowMessage: {
-                            buttons: buttons
-                        }
-                    }
-                }
-            }
+        await conn.sendMessage(m.chat, {
+            video: { url: media.no_watermark },
+            caption: mensaje,
+            footer: 'By Barboza-Team ⚡',
+            buttons: buttons,
+            headerType: 4
         }, { quoted: m });
 
         m.react("✅");
 
     } catch (error) {
         console.error(error);
-        m.reply("⚠️ *Sin resultados. Intenta con otra palabra.*");
+        m.reply("⚠️ *Sin resultados para esta búsqueda.*");
         m.react("❌");
     }
 };
 
-handler.command = /^(tiktoksearch|tts|tts_vid|tts_aud)$/i;
+handler.command = /^(tiktoksearch|tts_vid|tts_aud)$/i;
 export default handler;
 
-// Objeto de búsqueda corregido con User-Agent real
 const tiktok = {
     search: async function (q) {
         try {
-            const data = new URLSearchParams({
-                count: '20',
-                cursor: '0',
-                web: '1',
-                hd: '1',
-                keywords: q
-            });
-            
-            const response = await axios.post("https://tikwm.com/api/feed/search", data, {
+            const data = { count: 20, cursor: 0, web: 1, hd: 1, keywords: q };
+            const config = {
+                method: "post",
+                url: "https://tikwm.com/api/feed/search",
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"
-                }
-            });
-
-            if (response.data && response.data.data && response.data.data.videos) {
-                return response.data.data.videos.map((v) => ({
-                    id: v.video_id,
-                    metadata: { titulo: v.title },
-                    media: { no_watermark: "https://tikwm.com" + v.play }
+                    "User-Agent": "Mozilla/5.0 (Linux; Android 10)",
+                },
+                data: data,
+            };
+            const response = await axios(config);
+            if (response.data.data) {
+                return response.data.data.videos.map((video) => ({
+                    id: video.video_id, // Guardamos el ID para el botón de audio
+                    metadata: { titulo: video.title, duracion: video.duration },
+                    estadisticas: {
+                        reproducciones: Number(video.play_count).toLocaleString(),
+                        likes: Number(video.digg_count).toLocaleString(),
+                    },
+                    author: { name: video.author.nickname },
+                    media: {
+                        no_watermark: "https://tikwm.com" + video.play,
+                    },
                 }));
             } else {
-                return [];
+                throw new Error("Sin info");
             }
-        } catch (e) {
-            return [];
+        } catch (error) {
+            throw new Error(error);
         }
-    }
+    },
 };
