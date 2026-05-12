@@ -1,44 +1,67 @@
-//código de ytmp3
-// code creador por barboza 
-// Se te agradece que dejes mis créditos gracias disfruta el código
+/**
+ * 📂 COMANDO: Uchiha YouTube Downloader
+ * 📝 DESCRIPCIÓN: Extractor de audio de YouTube (MP3).
+ * 👤 CREADOR: Barboza Developer
+ * ⚡ CANAL: Barboza Developer x Zona Developers
+ * Usen los código porfa para traer más 
+ * 🔗 API: https://api.evogb.org/dl/ytmp3?url={link}&key=sasuke
+ */
 
-import axios from "axios"
+import fetch from 'node-fetch'
 
-const handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) return conn.reply(m.chat, `*¡Hola!* Ingresa el enlace de YouTube.\n\n*Ejemplo:* ${usedPrefix}${command} https://youtu.be/5M_n2UCe7DQ`, m)
+let handler = async (m, { conn, text, usedPrefix, command }) => {
+    const autorCode = "𝑩𝒚 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗"
+    const comunidad = "𝒁𝒐𝒏𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓𝒔 ⚡"
+    
+    if (!text) return conn.reply(m.chat, `🏮 *UCHIHA SYSTEM*\n\n> 🧩 *Pega el link de YouTube*\n> 💡 *Ej:* ${usedPrefix + command} https://youtu.be/...`, m)
 
-    await m.react('⏳')
+    await m.react('🛰️') 
 
     try {
-        const { data } = await axios.get(`https://api.delirius.store/download/ytmp3?url=${text}`)
+        const b = (s) => Buffer.from(s, 'base64').toString('utf-8')
+        const a = b("aHR0cHM6Ly9hcGkuZXZvZ2Iub3Jn")
+        const k = b("c2FzdWtl")
 
-        if (!data.status || !data.data) throw new Error()
+        let res = await fetch(`${a}/dl/ytmp3?url=${encodeURIComponent(text)}&key=${k}`)
+        let json = await res.json()
 
-        const { title, author, image, download } = data.data
+        if (!json.status || !json.data || !json.data.dl) {
+            await m.react('❌')
+            return m.reply('⚠️ *ERROR CRÍTICO* ⚠️\nNo se pudo extraer el audio de la sombra.')
+        }
 
-        const info = `*〔 YOUTUBE MP3 〕*\n\n*Título:* ${title}\n*Canal:* ${author}\n\n_Enviando audio..._`
+        const info = json.data
+
+        let txt = `⚔️  *UCHIHA AUDIO PLAYER* ⚔️\n`
+        txt += `『 🌑 ═══════════════ 🌑 』\n\n`
+        txt += `🎼 *TEMA:* ${info.title}\n`
+        txt += `⏳ *TIEMPO:* ${info.duration || 'Desconocido'}\n`
+        txt += `💽 *FORMATO:* MP3 (128kbps)\n`
+        txt += `🔥 *ESTADO:* Inyectado con éxito\n\n`
+        txt += `『 🌑 ═══════════════ 🌑 』\n`
+        txt += `💻 ${autorCode}\n`
+        txt += `📡 ${comunidad}`
 
         await conn.sendMessage(m.chat, { 
-            image: { url: image }, 
-            caption: info 
+            image: { url: info.thumbnail }, 
+            caption: txt 
         }, { quoted: m })
 
         await conn.sendMessage(m.chat, { 
-            audio: { url: download }, 
+            audio: { url: info.dl }, 
             mimetype: 'audio/mpeg', 
-            fileName: `${title}.mp3` 
+            fileName: `${info.title}.mp3` 
         }, { quoted: m })
 
-        await m.react('✅')
+        await m.react('✅') 
 
     } catch (e) {
-        await m.react('❌')
-        await conn.reply(m.chat, `⚠️ No se pudo procesar la descarga.`, m)
+        await m.react('💀')
     }
 }
 
 handler.help = ['ytmp3']
 handler.tags = ['descargas']
-handler.command = ['ytmp3v2', 'audio']
+handler.command = ['ytmp3v2', 'yta', 'audio']
 
 export default handler
