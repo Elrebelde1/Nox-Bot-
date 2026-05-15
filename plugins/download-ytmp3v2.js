@@ -1,67 +1,67 @@
 /**
- * 📂 COMANDO: Uchiha YouTube Downloader
- * 📝 DESCRIPCIÓN: Extractor de audio de YouTube (MP3).
+ * 📂 COMANDO: Uchiha Audio Downloader
+ * 📝 DESCRIPCIÓN: Extractor de audio MP3 de alta calidad.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
- * Usen los código porfa para traer más 
- * 🔗 API: https://api.evogb.org/dl/ytmp3?url={link}&key=sasuke
+ * 🔗 API: https://sylphyy.xyz/download/v2/ytmp3
  */
 
-import fetch from 'node-fetch'
+import fetch from "node-fetch"
+import yts from 'yt-search'
 
-let handler = async (m, { conn, text, usedPrefix, command }) => {
-    const autorCode = "𝑩𝒚 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗"
-    const comunidad = "𝒁𝒐𝒏𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓𝒔 ⚡"
-    
-    if (!text) return conn.reply(m.chat, `🏮 *UCHIHA SYSTEM*\n\n> 🧩 *Pega el link de YouTube*\n> 💡 *Ej:* ${usedPrefix + command} https://youtu.be/...`, m)
+const handler = async (m, { conn, text, usedPrefix, command }) => {
+    const dev = "⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓"
+    const net = "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕"
 
-    await m.react('🛰️') 
+    if (!text) return conn.reply(m.chat, `⚔️ *SISTEMA UCHIHA*\n\n> 🎵 *Escribe el nombre del audio*\n> 🔗 *Ej:* ${usedPrefix + command} Lose Yourself`, m)
+
+    await m.react('💿')
 
     try {
-        const b = (s) => Buffer.from(s, 'base64').toString('utf-8')
-        const a = b("aHR0cHM6Ly9hcGkuZXZvZ2Iub3Jn")
-        const k = b("c2FzdWtl")
+        const decode = (s) => Buffer.from(s, 'base64').toString('utf-8')
+        const endpoint = decode("aHR0cHM6Ly9zeWxwaHl5Lnh5ei9kb3dubG9hZC92Mi95dG1wMw==")
+        const key = decode("c3lscGh5LTZmMTUwZA==")
 
-        let res = await fetch(`${a}/dl/ytmp3?url=${encodeURIComponent(text)}&key=${k}`)
+        let search = await yts(text)
+        if (!search.videos[0]) return m.reply('❌ No se encontró el audio.')
+        
+        let v = search.videos[0].url
+        let res = await fetch(`${endpoint}?url=${encodeURIComponent(v)}&api_key=${key}`)
         let json = await res.json()
 
-        if (!json.status || !json.data || !json.data.dl) {
-            await m.react('❌')
-            return m.reply('⚠️ *ERROR CRÍTICO* ⚠️\nNo se pudo extraer el audio de la sombra.')
+        if (!json.status || !json.result) {
+            await m.react('🚫')
+            return m.reply('💀 *ERROR:* El rastro del audio se ha perdido.')
         }
 
-        const info = json.data
+        const audio = json.result
 
-        let txt = `⚔️  *UCHIHA AUDIO PLAYER* ⚔️\n`
-        txt += `『 🌑 ═══════════════ 🌑 』\n\n`
-        txt += `🎼 *TEMA:* ${info.title}\n`
-        txt += `⏳ *TIEMPO:* ${info.duration || 'Desconocido'}\n`
-        txt += `💽 *FORMATO:* MP3 (128kbps)\n`
-        txt += `🔥 *ESTADO:* Inyectado con éxito\n\n`
-        txt += `『 🌑 ═══════════════ 🌑 』\n`
-        txt += `💻 ${autorCode}\n`
-        txt += `📡 ${comunidad}`
+        let report = `| 🎵 *𝖴𝖢𝖧𝖨𝖧𝖠 𝖤𝖷𝖳𝖱𝖠𝖢𝖴𝖮́𝖭* 🎵\n`
+        report += `|═══════════════════\n`
+        report += `| 💿 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${audio.title}\n`
+        report += `| 🎧 *𝙲𝙰𝙻𝙸𝙳𝙰𝙳:* 320kbps\n`
+        report += `| 📡 *𝚂𝚃𝙰𝚃𝚄𝚂:* ✅ Sincronizado\n`
+        report += `|═══════════════════\n`
+        report += `| 🛠️ *${dev}*\n`
+        report += `| ⛩️ *${net}*`
 
-        await conn.sendMessage(m.chat, { 
-            image: { url: info.thumbnail }, 
-            caption: txt 
-        }, { quoted: m })
+        await conn.reply(m.chat, report, m)
 
         await conn.sendMessage(m.chat, { 
-            audio: { url: info.dl }, 
-            mimetype: 'audio/mpeg', 
-            fileName: `${info.title}.mp3` 
+            audio: { url: audio.dl_url }, 
+            mimetype: 'audio/mpeg',
+            fileName: `${audio.title}.mp3`
         }, { quoted: m })
 
-        await m.react('✅') 
+        await m.react('🔥')
 
     } catch (e) {
-        await m.react('💀')
+        await m.react('✖️')
     }
 }
 
 handler.help = ['ytmp3']
 handler.tags = ['descargas']
-handler.command = ['ytmp3v2', 'yta', 'audio']
+handler.command = ['ytmp3v2']
 
 export default handler
