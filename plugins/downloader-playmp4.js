@@ -1,78 +1,63 @@
-import axios from "axios"
+/**
+ * 📂 COMANDO: Uchiha YouTube Play (Scraper Nativo)
+ * 📝 DESCRIPCIÓN: Busca y descarga música usando yt-dlp directamente.
+ * 👤 CREADOR: Barboza Developer
+ * ⚡ CANAL: Barboza Developer x Zona Developers
+ */
+
+import { exec } from "child_process"
+import yts from "yt-search"
+import { promisify } from "util"
+const execPromise = promisify(exec)
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) return conn.reply(m.chat, `*¡Hola!* ¿Qué deseas descargar?\n\n*Uso:* ${usedPrefix}${command} [Nombre o Link]`, m)
+    const dev = "⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓"
+    const net = "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕"
 
-    const isVideo = command === 'play4'
-    const isAudio = command === 'play3'
-    
-    await m.react(isVideo ? '🎥' : '🎧')
+    if (!text) return conn.reply(m.chat, `⚔️ *SISTEMA UCHIHA*\n\n> 🎵 *Escribe el nombre de la canción*\n> 🔗 *Ej:* ${usedPrefix + command} Feid Luna`, m)
+
+    await m.react('🔍')
 
     try {
-        let videoUrl = text
-        let title, image, author, views, likes
+        let search = await yts(text)
+        if (!search.videos[0]) return m.reply('❌ No se encontró el audio.')
 
-        // 1. LÓGICA DE BÚSQUEDA / LINK
-        if (!text.match(/youtu/gi)) {
-            // Si NO es un link, buscamos en la API
-            const searchApi = `https://api.delirius.store/search/ytsearch?text=${encodeURIComponent(text)}`
-            const { data: searchData } = await axios.get(searchApi)
-            
-            if (!searchData.status || !searchData.data.length) {
-                await m.react('❌')
-                return m.reply('❌ No se encontró nada con ese nombre.')
-            }
-            videoUrl = searchData.data[0].url
-        }
+        let video = search.videos[0]
+        let link = video.url
+        let title = video.title
+        let thumbnail = video.thumbnail
+        let duration = video.timestamp
 
-        // 2. OBTENER DATOS DE DESCARGA
-        const endpoint = isVideo ? 'ytmp4' : 'ytmp3'
-        const downloadApi = `https://api.delirius.store/download/${endpoint}?url=${encodeURIComponent(videoUrl)}${isVideo ? '&format=360p' : ''}`
-        
-        const { data: res } = await axios.get(downloadApi)
-        if (!res.status) throw new Error()
+        let report = `| 🎵 *𝖴𝖢𝖧𝖨𝖧𝖠 𝖯𝖫𝖠𝖸* 🎵\n`
+        report += `|═══════════════════\n`
+        report += `| 💿 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${title}\n`
+        report += `| ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾́𝙽:* ${duration}\n`
+        report += `| 📡 *𝚂𝚃𝙰𝚃𝚄𝚂:* ✅ Scraper Activo\n`
+        report += `|═══════════════════\n`
+        report += `| 🛠️ *${dev}*\n`
+        report += `| ⛩️ *${net}*`
 
-        const data = res.data
-        
-        // 3. MENSAJE DE ESPERA CON INFO
-        let caption = `*〔 DOWNLOADER 〕*\n\n`
-        caption += `📌 *Título:* ${data.title}\n`
-        caption += `👤 *Autor:* ${data.author}\n`
-        caption += `👀 *Vistas:* ${data.views}\n`
-        caption += `📦 *Tipo:* ${isVideo ? 'Video' : 'Audio'}\n\n`
-        caption += `*By: Barboza Developer*`
+        await conn.sendMessage(m.chat, { image: { url: thumbnail }, caption: report }, { quoted: m })
+        await m.react('⏳')
 
-        // Enviamos miniatura e info
-        await conn.sendMessage(m.chat, { image: { url: data.image }, caption: caption }, { quoted: m })
+        const outputFilename = `/tmp/${video.videoId}.mp3`
+        await execPromise(`yt-dlp -x --audio-format mp3 --audio-quality 0 -o "${outputFilename}" "${link}"`)
 
-        // 4. ENVÍO DE ARCHIVO SEGÚN EL COMANDO
-        if (isVideo) {
-            // Enviar solo video si es play4
-            await conn.sendMessage(m.chat, { 
-                video: { url: data.download }, 
-                mimetype: 'video/mp4',
-                fileName: `${data.title}.mp4`
-            }, { quoted: m })
-        } else {
-            // Enviar solo audio si es play3
-            await conn.sendMessage(m.chat, { 
-                audio: { url: data.download }, 
-                mimetype: 'audio/mpeg',
-                fileName: `${data.title}.mp3`
-            }, { quoted: m })
-        }
+        await conn.sendMessage(m.chat, { 
+            audio: { url: outputFilename }, 
+            mimetype: 'audio/mpeg',
+            fileName: `${title}.mp3`
+        }, { quoted: m })
 
-        await m.react('✅')
+        await m.react('🔥')
 
     } catch (e) {
-        console.error(e)
-        await m.react('❌')
-        await conn.reply(m.chat, `⚠️ Hubo un error al procesar la descarga.`, m)
+        await m.react('✖️')
     }
 }
 
-handler.help = ['play3', 'play4']
-handler.tags = ['downloader']
-handler.command = ['play3', 'play4'] 
+handler.help = ['play']
+handler.tags = ['descargas']
+handler.command = ['play3', 'play4']
 
 export default handler
