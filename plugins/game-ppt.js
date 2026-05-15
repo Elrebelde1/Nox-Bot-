@@ -1,42 +1,45 @@
 let activeGames = new Map();
 
 const gameHandler = async (m, { conn, command, args, usedPrefix }) => {
-    const text = args.join(' ').toLowerCase();
     const mentionedJid = m.mentionedJid?.[0] || (m.quoted ? m.quoted.sender : null);
 
-    // ESCENARIO 1: Inicio del comando .game (Sin argumentos y sin mención)
+    // 1. MENU INICIAL: Si solo ponen .game
     if (args.length === 0 && !mentionedJid) {
         const caption = `🎮 *MENÚ DE JUEGO*\n\n¿Contra quién quieres jugar Piedra, Papel o Tijera?`;
         const buttons = [
             { buttonId: `${usedPrefix}game bot`, buttonText: { displayText: "🤖 Contra el Bot" }, type: 1 },
-            { buttonId: `${usedPrefix}game @user`, buttonText: { displayText: "👥 Contra un Miembro" }, type: 1 }
+            { buttonId: `${usedPrefix}game member_tag`, buttonText: { displayText: "👥 Contra un Miembro" }, type: 1 }
         ];
 
         return await conn.sendMessage(m.chat, { 
             text: caption, 
             buttons: buttons, 
-            footer: 'Selecciona una opción',
+            headerType: 1,
             viewOnce: true 
         }, { quoted: m });
     }
 
-    // ESCENARIO 2: Selección de "Contra un Miembro" (Instrucción de mencionar)
-    if (args[0] === '@user' && !mentionedJid) {
-        return conn.reply(m.chat, `Por favor, menciona a la persona con la que quieres jugar.\nEjemplo: *${usedPrefix}game @usuario*`, m);
+    // 2. SOLICITAR MENCIÓN: Si eligió el botón de miembro pero no hay mención
+    if (args[0] === 'member_tag' && !mentionedJid) {
+        return conn.reply(m.chat, `⚠️ *¡Atención!* para jugar con alguien más debes mencionarlo.\n\nEscribe: *${usedPrefix}game @usuario*`, m);
     }
 
-    // ESCENARIO 3: Inicio de partida (vs Bot o vs Usuario)
-    if (!activeGames.has(m.chat) || args[0] === 'bot' || mentionedJid) {
+    // 3. INICIO AUTOMÁTICO: Si hay mención o eligió al bot
+    if (args[0] === 'bot' || mentionedJid) {
+        // Evitar jugar con uno mismo si es mención
+        if (mentionedJid === m.sender) return conn.reply(m.chat, `❌ No puedes jugar contigo mismo. ¡Menciona a otro amigo!`, m);
+
         let opponent = mentionedJid ? mentionedJid : 'bot';
         
+        // Guardar estado del juego
         activeGames.set(m.chat, {
             player1: m.sender,
             player2: opponent,
-            status: 'waiting'
+            isBot: opponent === 'bot'
         });
 
         const oppName = opponent === 'bot' ? 'el Bot' : `@${opponent.split('@')[0]}`;
-        const caption = `🕹️ *PARTIDA INICIADA*\n*Retador:* @${m.sender.split('@')[0]}\n*Oponente:* ${oppName}\n\nSelecciona tu jugada:`;
+        const caption = `🕹️ *PARTIDA INICIADA*\n\n*Retador:* @${m.sender.split('@')[0]}\n*Oponente:* ${oppName}\n\nSelecciona tu jugada:`;
 
         const buttons = [
             { buttonId: `${usedPrefix}game piedra`, buttonText: { displayText: "🪨 Piedra" }, type: 1 },
@@ -52,14 +55,15 @@ const gameHandler = async (m, { conn, command, args, usedPrefix }) => {
         }, { quoted: m });
     }
 
-    // ESCENARIO 4: Procesar la jugada
+    // 4. PROCESAR JUGADA (Piedra, Papel o Tijera)
     let choices = ['piedra', 'papel', 'tijera'];
-    let userChoice = args[0];
+    let userChoice = args[0]?.toLowerCase();
 
     if (choices.includes(userChoice)) {
         let game = activeGames.get(m.chat);
-        if (!game) return;
+        if (!game) return conn.reply(m.chat, `⚠️ No hay una partida activa. Inicia una con *${usedPrefix}game*`, m);
 
+        // Lógica simplificada vs Bot (puedes expandir esto para PvP real luego)
         let botChoice = choices[Math.floor(Math.random() * choices.length)];
         let result = getResult(userChoice, botChoice);
 
@@ -67,7 +71,7 @@ const gameHandler = async (m, { conn, command, args, usedPrefix }) => {
 🕹️ *RESULTADOS*
 ──────────────
 🙋‍♂️ *Tú:* ${userChoice.toUpperCase()}
-🤖 *Bot:* ${botChoice.toUpperCase()}
+🤖 *Oponente:* ${botChoice.toUpperCase()}
 ──────────────
 📌 *Estatus:* ${result}
 `.trim();
@@ -82,7 +86,7 @@ const gameHandler = async (m, { conn, command, args, usedPrefix }) => {
             viewOnce: true
         }, { quoted: m });
 
-        activeGames.delete(m.chat);
+        activeGames.delete(m.chat); // Limpiar juego al terminar
     }
 };
 
