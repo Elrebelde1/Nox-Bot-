@@ -1,6 +1,6 @@
 /**
  * 📂 COMANDO: TikTok Uchiha Downloader
- * 📝 DESCRIPCIÓN: Envía video al instante y ofrece botones para HD o Audio.
+ * 📝 DESCRIPCIÓN: Soporte total de enlaces (Cortos/Largos). Envía video + botones.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  * 🔗 API: https://sylphyy.xyz/download/tiktok
@@ -44,15 +44,20 @@ const handler = async (m, { conn, text, args, usedPrefix, command }) => {
         }
     }
 
-    if (!text) return conn.reply(m.chat, `⚔️ *SISTEMA UCHIHA*\n\n> 🔗 *Pega un enlace de TikTok*`, m)
+    if (!text) return conn.reply(m.chat, `⚔️ *SISTEMA UCHIHA*\n\n> 🔗 *Pega cualquier enlace de TikTok*\n> *(Soporta enlaces cortos y largos)*`, m)
     
+    const tiktokRegex = /http(?:s?):\/\/(?:www\.|vt\.|vm\.)?tiktok\.com\/([^\s]+)/g
+    const match = text.match(tiktokRegex)
+    if (!match) return m.reply('🚫 Enlace de TikTok no detectado.')
+    const cleanUrl = match[0]
+
     await m.react('🔍')
 
     try {
-        const res = await fetch(`${api}?url=${encodeURIComponent(text)}&api_key=${key}`)
+        const res = await fetch(`${api}?url=${encodeURIComponent(cleanUrl)}&api_key=${key}`)
         const json = await res.json()
 
-        if (!json.status) return m.reply('🚫 Enlace inválido.')
+        if (!json.status) return m.reply('🚫 El servidor no pudo procesar este enlace.')
 
         const data = json.result
         const caption = `| 🎵 *𝖴𝖢𝖧𝖨𝖧𝖠 𝖳𝖨𝖪𝖳𝖮𝖪* 🎵\n` +
@@ -65,8 +70,8 @@ const handler = async (m, { conn, text, args, usedPrefix, command }) => {
                         `| ⛩️ *${net}*`
 
         const buttons = [
-            { buttonId: `${usedPrefix + command} hd ${text}`, buttonText: { displayText: "🎬 Descargar en HD" }, type: 1 },
-            { buttonId: `${usedPrefix + command} audio ${text}`, buttonText: { displayText: "🎧 Extraer Audio" }, type: 1 }
+            { buttonId: `${usedPrefix + command} hd ${cleanUrl}`, buttonText: { displayText: "🎬 Descargar en HD" }, type: 1 },
+            { buttonId: `${usedPrefix + command} audio ${cleanUrl}`, buttonText: { displayText: "🎧 Extraer Audio" }, type: 1 }
         ]
 
         await conn.sendMessage(m.chat, {
