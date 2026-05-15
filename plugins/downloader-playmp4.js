@@ -1,6 +1,6 @@
 /**
- * 📂 COMANDO: Uchiha YouTube Play (Scraper Nativo)
- * 📝 DESCRIPCIÓN: Busca y descarga música usando yt-dlp directamente.
+ * 📂 COMANDO: Uchiha YouTube Play (Scraper Nativo Corregido)
+ * 📝 DESCRIPCIÓN: Busca y descarga música usando yt-dlp de forma local.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  */
@@ -8,6 +8,7 @@
 import { exec } from "child_process"
 import yts from "yt-search"
 import { promisify } from "util"
+import fs from "fs"
 const execPromise = promisify(exec)
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
@@ -28,19 +29,20 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         let thumbnail = video.thumbnail
         let duration = video.timestamp
 
-        let report = `| 🎵 *𝖴𝖢𝖧𝖨𝖧𝖠 𝖯𝖫𝖠𝖸* 🎵\n`
-        report += `|═══════════════════\n`
-        report += `| 💿 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${title}\n`
-        report += `| ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾́𝙽:* ${duration}\n`
-        report += `| 📡 *𝚂𝚃𝙰𝚃𝚄𝚂:* ✅ Scraper Activo\n`
-        report += `|═══════════════════\n`
-        report += `| 🛠️ *${dev}*\n`
-        report += `| ⛩️ *${net}*`
+        let report = `| 🎵 *𝖴𝖢𝖧𝖨𝖧𝖠 𝖯𝖫𝙰𝖸* 🎵\n` +
+                    `|═══════════════════\n` +
+                    `| 💿 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${title}\n` +
+                    `| ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾́𝙽:* ${duration}\n` +
+                    `| 📡 *𝚂𝚃𝙰𝚃𝚄𝚂:* ✅ Scraper Activo\n` +
+                    `|═══════════════════\n` +
+                    `| 🛠️ *${dev}*\n` +
+                    `| ⛩️ *${net}*`
 
         await conn.sendMessage(m.chat, { image: { url: thumbnail }, caption: report }, { quoted: m })
         await m.react('⏳')
 
-        const outputFilename = `/tmp/${video.videoId}.mp3`
+        const outputFilename = `./${video.videoId}.mp3`
+        
         await execPromise(`yt-dlp -x --audio-format mp3 --audio-quality 0 -o "${outputFilename}" "${link}"`)
 
         await conn.sendMessage(m.chat, { 
@@ -49,6 +51,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             fileName: `${title}.mp3`
         }, { quoted: m })
 
+        if (fs.existsSync(outputFilename)) fs.unlinkSync(outputFilename)
         await m.react('🔥')
 
     } catch (e) {
@@ -58,6 +61,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
 handler.help = ['play']
 handler.tags = ['descargas']
-handler.command = ['play3', 'play4']
+handler.command = ['play3']
 
 export default handler
