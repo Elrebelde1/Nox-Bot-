@@ -1,16 +1,24 @@
 /**
- * 📂 COMANDO: Uchiha YouTube Downloader
- * 📝 DESCRIPCIÓN: Descargador de YouTube MP3/MP4 con motor de búsqueda.
+ * 📂 COMANDO: Uchiha YouTube Downloader (Scraper Nativo Puro)
+ * 📝 DESCRIPCIÓN: Descargador e instalador automático de yt-dlp-wrap sin APIs externas.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
- * Usen los código porfa para traer más 
- * 🔗 API: https://sylphyy.xyz/download/v2/ytmp3
  */
 
-import fetch from "node-fetch"
+import YTDlpWrap from "yt-dlp-wrap"
 import yts from 'yt-search'
-import { readFileSync, existsSync } from 'fs'
+import { readFileSync, existsSync, mkdirSync, unlinkSync } from 'fs'
 import { join } from 'path'
+
+const binFolder = "./src/bin"
+const binPath = `${binFolder}/yt-dlp`
+if (!existsSync(binFolder)) mkdirSync(binFolder, { recursive: true })
+
+if (!existsSync(binPath)) {
+    YTDlpWrap.default.downloadFromGithub(binPath).catch(() => {})
+}
+
+const ytDlpWrap = new YTDlpWrap.default(binPath)
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
     const dev = "𝑩𝒚 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑼𝒄𝒉𝒊𝒉𝒂 ⚡"
@@ -41,54 +49,77 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     if (isAudio || isVideo) {
         if (m.react) await m.react('📥')
         try {
-            let dlUrl = ''
-            let titulo = ''
+            let link = text.trim()
+            let titulo = 'Media_File'
+            let videoId = Date.now()
+
+            if (!link.includes('youtube.com') && !link.includes('youtu.be')) {
+                let searchUrl = await yts(text)
+                if (searchUrl && searchUrl.videos[0]) {
+                    link = searchUrl.videos[0].url
+                    titulo = searchUrl.videos[0].title
+                    videoId = searchUrl.videos[0].videoId
+                } else {
+                    throw 'No encontrado'
+                }
+            } else {
+                let searchInfo = await yts(link)
+                if (searchInfo && searchInfo.videos[0]) {
+                    titulo = searchInfo.videos[0].title
+                    videoId = searchInfo.videos[0].videoId
+                }
+            }
 
             if (isAudio || isDocMp3) {
-                let res = await fetch(`https://sylphyy.xyz/download/v2/ytmp3?url=${encodeURIComponent(text)}&api_key=sylphy-6f150d`)
-                let json = await res.json()
-                if (json.status && json.result) {
-                    dlUrl = json.result.dl_url
-                    titulo = json.result.title || 'Audio'
-                }
-            } else if (isVideo || isDocMp4) {
-                let res = await fetch(`https://api.delirius.store/download/ytmp4?url=${encodeURIComponent(text)}`)
-                let json = await res.json()
-                if (json.status && json.data) {
-                    dlUrl = json.data.download
-                    titulo = json.data.title || 'Video'
-                }
-            }
-
-            if (!dlUrl) throw 'Error'
-
-            if (isAudio || command === 'yta' || command === 'ytmp3') {
-                let infoAudio = `🎧 *𝚄𝙲𝙷𝙸𝙷𝙰 𝙰𝚄𝙳𝙸𝙾 𝙿𝙻𝙰𝚈𝙴𝚁*\n`
-                infoAudio += `─━━━━━━⊱ 🪐 ⊰━━━━━━─\n\n`
-                infoAudio += `📌 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${titulo}\n`
-                infoAudio += `📦 *𝙵𝙾𝚁𝙼𝙰𝚃𝙾:* MP3\n`
-                infoAudio += `✅ *𝙴𝚂𝚃𝙰𝙳𝙾:* Enviando...\n\n`
-                infoAudio += `─━━━━━━⊱ 🪐 ⊰━━━━━━─\n`
-                infoAudio += `🛠️ ${dev}\n`
-                infoAudio += `📡 ${chn}`
+                const outputAudio = `./${videoId}.mp3`
                 
-                await conn.reply(m.chat, infoAudio, m)
-                return await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: 'audio/mpeg' }, { quoted: m })
+                await ytDlpWrap.execPromise([
+                    link,
+                    "-x",
+                    "--audio-format", "mp3",
+                    "--audio-quality", "0",
+                    "-o", outputAudio
+                ])
+
+                if (isDocMp3) {
+                    await conn.sendMessage(m.chat, { document: { url: outputAudio }, mimetype: 'audio/mpeg', fileName: `${titulo}.mp3` }, { quoted: m })
+                } else {
+                    let infoAudio = `🎧 *𝚄𝙲𝙷𝙸𝙷𝙰 𝙰𝚄𝙳𝙸𝙾 𝙿𝙻𝙰𝚈𝙴𝚁*\n` +
+                                    `─━━━━━━⊱ 🪐 ⊰━━━━━━─\n\n` +
+                                    `📌 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${titulo}\n` +
+                                    `📦 *𝙵𝙾𝚁𝙼𝙰𝚃𝙾:* MP3\n` +
+                                    `✅ *𝙴𝚂𝚃𝙰𝙳𝙾:* Enviando...\n\n` +
+                                    `─━━━━━━⊱ 🪐 ⊰━━━━━━─\n` +
+                                    `🛠️ ${dev}\n` +
+                                    `📡 ${chn}`
+                    await conn.reply(m.chat, infoAudio, m)
+                    await conn.sendMessage(m.chat, { audio: { url: outputAudio }, mimetype: 'audio/mpeg' }, { quoted: m })
+                }
+                
+                if (existsSync(outputAudio)) unlinkSync(outputAudio)
+            } else if (isVideo || isDocMp4) {
+                const outputVideo = `./${videoId}.mp4`
+
+                await ytDlpWrap.execPromise([
+                    link,
+                    "-f", "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]",
+                    "-o", outputVideo
+                ])
+
+                if (isDocMp4) {
+                    await conn.sendMessage(m.chat, { document: { url: outputVideo }, mimetype: 'video/mp4', fileName: `${titulo}.mp4` }, { quoted: m })
+                } else {
+                    await conn.sendMessage(m.chat, { video: { url: outputVideo }, caption: `✅ *Video:* ${titulo}\n\n${dev}` }, { quoted: m })
+                }
+
+                if (existsSync(outputVideo)) unlinkSync(outputVideo)
             }
 
-            if (command === 'ytv' || command === 'ytmp4') {
-                return await conn.sendMessage(m.chat, { video: { url: dlUrl }, caption: `✅ *Video:* ${titulo}\n\n${dev}`, footer: chn }, { quoted: m })
-            }
-            if (isDocMp3) {
-                return await conn.sendMessage(m.chat, { document: { url: dlUrl }, mimetype: 'audio/mpeg', fileName: `${titulo}.mp3` }, { quoted: m })
-            }
-            if (isDocMp4) {
-                return await conn.sendMessage(m.chat, { document: { url: dlUrl }, mimetype: 'video/mp4', fileName: `${titulo}.mp4` }, { quoted: m })
-            }
+            if (m.react) await m.react('🔥')
 
         } catch (e) {
             if (m.react) await m.react('❌')
-            return conn.reply(m.chat, `🛑 Error al procesar la descarga.`, m)
+            return conn.reply(m.chat, `🛑 Error al procesar el scraper nativo.`, m)
         }
         return 
     }
@@ -112,14 +143,14 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
         ]
 
-        let info = `「 🎬 𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴 」\n─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n`
-        info += `│ 👤 *𝙲𝙰𝙽𝙰𝙻:* ${result.author.name}\n`
-        info += `│ 🎵 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${result.title}\n`
-        info += `│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽:* ${result.timestamp}\n`
-        info += `│ 📅 *𝙿𝚄𝙱𝙻𝙸𝙲𝙰𝙳𝙾:* ${result.ago || 'Reciente'}\n`
-        info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n`
-        info += `🛠️ *${dev}*\n`
-        info += `📡 *${chn}*`
+        let info = `「 🎬 𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴 」\n─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n` +
+                   `│ 👤 *𝙲𝙰𝙽𝙰𝙻:* ${result.author.name}\n` +
+                   `│ 🎵 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${result.title}\n` +
+                   `│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽:* ${result.timestamp}\n` +
+                   `│ 📅 *𝙿𝚄𝙱𝙻𝙸𝙲𝙰𝙳𝙾:* ${result.ago || 'Reciente'}\n` +
+                   `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n` +
+                   `🛠️ *${dev}*\n` +
+                   `📡 *${chn}*`
 
         await conn.sendMessage(m.chat, { 
             image: { url: result.thumbnail }, 
