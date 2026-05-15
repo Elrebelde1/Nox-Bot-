@@ -1,7 +1,9 @@
 /**
  * 📂 COMANDO: TikTok Uchiha Downloader
- * 📝 DESCRIPCIÓN: Descarga videos o audio de TikTok con botones.
+ * 📝 DESCRIPCIÓN: Descarga videos (Normal/HD) o audio con botones.
  * 👤 CREADOR: Barboza Developer
+ * ⚡ CANAL: Barboza Developer x Zona Developers
+ * 🔗 API: https://sylphyy.xyz/download/tiktok
  */
 
 import fetch from "node-fetch"
@@ -10,13 +12,11 @@ const handler = async (m, { conn, text, args, usedPrefix, command }) => {
     const dev = "⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓"
     const net = "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕"
     
-    // Ofuscación de credenciales
     const decode = (s) => Buffer.from(s, 'base64').toString('utf-8')
     const api = decode("aHR0cHM6Ly9zeWxwaHl5Lnh5ei9kb3dubG9hZC90aWt0b2s=")
     const key = decode("c3lscGh5LTZmMTUwZA==")
 
-    // Si el usuario presiona un botón, el comando se vuelve a ejecutar con argumentos
-    const type = args[0] // 'hd' o 'audio'
+    const type = args[0]
     const link = args[1]
 
     if (type && link) {
@@ -29,7 +29,7 @@ const handler = async (m, { conn, text, args, usedPrefix, command }) => {
             if (type === 'hd') {
                 await conn.sendMessage(m.chat, { 
                     video: { url: data.hdplay || data.play }, 
-                    caption: `✅ *Video HD Cargado*\n📌 ${data.title}\n\n${net}` 
+                    caption: `🎬 *VIDEO CALIDAD HD*\n🔥 ${data.title}\n\n${net}` 
                 }, { quoted: m })
             } else if (type === 'audio') {
                 await conn.sendMessage(m.chat, { 
@@ -37,14 +37,18 @@ const handler = async (m, { conn, text, args, usedPrefix, command }) => {
                     mimetype: 'audio/mpeg', 
                     fileName: `${data.title}.mp3` 
                 }, { quoted: m })
+            } else if (type === 'normal') {
+                await conn.sendMessage(m.chat, { 
+                    video: { url: data.play }, 
+                    caption: `✅ *VIDEO NORMAL*\n📌 ${data.title}\n\n${net}` 
+                }, { quoted: m })
             }
             return await m.react('🔥')
         } catch (e) {
-            return m.reply('✖️ Error al procesar la descarga.')
+            return m.react('✖️')
         }
     }
 
-    // Flujo inicial: Búsqueda y muestra de botones
     if (!text) return conn.reply(m.chat, `⚔️ *SISTEMA UCHIHA*\n\n> 🔗 *Pega un enlace de TikTok*`, m)
     
     await m.react('🔍')
@@ -53,7 +57,7 @@ const handler = async (m, { conn, text, args, usedPrefix, command }) => {
         const res = await fetch(`${api}?url=${encodeURIComponent(text)}&api_key=${key}`)
         const json = await res.json()
 
-        if (!json.status) return m.reply('🚫 Enlace inválido o servidor caído.')
+        if (!json.status) return m.reply('🚫 Enlace inválido.')
 
         const data = json.result
         const caption = `| 🎵 *𝖴𝖢𝖧𝖨𝖧𝖠 𝖳𝖨𝖪𝖳𝖮𝖪* 🎵\n` +
@@ -65,10 +69,10 @@ const handler = async (m, { conn, text, args, usedPrefix, command }) => {
                         `| 🛠️ *${dev}*\n` +
                         `| ⛩️ *${net}*`
 
-        // Adaptación de botones según tu ejemplo
         const buttons = [
-            { buttonId: `${usedPrefix + command} hd ${text}`, buttonText: { displayText: "🎬 Ver Video HD" }, type: 1 },
-            { buttonId: `${usedPrefix + command} audio ${text}`, buttonText: { displayText: "🎧 Extraer Audio" }, type: 1 }
+            { buttonId: `${usedPrefix + command} normal ${text}`, buttonText: { displayText: "🎥 Video Normal" }, type: 1 },
+            { buttonId: `${usedPrefix + command} hd ${text}`, buttonText: { displayText: "🎬 Video HD" }, type: 1 },
+            { buttonId: `${usedPrefix + command} audio ${text}`, buttonText: { displayText: "🎧 Solo Audio" }, type: 1 }
         ]
 
         await conn.sendMessage(m.chat, {
