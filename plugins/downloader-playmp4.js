@@ -1,6 +1,6 @@
 /**
- * 📂 COMANDO: Uchiha YouTube Play (Scraper Wrapper)
- * 📝 DESCRIPCIÓN: Busca y descarga música usando yt-dlp-wrap de forma limpia.
+ * 📂 COMANDO: Uchiha YouTube Play (Scraper Wrapper Auto-Binario)
+ * 📝 DESCRIPCIÓN: Descarga música usando yt-dlp-wrap con descarga automática de binario.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  */
@@ -9,7 +9,15 @@ import YTDlpWrap from "yt-dlp-wrap"
 import yts from "yt-search"
 import fs from "fs"
 
-const ytDlpWrap = new YTDlpWrap()
+const binFolder = "./src/bin"
+const binPath = `${binFolder}/yt-dlp`
+if (!fs.existsSync(binFolder)) fs.mkdirSync(binFolder, { recursive: true })
+
+if (!fs.existsSync(binPath)) {
+    YTDlpWrap.default.downloadFromGithub(binPath).catch(() => {})
+}
+
+const ytDlpWrap = new YTDlpWrap.default(binPath)
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
     const dev = "⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓"
