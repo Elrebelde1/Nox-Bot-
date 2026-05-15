@@ -1,6 +1,6 @@
 /**
  * 📂 COMANDO: Uchiha Audio Downloader
- * 📝 DESCRIPCIÓN: Extractor de audio MP3 de alta calidad.
+ * 📝 DESCRIPCIÓN: Extractor de audio MP3 con imagen.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  * 🔗 API: https://sylphyy.xyz/download/v2/ytmp3
@@ -26,6 +26,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         if (!search.videos[0]) return m.reply('❌ No se encontró el audio.')
         
         let v = search.videos[0].url
+        let thumbnail = search.videos[0].thumbnail
         let res = await fetch(`${endpoint}?url=${encodeURIComponent(v)}&api_key=${key}`)
         let json = await res.json()
 
@@ -45,7 +46,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         report += `| 🛠️ *${dev}*\n`
         report += `| ⛩️ *${net}*`
 
-        await conn.reply(m.chat, report, m)
+        await conn.sendMessage(m.chat, { image: { url: thumbnail }, caption: report }, { quoted: m })
 
         await conn.sendMessage(m.chat, { 
             audio: { url: audio.dl_url }, 
@@ -62,6 +63,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
 handler.help = ['ytmp3']
 handler.tags = ['descargas']
-handler.command = ['ytmp3v2']
+handler.command = ['ytmp3']
 
 export default handler
