@@ -62,11 +62,22 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
             if (!dlUrl) throw 'Error'
 
-            if (command === 'yta' || command === 'ytmp3') {
+            if (isAudio || command === 'yta' || command === 'ytmp3') {
+                let infoAudio = `🎧 *𝚄𝙲𝙷𝙸𝙷𝙰 𝙰𝚄𝙳𝙸𝙾 𝙿𝙻𝙰𝚈𝙴𝚁*\n`
+                infoAudio += `─━━━━━━⊱ 🪐 ⊰━━━━━━─\n\n`
+                infoAudio += `📌 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${titulo}\n`
+                infoAudio += `📦 *𝙵𝙾𝚁𝙼𝙰𝚃𝙾:* MP3\n`
+                infoAudio += `✅ *𝙴𝚂𝚃𝙰𝙳𝙾:* Enviando...\n\n`
+                infoAudio += `─━━━━━━⊱ 🪐 ⊰━━━━━━─\n`
+                infoAudio += `🛠️ ${dev}\n`
+                infoAudio += `📡 ${chn}`
+                
+                await conn.reply(m.chat, infoAudio, m)
                 return await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: 'audio/mpeg' }, { quoted: m })
             }
+
             if (command === 'ytv' || command === 'ytmp4') {
-                return await conn.sendMessage(m.chat, { video: { url: dlUrl }, caption: `✅ *Video:* ${titulo}`, footer: "By Barboza-Team ⚡" }, { quoted: m })
+                return await conn.sendMessage(m.chat, { video: { url: dlUrl }, caption: `✅ *Video:* ${titulo}\n\n${dev}`, footer: chn }, { quoted: m })
             }
             if (isDocMp3) {
                 return await conn.sendMessage(m.chat, { document: { url: dlUrl }, mimetype: 'audio/mpeg', fileName: `${titulo}.mp3` }, { quoted: m })
