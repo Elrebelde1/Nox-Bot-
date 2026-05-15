@@ -2,10 +2,11 @@ let activeGames = new Map();
 
 const gameHandler = async (m, { conn, command, args, usedPrefix }) => {
     const mentionedJid = m.mentionedJid?.[0] || (m.quoted ? m.quoted.sender : null);
+    const userChoice = command.toLowerCase() === 'rival' ? null : args[0]?.toLowerCase();
 
-    // 1. MENU INICIAL: Si solo ponen .game
-    if (args.length === 0 && !mentionedJid) {
-        const caption = `🎮 *MENÚ DE JUEGO*\n\n¿Contra quién quieres jugar Piedra, Papel o Tijera?`;
+    // 1. MENÚ PRINCIPAL (.game)
+    if (command === 'game' && args.length === 0 && !mentionedJid) {
+        const caption = `🎮 *P.P.T - SELECCIÓN*\n\n¿Contra quién quieres medirte hoy?`;
         const buttons = [
             { buttonId: `${usedPrefix}game bot`, buttonText: { displayText: "🤖 Contra el Bot" }, type: 1 },
             { buttonId: `${usedPrefix}game member_tag`, buttonText: { displayText: "👥 Contra un Miembro" }, type: 1 }
@@ -13,33 +14,29 @@ const gameHandler = async (m, { conn, command, args, usedPrefix }) => {
 
         return await conn.sendMessage(m.chat, { 
             text: caption, 
-            buttons: buttons, 
-            headerType: 1,
+            buttons: buttons,
             viewOnce: true 
         }, { quoted: m });
     }
 
-    // 2. SOLICITAR MENCIÓN: Si eligió el botón de miembro pero no hay mención
-    if (args[0] === 'member_tag' && !mentionedJid) {
-        return conn.reply(m.chat, `⚠️ *¡Atención!* para jugar con alguien más debes mencionarlo.\n\nEscribe: *${usedPrefix}game @usuario*`, m);
+    // 2. RESPUESTA AL BOTÓN "CONTRA UN MIEMBRO"
+    if (args[0] === 'member_tag') {
+        return conn.reply(m.chat, `⏭️ *¡Excelente!*\n\nPara jugar contra alguien, usa el comando:\n*${usedPrefix}rival @usuario*`, m);
     }
 
-    // 3. INICIO AUTOMÁTICO: Si hay mención o eligió al bot
-    if (args[0] === 'bot' || mentionedJid) {
-        // Evitar jugar con uno mismo si es mención
-        if (mentionedJid === m.sender) return conn.reply(m.chat, `❌ No puedes jugar contigo mismo. ¡Menciona a otro amigo!`, m);
+    // 3. INICIO DE PARTIDA (Vía .game bot o .rival @tag)
+    if (args[0] === 'bot' || command === 'rival') {
+        if (command === 'rival' && !mentionedJid) {
+            return conn.reply(m.chat, `⚠️ Debes etiquetar a alguien para jugar.\nEjemplo: *${usedPrefix}rival @tag*`, m);
+        }
+        
+        if (mentionedJid === m.sender) return conn.reply(m.chat, `❌ No puedes jugar contra ti mismo.`, m);
 
         let opponent = mentionedJid ? mentionedJid : 'bot';
-        
-        // Guardar estado del juego
-        activeGames.set(m.chat, {
-            player1: m.sender,
-            player2: opponent,
-            isBot: opponent === 'bot'
-        });
+        activeGames.set(m.chat, { player1: m.sender, player2: opponent });
 
         const oppName = opponent === 'bot' ? 'el Bot' : `@${opponent.split('@')[0]}`;
-        const caption = `🕹️ *PARTIDA INICIADA*\n\n*Retador:* @${m.sender.split('@')[0]}\n*Oponente:* ${oppName}\n\nSelecciona tu jugada:`;
+        const caption = `🕹️ *PARTIDA INICIADA*\n\n*Retador:* @${m.sender.split('@')[0]}\n*Oponente:* ${oppName}\n\n¡Haz tu elección!`;
 
         const buttons = [
             { buttonId: `${usedPrefix}game piedra`, buttonText: { displayText: "🪨 Piedra" }, type: 1 },
@@ -55,29 +52,25 @@ const gameHandler = async (m, { conn, command, args, usedPrefix }) => {
         }, { quoted: m });
     }
 
-    // 4. PROCESAR JUGADA (Piedra, Papel o Tijera)
+    // 4. PROCESAR RESULTADO
     let choices = ['piedra', 'papel', 'tijera'];
-    let userChoice = args[0]?.toLowerCase();
-
     if (choices.includes(userChoice)) {
-        let game = activeGames.get(m.chat);
-        if (!game) return conn.reply(m.chat, `⚠️ No hay una partida activa. Inicia una con *${usedPrefix}game*`, m);
+        if (!activeGames.has(m.chat)) return;
 
-        // Lógica simplificada vs Bot (puedes expandir esto para PvP real luego)
         let botChoice = choices[Math.floor(Math.random() * choices.length)];
         let result = getResult(userChoice, botChoice);
 
         const resultText = `
 🕹️ *RESULTADOS*
 ──────────────
-🙋‍♂️ *Tú:* ${userChoice.toUpperCase()}
+🙋‍♂️ *Elegiste:* ${userChoice.toUpperCase()}
 🤖 *Oponente:* ${botChoice.toUpperCase()}
 ──────────────
-📌 *Estatus:* ${result}
+📌 *Resultado:* ${result}
 `.trim();
 
         const endButtons = [
-            { buttonId: `${usedPrefix}game`, buttonText: { displayText: "🔄 Juego Nuevo" }, type: 1 }
+            { buttonId: `${usedPrefix}game`, buttonText: { displayText: "🔄 Nuevo Juego" }, type: 1 }
         ];
 
         await conn.sendMessage(m.chat, {
@@ -86,24 +79,20 @@ const gameHandler = async (m, { conn, command, args, usedPrefix }) => {
             viewOnce: true
         }, { quoted: m });
 
-        activeGames.delete(m.chat); // Limpiar juego al terminar
+        activeGames.delete(m.chat);
     }
 };
 
 function getResult(user, bot) {
     if (user === bot) return "🤝 ¡Empate!";
-    if (
-        (user === 'piedra' && bot === 'tijera') ||
-        (user === 'papel' && bot === 'piedra') ||
-        (user === 'tijera' && bot === 'papel')
-    ) {
+    if ((user === 'piedra' && bot === 'tijera') || (user === 'papel' && bot === 'piedra') || (user === 'tijera' && bot === 'papel')) {
         return "🎉 ¡Ganaste!";
     }
     return "😢 Perdiste...";
 }
 
-gameHandler.help = ['game'];
+gameHandler.help = ['game', 'rival @tag'];
 gameHandler.tags = ['game'];
-gameHandler.command = /^(game)$/i;
+gameHandler.command = /^(game|rival)$/i; // Aquí detecta ambos comandos
 
 export default gameHandler;
