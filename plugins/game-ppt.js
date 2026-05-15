@@ -6,7 +6,7 @@ const gameHandler = async (m, { conn, command, args, usedPrefix }) => {
 
     // 1. MENÚ PRINCIPAL (.game)
     if (command === 'game' && args.length === 0 && !mentionedJid) {
-        const caption = `🎮 *P.P.T - SELECCIÓN*\n\n¿Contra quién quieres medirte hoy?`;
+        const caption = `🎮 *P.P.T - SELECCIÓN*\n\n¿Contra quién quieres jugar?`;
         const buttons = [
             { buttonId: `${usedPrefix}game bot`, buttonText: { displayText: "🤖 Contra el Bot" }, type: 1 },
             { buttonId: `${usedPrefix}game member_tag`, buttonText: { displayText: "👥 Contra un Miembro" }, type: 1 }
@@ -24,10 +24,10 @@ const gameHandler = async (m, { conn, command, args, usedPrefix }) => {
         return conn.reply(m.chat, `⏭️ *¡Excelente!*\n\nPara jugar contra alguien, usa el comando:\n*${usedPrefix}rival @usuario*`, m);
     }
 
-    // 3. INICIO DE PARTIDA (Vía .game bot o .rival @tag)
+    // 3. INICIO DE PARTIDA
     if (args[0] === 'bot' || command === 'rival') {
         if (command === 'rival' && !mentionedJid) {
-            return conn.reply(m.chat, `⚠️ Debes etiquetar a alguien para jugar.\nEjemplo: *${usedPrefix}rival @tag*`, m);
+            return conn.reply(m.chat, `⚠️ Debes etiquetar a alguien.\nEjemplo: *${usedPrefix}rival @tag*`, m);
         }
         
         if (mentionedJid === m.sender) return conn.reply(m.chat, `❌ No puedes jugar contra ti mismo.`, m);
@@ -36,7 +36,7 @@ const gameHandler = async (m, { conn, command, args, usedPrefix }) => {
         activeGames.set(m.chat, { player1: m.sender, player2: opponent });
 
         const oppName = opponent === 'bot' ? 'el Bot' : `@${opponent.split('@')[0]}`;
-        const caption = `🕹️ *PARTIDA INICIADA*\n\n*Retador:* @${m.sender.split('@')[0]}\n*Oponente:* ${oppName}\n\n¡Haz tu elección!`;
+        const caption = `🕹️ *PARTIDA INICIADA*\n\n*Retador:* @${m.sender.split('@')[0]}\n*Oponente:* ${oppName}\n\n¡Haz tu elección abajo!`;
 
         const buttons = [
             { buttonId: `${usedPrefix}game piedra`, buttonText: { displayText: "🪨 Piedra" }, type: 1 },
@@ -52,30 +52,48 @@ const gameHandler = async (m, { conn, command, args, usedPrefix }) => {
         }, { quoted: m });
     }
 
-    // 4. PROCESAR RESULTADO
+    // 4. PROCESAR RESULTADO Y ETIQUETAR
     let choices = ['piedra', 'papel', 'tijera'];
     if (choices.includes(userChoice)) {
-        if (!activeGames.has(m.chat)) return;
+        let game = activeGames.get(m.chat);
+        if (!game) return;
 
         let botChoice = choices[Math.floor(Math.random() * choices.length)];
-        let result = getResult(userChoice, botChoice);
+        let status = getResult(userChoice, botChoice);
+        
+        let winner, loser, resultMsg;
+        const p1 = `@${game.player1.split('@')[0]}`;
+        const p2 = game.player2 === 'bot' ? '🤖 Bot' : `@${game.player2.split('@')[0]}`;
 
-        const resultText = `
-🕹️ *RESULTADOS*
+        if (status === 'win') {
+            winner = p1;
+            loser = p2;
+            resultMsg = `🎉 *¡GANADOR:* ${winner}!\n💀 *¡PERDEDOR:* ${loser}`;
+        } else if (status === 'lose') {
+            winner = p2;
+            loser = p1;
+            resultMsg = `🎉 *¡GANADOR:* ${winner}!\n💀 *¡PERDEDOR:* ${loser}`;
+        } else {
+            resultMsg = `🤝 *¡HA SIDO UN EMPATE!*\nAmbos eligieron ${userChoice.toUpperCase()}`;
+        }
+
+        const captionResult = `
+🕹️ *RESULTADOS FINALES*
 ──────────────
-🙋‍♂️ *Elegiste:* ${userChoice.toUpperCase()}
-🤖 *Oponente:* ${botChoice.toUpperCase()}
+🙋‍♂️ ${p1}: ${userChoice.toUpperCase()}
+🤖 ${p2}: ${botChoice.toUpperCase()}
 ──────────────
-📌 *Resultado:* ${result}
+${resultMsg}
 `.trim();
 
         const endButtons = [
-            { buttonId: `${usedPrefix}game`, buttonText: { displayText: "🔄 Nuevo Juego" }, type: 1 }
+            { buttonId: `${usedPrefix}game`, buttonText: { displayText: "🔄 Juego Nuevo" }, type: 1 }
         ];
 
         await conn.sendMessage(m.chat, {
-            text: resultText,
+            text: captionResult,
             buttons: endButtons,
+            mentions: [game.player1, ...(game.player2 !== 'bot' ? [game.player2] : [])],
             viewOnce: true
         }, { quoted: m });
 
@@ -84,15 +102,15 @@ const gameHandler = async (m, { conn, command, args, usedPrefix }) => {
 };
 
 function getResult(user, bot) {
-    if (user === bot) return "🤝 ¡Empate!";
+    if (user === bot) return "tie";
     if ((user === 'piedra' && bot === 'tijera') || (user === 'papel' && bot === 'piedra') || (user === 'tijera' && bot === 'papel')) {
-        return "🎉 ¡Ganaste!";
+        return "win";
     }
-    return "😢 Perdiste...";
+    return "lose";
 }
 
 gameHandler.help = ['game', 'rival @tag'];
 gameHandler.tags = ['game'];
-gameHandler.command = /^(game|rival)$/i; // Aquí detecta ambos comandos
+gameHandler.command = /^(game|rival)$/i;
 
 export default gameHandler;
