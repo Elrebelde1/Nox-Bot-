@@ -47,6 +47,8 @@
     "boxen": "^7.1.1",
     "cfonts": "^3.3.0",
     "cors": "^2.8.5",
+    "dependencies": {
+    "got-scraping": "^3.2.33",
     "chalk": "^5.1.0",
     "cheerio": "npm:cheerio@1.0.0-rc.12",
     "didyoumean": "^1.2.2",
