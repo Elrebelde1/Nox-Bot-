@@ -1,7 +1,8 @@
 import fetch from "node-fetch"
 
 const handler = async (m, { text, conn, args, usedPrefix, command }) => {
-  let cleanUrl = text.split(' ')[0].split('?')[0];
+  let urlMatch = text.match(/https?:\/\/(?:www\.|web\.|m\.|lite\.|fb\.)?facebook\.com\/[^\s]+/i) || text.match(/https?:\/\/fb\.watch\/[^\s]+/i);
+  let cleanUrl = urlMatch ? urlMatch[0].split(' ')[0] : text.split(' ')[0];
 
   if (command === 'fb_vid' || command === 'fb_aud') {
     const b = (s) => Buffer.from(s, 'base64').toString('utf-8')
