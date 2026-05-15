@@ -1,6 +1,6 @@
 /**
  * 📂 COMANDO: TikTok Uchiha Downloader
- * 📝 DESCRIPCIÓN: Descarga videos (Normal/HD) o audio con botones.
+ * 📝 DESCRIPCIÓN: Envía video al instante y ofrece botones para HD o Audio.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  * 🔗 API: https://sylphyy.xyz/download/tiktok
@@ -29,18 +29,13 @@ const handler = async (m, { conn, text, args, usedPrefix, command }) => {
             if (type === 'hd') {
                 await conn.sendMessage(m.chat, { 
                     video: { url: data.hdplay || data.play }, 
-                    caption: `🎬 *VIDEO CALIDAD HD*\n🔥 ${data.title}\n\n${net}` 
+                    caption: `🎬 *CALIDAD ULTRA HD*\n📌 ${data.title}\n\n${net}` 
                 }, { quoted: m })
             } else if (type === 'audio') {
                 await conn.sendMessage(m.chat, { 
                     audio: { url: data.music }, 
                     mimetype: 'audio/mpeg', 
                     fileName: `${data.title}.mp3` 
-                }, { quoted: m })
-            } else if (type === 'normal') {
-                await conn.sendMessage(m.chat, { 
-                    video: { url: data.play }, 
-                    caption: `✅ *VIDEO NORMAL*\n📌 ${data.title}\n\n${net}` 
                 }, { quoted: m })
             }
             return await m.react('🔥')
@@ -70,17 +65,18 @@ const handler = async (m, { conn, text, args, usedPrefix, command }) => {
                         `| ⛩️ *${net}*`
 
         const buttons = [
-            { buttonId: `${usedPrefix + command} normal ${text}`, buttonText: { displayText: "🎥 Video Normal" }, type: 1 },
-            { buttonId: `${usedPrefix + command} hd ${text}`, buttonText: { displayText: "🎬 Video HD" }, type: 1 },
-            { buttonId: `${usedPrefix + command} audio ${text}`, buttonText: { displayText: "🎧 Solo Audio" }, type: 1 }
+            { buttonId: `${usedPrefix + command} hd ${text}`, buttonText: { displayText: "🎬 Descargar en HD" }, type: 1 },
+            { buttonId: `${usedPrefix + command} audio ${text}`, buttonText: { displayText: "🎧 Extraer Audio" }, type: 1 }
         ]
 
         await conn.sendMessage(m.chat, {
-            image: { url: data.cover },
+            video: { url: data.play },
             caption: caption,
             buttons: buttons,
             viewOnce: true
         }, { quoted: m })
+
+        await m.react('✅')
 
     } catch (e) {
         await m.react('✖️')
