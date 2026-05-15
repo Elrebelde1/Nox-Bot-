@@ -1,15 +1,15 @@
 /**
- * 📂 COMANDO: Uchiha YouTube Play (Scraper Nativo Corregido)
- * 📝 DESCRIPCIÓN: Busca y descarga música usando yt-dlp de forma local.
+ * 📂 COMANDO: Uchiha YouTube Play (Scraper Wrapper)
+ * 📝 DESCRIPCIÓN: Busca y descarga música usando yt-dlp-wrap de forma limpia.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  */
 
-import { exec } from "child_process"
+import YTDlpWrap from "yt-dlp-wrap"
 import yts from "yt-search"
-import { promisify } from "util"
 import fs from "fs"
-const execPromise = promisify(exec)
+
+const ytDlpWrap = new YTDlpWrap()
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
     const dev = "⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓"
@@ -33,7 +33,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                     `|═══════════════════\n` +
                     `| 💿 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${title}\n` +
                     `| ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾́𝙽:* ${duration}\n` +
-                    `| 📡 *𝚂𝚃𝙰𝚃𝚄𝚂:* ✅ Scraper Activo\n` +
+                    `| 📡 *𝚂𝚃𝙰𝚃𝚄𝚂:* ✅ Scraper Wrapper\n` +
                     `|═══════════════════\n` +
                     `| 🛠️ *${dev}*\n` +
                     `| ⛩️ *${net}*`
@@ -42,8 +42,14 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         await m.react('⏳')
 
         const outputFilename = `./${video.videoId}.mp3`
-        
-        await execPromise(`yt-dlp -x --audio-format mp3 --audio-quality 0 -o "${outputFilename}" "${link}"`)
+
+        await ytDlpWrap.execPromise([
+            link,
+            "-x",
+            "--audio-format", "mp3",
+            "--audio-quality", "0",
+            "-o", outputFilename
+        ])
 
         await conn.sendMessage(m.chat, { 
             audio: { url: outputFilename }, 
