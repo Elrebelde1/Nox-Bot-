@@ -1,15 +1,18 @@
-import { igdl } from 'ruhend-scraper';
+import fetch from "node-fetch"
 
 const handler = async (m, { text, conn, args, usedPrefix, command }) => {
-  // Limpieza del link para evitar errores por parámetros de rastreo
   let cleanUrl = text.split(' ')[0].split('?')[0];
 
-  // Manejadores para los botones (HD y Audio)
   if (command === 'fb_vid' || command === 'fb_aud') {
-    const res = await igdl(cleanUrl);
-    const result = res.data;
+    const b = (s) => Buffer.from(s, 'base64').toString('utf-8')
+    const endpoint = b("aHR0cHM6Ly9hcGkuZXZvZ2Iub3JnL2RsL2ZhY2Vib29r")
+    const access = b("c2FzdWtl")
 
-    const dataHd = result.find(i => i.resolution === "720p (HD)") || result[0];
+    const res = await fetch(`${endpoint}?url=${encodeURIComponent(cleanUrl)}&key=${access}`)
+    const json = await res.json()
+    const result = json.resultados;
+
+    const dataHd = result.find(i => i.quality.includes("720p") || i.quality.includes("HD")) || result[0];
 
     if (command === 'fb_vid') {
       return await conn.sendMessage(m.chat, { 
@@ -32,32 +35,41 @@ const handler = async (m, { text, conn, args, usedPrefix, command }) => {
   await m.react('🕒');
 
   try {
-    const res = await igdl(cleanUrl);
-    const result = res.data;
+    const b = (s) => Buffer.from(s, 'base64').toString('utf-8')
+    const endpoint = b("aHR0cHM6Ly9hcGkuZXZvZ2Iub3JnL2RsL2ZhY2Vib29r")
+    const access = b("c2FzdWtl")
 
-    if (!result || result.length === 0) {
+    const res = await fetch(`${endpoint}?url=${encodeURIComponent(cleanUrl)}&key=${access}`)
+    const json = await res.json()
+    const result = json.resultados;
+
+    if (!json.status || !result || result.length === 0) {
       await m.react('❌');
       return conn.reply(m.chat, '*No se encontraron resultados para este video.*', m);
     }
 
-    const data = result.find(i => i.resolution === "720p (HD)") || result.find(i => i.resolution === "360p (SD)") || result[0];
+    let data = result.find(i => i.quality.includes("720p") || i.quality.includes("HD")) || result.find(i => i.quality.includes("360p") || i.quality.includes("SD")) || result[0];
+
+    if (!data.url || data.url === "/") {
+        data = result.find(v => v.url && v.url !== "/")
+    }
 
     await m.react('✅');
+
+    const dev = "⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓"
+    const net = "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕"
 
     const buttons = [
       { buttonId: `${usedPrefix}fb_vid ${cleanUrl}`, buttonText: { displayText: 'Video en HD 🎥' }, type: 1 },
       { buttonId: `${usedPrefix}fb_aud ${cleanUrl}`, buttonText: { displayText: 'Extraer Audio 🎵' }, type: 1 }
     ];
 
-    const caption = `╔══🔥 • 𝕾𝕬𝕾𝖀𝕶𝕰 𝕭𝕺𝕿 • 🔥══╗
-   ✅  *FACEBOOK DESCARGADO* ╚════════════════════╝
-
-_Usa los botones para obtener la mejor calidad o el audio._`.trim();
+    const caption = `╔══🔥 • 𝕾𝕬𝕾𝖀𝕶𝕰 𝕭𝕺𝕿 • 🔥══╗\n   ✅  *FACEBOOK DESCARGADO* \n╚════════════════════╝\n\n_Usa los botones para obtener la mejor calidad o el audio._`.trim();
 
     await conn.sendMessage(m.chat, { 
       video: { url: data.url }, 
       caption: caption,
-      footer: 'By Barboza-Team ⚡',
+      footer: `${dev} x ${net}`,
       buttons: buttons,
       headerType: 4
     }, { quoted: m });
