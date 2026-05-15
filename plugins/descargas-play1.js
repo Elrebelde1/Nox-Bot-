@@ -4,7 +4,7 @@
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  * Usen los código porfa para traer más 
- * 🔗 API: https://api.delirius.store/download/ytmp3
+ * 🔗 API: https://sylphyy.xyz/download/v2/ytmp3
  */
 
 import fetch from "node-fetch"
@@ -33,23 +33,23 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         }, { quoted: m })
     }
 
-    const isAudio = /^(yta|ytmp3)$/i.test(command)
-    const isVideo = /^(ytv|ytmp4)$/i.test(command)
+    const isAudio = /^(yta|ytmp3|ytmp3doc)$/i.test(command)
+    const isVideo = /^(ytv|ytmp4|ytmp4doc)$/i.test(command)
     const isDocMp3 = /^(ytmp3doc)$/i.test(command)
     const isDocMp4 = /^(ytmp4doc)$/i.test(command)
 
-    if (isAudio || isVideo || isDocMp3 || isDocMp4) {
+    if (isAudio || isVideo) {
         if (m.react) await m.react('📥')
         try {
             let dlUrl = ''
             let titulo = ''
 
             if (isAudio || isDocMp3) {
-                let res = await fetch(`https://api.delirius.store/download/ytmp3?url=${encodeURIComponent(text)}`)
+                let res = await fetch(`https://sylphyy.xyz/download/v2/ytmp3?url=${encodeURIComponent(text)}&api_key=sylphy-6f150d`)
                 let json = await res.json()
-                if (json.status && json.data) {
-                    dlUrl = json.data.download
-                    titulo = json.data.title || 'Audio'
+                if (json.status && json.result) {
+                    dlUrl = json.result.dl_url
+                    titulo = json.result.title || 'Audio'
                 }
             } else if (isVideo || isDocMp4) {
                 let res = await fetch(`https://api.delirius.store/download/ytmp4?url=${encodeURIComponent(text)}`)
@@ -62,10 +62,10 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
             if (!dlUrl) throw 'Error'
 
-            if (isAudio) {
+            if (command === 'yta' || command === 'ytmp3') {
                 return await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: 'audio/mpeg' }, { quoted: m })
             }
-            if (isVideo) {
+            if (command === 'ytv' || command === 'ytmp4') {
                 return await conn.sendMessage(m.chat, { video: { url: dlUrl }, caption: `✅ *Video:* ${titulo}`, footer: "By Barboza-Team ⚡" }, { quoted: m })
             }
             if (isDocMp3) {
