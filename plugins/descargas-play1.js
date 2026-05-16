@@ -28,7 +28,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
     ]
 
-    // 1. Validar texto vacío
     if (!text.trim()) {
         const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
         let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
@@ -42,14 +41,11 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         }, { quoted: m })
     }
 
-    // 2. Mapeo correcto de comandos alternativos
     const isAudio = /^(yta|ytmp3|ytmp3doc)$/i.test(command)
-    const isVideo = /^(ytv|mp4|ytmp4|ytmp4doc)$/i.test(command)
+    const isVideo = /^(ytv|ytmp4|ytmp4doc)$/i.test(command)
     const isDocMp3 = /^(ytmp3doc)$/i.test(command)
     const isDocMp4 = /^(ytmp4doc)$/i.test(command)
-    const isPlay = /^(play|play2|play3)$/i.test(command)
 
-    // 3. Flujo para descargas directas (Audio o Video)
     if (isAudio || isVideo) {
         if (m.react) await m.react('📥')
         try {
@@ -64,7 +60,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                     titulo = searchUrl.videos[0].title
                     videoId = searchUrl.videos[0].videoId
                 } else {
-                    throw 'No se encontraron resultados para la búsqueda.'
+                    throw 'No encontrado'
                 }
             } else {
                 let searchInfo = await yts(link)
@@ -74,8 +70,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                 }
             }
 
-            // Sección de Audio
-            if (isAudio) {
+            if (isAudio || isDocMp3) {
                 const outputAudio = `./${videoId}.mp3`
 
                 await ytDlpWrap.execPromise([
@@ -102,9 +97,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                 }
 
                 if (existsSync(outputAudio)) unlinkSync(outputAudio)
-            } 
-            // Sección de Video
-            else if (isVideo) {
+            } else if (isVideo || isDocMp4) {
                 const outputVideo = `./${videoId}.mp4`
 
                 await ytDlpWrap.execPromise([
@@ -125,68 +118,62 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             if (m.react) await m.react('🔥')
 
         } catch (e) {
-            console.error(e)
             if (m.react) await m.react('❌')
-            return conn.reply(m.chat, `🛑 Error al procesar el scraper nativo:\n${e.message || e}`, m)
+            return conn.reply(m.chat, `🛑 Error al procesar el scraper nativo.`, m)
         }
         return 
     }
 
-    // 4. Flujo para el comando "PLAY" (Modo interactivo con búsqueda previa)
-    if (isPlay) {
-        try {
-            if (m.react) await m.react('🔍')
-            const search = await yts(text)
-            if (!search || !search.all.length) {
-                if (m.react) await m.react('❌')
-                return conn.reply(m.chat, '❌ Sin resultados.', m)
-            }
-
-            const result = search.videos[0]
-            const videoUrl = `https://www.youtube.com/watch?v=${result.videoId}`
-
-            let report = `| 🎵 *𝖴𝖢𝖧𝖨𝖧𝙰 𝖯𝖫𝙰𝖸* 🎵\n` +
-                        `|═══════════════════\n` +
-                        `| 💿 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${result.title}\n` +
-                        `| ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾́𝙽:* ${result.timestamp}\n` +
-                        `| 📡 *𝚂𝚃𝙰𝚃𝚄𝚂:* ✅ Scraper Activo\n` +
-                        `|═══════════════════\n` +
-                        `| 🛠️ *⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓*\n` +
-                        `| ⛩️ *⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕*`
-
-            await conn.sendMessage(m.chat, { 
-                image: { url: result.thumbnail }, 
-                caption: report
-            }, { quoted: m })
-
-            if (m.react) await m.react('⏳')
-
-            const outputAudioAuto = `./${result.videoId}.mp3`
-
-            await ytDlpWrap.execPromise([
-                videoUrl,
-                "-x",
-                "--audio-format", "mp3",
-                "--audio-quality", "0",
-                "-o", outputAudioAuto
-            ])
-
-            await conn.sendMessage(m.chat, { 
-                audio: { url: outputAudioAuto }, 
-                mimetype: 'audio/mpeg',
-                fileName: `${result.title}.mp3`
-            }, { quoted: m })
-
-            if (existsSync(outputAudioAuto)) unlinkSync(outputAudioAuto)
-
-            if (m.react) await m.react('🔥')
-        } catch (e) {
-            console.error(e)
+    try {
+        if (m.react) await m.react('🔍')
+        const search = await yts(text)
+        if (!search || !search.all.length) {
             if (m.react) await m.react('❌')
-            return conn.reply(m.chat, `🛑 Error en el comando Play:\n${e.message || e}`, m)
+            return conn.reply(m.chat, '❌ Sin resultados.', m)
         }
+
+        const result = search.videos[0]
+        const videoUrl = `https://www.youtube.com/watch?v=${result.videoId}`
+
+        let report = `| 🎵 *𝖴𝖢𝖧𝖨𝖧𝖠 𝖯𝖫𝙰𝖸* 🎵\n` +
+                    `|═══════════════════\n` +
+                    `| 💿 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${result.title}\n` +
+                    `| ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾́𝙽:* ${result.timestamp}\n` +
+                    `| 📡 *𝚂𝚃𝙰𝚃𝚄𝚂:* ✅ Scraper Activo\n` +
+                    `|═══════════════════\n` +
+                    `| 🛠️ *⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓*\n` +
+                    `| ⛩️ *⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕*`
+
+        await conn.sendMessage(m.chat, { 
+            image: { url: result.thumbnail }, 
+            caption: report
+        }, { quoted: m })
+
+        if (m.react) await m.react('⏳')
+
+        const outputAudioAuto = `./${result.videoId}.mp3`
+
+        await ytDlpWrap.execPromise([
+            videoUrl,
+            "-x",
+            "--audio-format", "mp3",
+            "--audio-quality", "0",
+            "-o", outputAudioAuto
+        ])
+
+        await conn.sendMessage(m.chat, { 
+            audio: { url: outputAudioAuto }, 
+            mimetype: 'audio/mpeg',
+            fileName: `${result.title}.mp3`
+        }, { quoted: m })
+
+        if (existsSync(outputAudioAuto)) unlinkSync(outputAudioAuto)
+
+        if (m.react) await m.react('🔥')
+    } catch (e) {
+        if (m.react) await m.react('❌')
     }
 }
 
-handler.command = /^(play|play2|play3|yta|ytmp3|ytv|mp4|ytmp4|ytmp3doc|ytmp4doc)$/i
+handler.command = /^(play|yta|ytmp3|play2|play3|ytv|mp4|ytmp4|ytmp3doc|ytmp4doc)$/i
 export default handler
