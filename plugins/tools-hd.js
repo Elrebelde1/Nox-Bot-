@@ -1,71 +1,57 @@
-import axios from 'axios';
-import FormData from 'form-data';
+import fetch from "node-fetch"
+import uploadImage from '../lib/uploadImage.js'
 
-let handler = async (m, { conn, prefix, command }) => {
-  try {
-    let q = m.quoted ? m.quoted : m;
-    let mime = (q.msg || q).mimetype || '';
+const handler = async (m, { conn, text, args }) => {
+    let q = m.quoted ? m.quoted : m
+    let mime = (q.msg || q).mimetype || ''
+    
+    let mediaUrl = ""
 
-    if (!mime) return m.reply(`📸 Responde a una imagen con el comando *${prefix}${command}* para mejorarla.`);
-    if (!mime.startsWith('image')) return m.reply(`⚠️ Solo se admiten imágenes.`);
+    if (/image|video|audio|document/.test(mime)) {
+        await m.react('🕒')
+        let media = await q.download()
+        mediaUrl = await uploadImage(media)
+    } else if (args[0] && args[0].startsWith('http')) {
+        await m.react('🕒')
+        mediaUrl = args[0]
+    } else {
+        return conn.reply(m.chat, `⚠️ *SISTEMA UCHIHA*\n\n> 📂 *Responde a una imagen/archivo o ingresa una URL directamente.*`, m)
+    }
 
-    await conn.sendMessage(m.chat, {
-      react: { text: "🔄", key: m.key }
-    });
+    try {
+        const b = (s) => Buffer.from(s, 'base64').toString('utf-8')
+        const endpoint = b("aHR0cHM6Ly9hcGkuZXZvZ2Iub3JnL3Rvb2xzL3VwbG9hZA==")
+        const access = b("c2FzdWtl")
 
-    const media = await q.download();
+        let res = await fetch(`${endpoint}?url=${encodeURIComponent(mediaUrl)}&key=${access}`)
+        let json = await res.json()
 
-    const enhancedBuffer = await ihancer(media, { method: 1, size: 'high' });
+        if (!json.status || !json.url) {
+            await m.react('❌')
+            return m.reply('*Error al subir el archivo al servidor central.*')
+        }
 
-    const caption = `✨ *Imagen mejorada con éxito*\n⚙️ Método: iHancer AI\n🔝 Calidad: High\n🔥 By: Sasuke Bot`;
+        const dev = "⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓"
+        const net = "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕"
 
-    await conn.sendMessage(m.chat, {
-      image: enhancedBuffer,
-      caption
-    }, { quoted: m });
+        let report = `| 📂 *𝖴𝖢𝖧𝖨𝖧A CLOUD UPLOAD* 📂\n`
+        report += `|═══════════════════\n`
+        report += `| 🟢 *𝚂𝚃𝙰𝚃𝚄𝚂:* Enlace Generado\n`
+        report += `| 🔗 *𝚄𝚁𝙻:* ${json.url}\n`
+        report += `|═══════════════════\n`
+        report += `| 🛠️ *${dev}*\n`
+        report += `| ⛩️ *${net}*`
 
-    await conn.sendMessage(m.chat, {
-      react: { text: "✅", key: m.key }
-    });
+        await conn.reply(m.chat, report, m)
+        await m.react('✅')
 
-  } catch (e) {
-    console.error(e);
-    await conn.sendMessage(m.chat, {
-      react: { text: "❌", key: m.key }
-    });
-    await m.reply("⚠️ Ocurrió un error al procesar la imagen con iHancer.");
-  }
-};
-
-async function ihancer(buffer, { method = 1, size = 'low' } = {}) {
-    const _size = ['low', 'medium', 'high']
-
-    if (!buffer || !Buffer.isBuffer(buffer)) throw new Error('Se requiere una imagen')
-    if (method < 1 || method > 4) throw new Error('Métodos disponibles: 1, 2, 3, 4')
-    if (!_size.includes(size)) throw new Error(`Calidades disponibles: ${_size.join(', ')}`)
-
-    const form = new FormData()
-    form.append('method', method.toString())
-    form.append('is_pro_version', 'false')
-    form.append('is_enhancing_more', 'false')
-    form.append('max_image_size', size)
-    form.append('file', buffer, `sasuke_${Date.now()}.jpg`)
-
-    const { data } = await axios.post('https://ihancer.com/api/enhance', form, {
-        headers: {
-            ...form.getHeaders(),
-            'accept-encoding': 'gzip',
-            'host': 'ihancer.com',
-            'user-agent': 'Dart/3.5 (dart:io)'
-        },
-        responseType: 'arraybuffer'
-    })
-
-    return Buffer.from(data)
+    } catch (e) {
+        await m.react('❌')
+    }
 }
 
-handler.help = ['hd'];
-handler.tags = ['ai', 'imagen'];
-handler.command = ['hd', 'upscale', 'enhance'];
+handler.help = ['tourl', 'upload']
+handler.tags = ['tools']
+handler.command = /^(hd|upload|subir)$/i
 
-export default handler;
+export default handler
