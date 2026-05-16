@@ -9,7 +9,12 @@ import axios from 'axios'
 
 var handler = async (m, { conn, text, usedPrefix, command }) => {
     if (!m.isGroup) return
-    
+
+    // Validación de la base de datos para comandos +18 desactivados
+    if (!db.data.chats[m.chat].nsfw && m.isGroup) {
+        return m.reply('*[❗] 𝐋𝐨𝐬 𝐜𝐨𝐦𝐚𝐧𝐝𝐨𝐬 +𝟏𝟖 𝐞𝐬𝐭𝐚́𝐧 𝐝𝐞𝐬𝐚𝐜𝐭𝐢𝐯𝐚𝐝𝐨𝐬 𝐞𝐧 𝐞𝐬𝐭𝐞 𝐠𝐫𝐮𝐩𝐨.*\n> 𝐬𝐢 𝐞𝐬 𝐚𝐝𝐦𝐢𝐧 𝐲 𝐝𝐞𝐬𝐞𝐚 𝐚𝐜𝐭𝐢𝐯𝐚𝐫𝐥𝐨𝐬 𝐮𝐬𝐞 .enable nsfw');
+    }
+
     let query = text ? text.trim() : (m.quoted?.text || null)
     if (!query) return conn.reply(m.chat, `✨ *¿Qué buscas?*\n\n> *Ejemplo:* ${usedPrefix + command} Rusas`, m)
 
@@ -32,7 +37,7 @@ var handler = async (m, { conn, text, usedPrefix, command }) => {
 
     try {
         const { data: searchRes } = await axios.get(`https://api.delirius.store/search/xnxxsearch?query=${encodeURIComponent(query)}`)
-        
+
         if (!searchRes.status || !searchRes.data.length) {
             await m.react('❌')
             return
