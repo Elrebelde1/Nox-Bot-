@@ -31,18 +31,24 @@ const handler = async (m, { conn, text, args }) => {
             return m.reply('*Error al subir el archivo al servidor central.*')
         }
 
+        let cleanUrl = json.url.split(';')[0].trim()
+
         const dev = "⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓"
         const net = "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕"
 
-        let report = `| 📂 *𝖴𝖢𝖧𝖨𝖧A CLOUD UPLOAD* 📂\n`
+        let report = `| 📂 *𝖴𝖢𝖧𝖨𝖧𝖠 𝖢𝖫𝖮𝖴 Slate* 📂\n`
         report += `|═══════════════════\n`
         report += `| 🟢 *𝚂𝚃𝙰𝚃𝚄𝚂:* Enlace Generado\n`
-        report += `| 🔗 *𝚄𝚁𝙻:* ${json.url}\n`
+        report += `| 🔗 *𝚄𝚁𝙻:* ${cleanUrl}\n`
         report += `|═══════════════════\n`
         report += `| 🛠️ *${dev}*\n`
         report += `| ⛩️ *${net}*`
 
-        await conn.reply(m.chat, report, m)
+        await conn.sendMessage(m.chat, { 
+            image: { url: cleanUrl }, 
+            caption: report 
+        }, { quoted: m })
+        
         await m.react('✅')
 
     } catch (e) {
@@ -52,6 +58,6 @@ const handler = async (m, { conn, text, args }) => {
 
 handler.help = ['tourl', 'upload']
 handler.tags = ['tools']
-handler.command = /^(hd|upload|subir)$/i
+handler.command = /^(tourl|upload|subir|hd)$/i
 
 export default handler
