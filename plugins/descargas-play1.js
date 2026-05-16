@@ -135,14 +135,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const result = search.videos[0]
         const videoUrl = `https://www.youtube.com/watch?v=${result.videoId}`
 
-        const buttons = [
-            { buttonId: `${usedPrefix}yta ${videoUrl}`, buttonText: { displayText: "🎵 Audio" }, type: 1 },
-            { buttonId: `${usedPrefix}ytv ${videoUrl}`, buttonText: { displayText: "🎥 Video" }, type: 1 },
-            { buttonId: `${usedPrefix}ytmp3doc ${videoUrl}`, buttonText: { displayText: "📁 Documento MP3" }, type: 1 },
-            { buttonId: `${usedPrefix}ytmp4doc ${videoUrl}`, buttonText: { displayText: "📁 Documento MP4" }, type: 1 },
-            { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
-        ]
-
         let info = `「 🎬 𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴 」\n─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n` +
                    `│ 👤 *𝙲𝙰𝙽𝙰𝙻:* ${result.author.name}\n` +
                    `│ 🎵 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${result.title}\n` +
@@ -154,13 +146,28 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
         await conn.sendMessage(m.chat, { 
             image: { url: result.thumbnail }, 
-            caption: info, 
-            footer: "Seleccione una opción para descargar:", 
-            buttons: buttons, 
-            headerType: 4 
+            caption: info
         }, { quoted: m })
 
-        if (m.react) await m.react('✅')
+        const outputAudioAuto = `./${result.videoId}.mp3`
+        
+        await ytDlpWrap.execPromise([
+            videoUrl,
+            "-x",
+            "--audio-format", "mp3",
+            "--audio-quality", "0",
+            "-o", outputAudioAuto
+        ])
+
+        await conn.sendMessage(m.chat, { 
+            audio: { url: outputAudioAuto }, 
+            mimetype: 'audio/mpeg',
+            fileName: `${result.title}.mp3`
+        }, { quoted: m })
+
+        if (existsSync(outputAudioAuto)) unlinkSync(outputAudioAuto)
+
+        if (m.react) await m.react('🔥')
     } catch (e) {
         if (m.react) await m.react('❌')
     }
