@@ -1,12 +1,12 @@
 /**
- * 📂 COMANDO: YouTube Search
- * 📝 DESCRIPCIÓN: Búsqueda de videos en YouTube.
+ * 📂 COMANDO: yts / ytsearch
+ * 📝 DESCRIPCIÓN: Buscador de YouTube usando Scraper nativo (0 APIs).
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
- * 🔌 API: https://api.evogb.org
  */
 
-import axios from 'axios'
+// Asegúrate de tener instalada esta dependencia en tu bot: npm i yt-search
+import ytSearch from 'yt-search'
 
 var handler = async (m, { conn, text, usedPrefix, command }) => {
     let query = text ? text.trim() : (m.quoted?.text || null)
@@ -15,12 +15,12 @@ var handler = async (m, { conn, text, usedPrefix, command }) => {
     await m.react('🔍')
 
     try {
-        const _0x4a1b = 'ZWt1c2Fz' 
-        const key = Buffer.from(_0x4a1b, 'base64').toString('utf-8').split('').reverse().join('')
+        // Ejecuta el scraper directo a YouTube
+        const searchRes = await ytSearch(query)
+        const videos = searchRes.videos
 
-        const { data } = await axios.get(`https://api.evogb.org/search/yt?query=${encodeURIComponent(query)}&key=${key}`)
-
-        if (!data.status || !data.result.length) {
+        // Si no encuentra videos, tira el error para pasar al catch
+        if (!videos || videos.length === 0) {
             await m.react('❌')
             return m.reply('⚠️ *No se encontraron resultados.*')
         }
@@ -29,11 +29,12 @@ var handler = async (m, { conn, text, usedPrefix, command }) => {
         ui += `┃   🎥 *YOUTUBE SEARCH* ┃\n`
         ui += `┗━━━━━━━━━━━━━━━━┛\n\n`
 
-        data.result.slice(0, 6).forEach((vid, i) => {
+        // Tomamos los primeros 6 resultados del scraper
+        videos.slice(0, 6).forEach((vid, i) => {
             ui += `*${i + 1}.* ${vid.title}\n`
-            ui += `👤 *Autor:* ${vid.autor}\n`
-            ui += `⏱️ *Duración:* ${vid.duration}\n`
-            ui += `👁️ *Vistas:* ${vid.views}\n`
+            ui += `👤 *Autor:* ${vid.author.name}\n`
+            ui += `⏱️ *Duración:* ${vid.timestamp}\n`
+            ui += `👁️ *Vistas:* ${vid.views.toLocaleString()}\n`
             ui += `🔗 *Link:* ${vid.url}\n\n`
         })
 
@@ -41,16 +42,18 @@ var handler = async (m, { conn, text, usedPrefix, command }) => {
         ui += `⚡ *By: Barboza Developer*\n`
         ui += `🌐 *Zona Developers*`
 
+        // Envía la imagen del primer video junto con la lista recopilada por el scraper
         await conn.sendMessage(m.chat, { 
-            image: { url: data.result[0].banner }, 
+            image: { url: videos[0].thumbnail }, 
             caption: ui 
         }, { quoted: m })
 
         await m.react('✅')
 
     } catch (e) {
+        console.error(e)
         await m.react('❌')
-        m.reply('⚠️ *Error al conectar con la API de YouTube.*')
+        m.reply('⚠️ *Error interno al ejecutar el scraper de YouTube.*')
     }
 }
 
