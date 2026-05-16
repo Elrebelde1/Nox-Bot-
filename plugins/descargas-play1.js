@@ -1,6 +1,6 @@
 /**
  * 📂 COMANDO: Uchiha YouTube Downloader (Scraper Nativo Puro)
- * 📝 DESCRIPCIÓN: Descargador e instalador automático de yt-dlp-wrap sin APIs externas.
+ * 📝 DESCRIPCIÓN: Descarga e instala yt-dlp automáticamente. Envía info + foto + audio directo.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  */
@@ -21,8 +21,8 @@ if (!existsSync(binPath)) {
 const ytDlpWrap = new YTDlpWrap.default(binPath)
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    const dev = "𝑩𝒚 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑼𝒄𝒉𝒊𝒉𝒂 ⚡"
-    const chn = "𝒁𝒐𝒏𝒂 𝑫𝒆𝒗𝒔 𝑶𝒇𝒇𝒊𝒄𝒊𝒂𝒍"
+    const dev = "By Barboza Uchiha ⚡"
+    const chn = "Zona Devs Official"
 
     const botonesCanal = [
         { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
@@ -90,8 +90,8 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                                     `📦 *𝙵𝙾𝚁𝙼𝙰𝚃𝙾:* MP3\n` +
                                     `✅ *𝙴𝚂𝚃𝙰𝙳𝙾:* Enviando...\n\n` +
                                     `─━━━━━━⊱ 🪐 ⊰━━━━━━─\n` +
-                                    `🛠️ ${dev}\n` +
-                                    `📡 ${chn}`
+                                    `🛠️ 𝑩𝒚 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑼𝒄𝒉𝒊𝒉𝒂 ⚡\n` +
+                                    `📡 𝒁𝒐𝒏𝒂 𝑫𝒆𝒗𝒔 𝑶𝒇𝒇𝒊𝒄𝒊𝒂𝒍`
                     await conn.reply(m.chat, infoAudio, m)
                     await conn.sendMessage(m.chat, { audio: { url: outputAudio }, mimetype: 'audio/mpeg' }, { quoted: m })
                 }
@@ -109,7 +109,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                 if (isDocMp4) {
                     await conn.sendMessage(m.chat, { document: { url: outputVideo }, mimetype: 'video/mp4', fileName: `${titulo}.mp4` }, { quoted: m })
                 } else {
-                    await conn.sendMessage(m.chat, { video: { url: outputVideo }, caption: `✅ *Video:* ${titulo}\n\n${dev}` }, { quoted: m })
+                    await conn.sendMessage(m.chat, { video: { url: outputVideo }, caption: `✅ *Video:* ${titulo}\n\n🛠️ ${dev}` }, { quoted: m })
                 }
 
                 if (existsSync(outputVideo)) unlinkSync(outputVideo)
@@ -125,7 +125,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 
     try {
-        if (m.react) await m.react('⏳')
+        if (m.react) await m.react('🔍')
         const search = await yts(text)
         if (!search || !search.all.length) {
             if (m.react) await m.react('❌')
@@ -135,19 +135,21 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const result = search.videos[0]
         const videoUrl = `https://www.youtube.com/watch?v=${result.videoId}`
 
-        let info = `「 🎬 𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴 」\n─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n` +
-                   `│ 👤 *𝙲𝙰𝙽𝙰𝙻:* ${result.author.name}\n` +
-                   `│ 🎵 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${result.title}\n` +
-                   `│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽:* ${result.timestamp}\n` +
-                   `│ 📅 *𝙿𝚄𝙱𝙻𝙸𝙲𝙰𝙳𝙾:* ${result.ago || 'Reciente'}\n` +
-                   `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n` +
-                   `🛠️ *${dev}*\n` +
-                   `📡 *${chn}*`
+        let report = `| 🎵 *𝖴𝖢𝖧𝖨𝖧𝖠 𝖯𝖫𝙰𝖸* 🎵\n` +
+                    `|═══════════════════\n` +
+                    `| 💿 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${result.title}\n` +
+                    `| ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾́𝙽:* ${result.timestamp}\n` +
+                    `| 📡 *𝚂𝚃𝙰𝚃𝚄𝚂:* ✅ Scraper Activo\n` +
+                    `|═══════════════════\n` +
+                    `| 🛠️ *⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓*\n` +
+                    `| ⛩️ *⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕*`
 
         await conn.sendMessage(m.chat, { 
             image: { url: result.thumbnail }, 
-            caption: info
+            caption: report
         }, { quoted: m })
+
+        if (m.react) await m.react('⏳')
 
         const outputAudioAuto = `./${result.videoId}.mp3`
         
@@ -173,5 +175,5 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 }
 
-handler.command = /^(play|yta|ytmp3|play2|ytv|mp4|ytmp4|ytmp3doc|ytmp4doc)$/i
+handler.command = /^(play|yta|ytmp3|play2|play3|ytv|mp4|ytmp4|ytmp3doc|ytmp4doc)$/i
 export default handler
