@@ -1,6 +1,6 @@
 /**
  * 📂 COMANDO: google
- * 📝 DESCRIPCIÓN: Buscador de Google usando Scraper nativo (0 APIs y sin google-it).
+ * 📝 DESCRIPCIÓN: Buscador de Google/Web usando Scraper nativo estable (0 APIs y sin google-it).
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  * ⚠️ IMPORTANTE: Funciona con cheerio/fetch nativo de la base. 
@@ -18,11 +18,12 @@ let handler = async (m, { text, usedPrefix }) => {
   try {
     await m.react('🔍')
 
-    const url = `https://www.google.com/search?q=${encodeURIComponent(text.trim())}&hl=es`
+    // Usamos la versión HTML ligera para asegurar que las etiquetas no cambien
+    const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(text.trim())}`
     
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       }
     })
     
@@ -30,14 +31,21 @@ let handler = async (m, { text, usedPrefix }) => {
     const $ = cheerio.load(html)
     const results = []
 
-    // Raspando los contenedores principales de Google
-    $('.g').each((i, el) => {
-      const title = $(el).find('h3').text()
-      const link = $(el).find('a').attr('href')
-      const snippet = $(el).find('.VwiC3b').text()
+    // Raspando los bloques de resultados estables
+    $('.links_main').each((i, el) => {
+      const titleObj = $(el).find('.result__a')
+      const title = titleObj.text().trim()
+      const link = titleObj.attr('href')
+      const snippet = $(el).next('.result__snippet').text().trim()
 
       if (title && link) {
-        results.push({ title, link, snippet: snippet || 'Sin descripción disponible.' })
+        // Limpiamos los links redirigidos si los hay
+        let finalLink = link
+        if (link.includes('//duckduckgo.com/l/?kh=-1&uddg=')) {
+          finalLink = decodeURIComponent(link.split('uddg=')[1].split('&amp;')[0])
+        }
+        
+        results.push({ title, link: finalLink, snippet: snippet || 'Sin descripción disponible.' })
       }
     })
 
