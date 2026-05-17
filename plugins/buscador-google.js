@@ -18,7 +18,6 @@ let handler = async (m, { text, usedPrefix }) => {
   try {
     await m.react('🔍')
 
-    // Usamos la versión HTML ligera para asegurar que las etiquetas no cambien
     const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(text.trim())}`
     
     const response = await fetch(url, {
@@ -31,21 +30,28 @@ let handler = async (m, { text, usedPrefix }) => {
     const $ = cheerio.load(html)
     const results = []
 
-    // Raspando los bloques de resultados estables
-    $('.links_main').each((i, el) => {
+    $('.result').each((i, el) => {
       const titleObj = $(el).find('.result__a')
       const title = titleObj.text().trim()
-      const link = titleObj.attr('href')
-      const snippet = $(el).next('.result__snippet').text().trim()
+      const rawLink = titleObj.attr('href')
+      const snippet = $(el).find('.result__snippet').text().trim()
 
-      if (title && link) {
-        // Limpiamos los links redirigidos si los hay
-        let finalLink = link
-        if (link.includes('//duckduckgo.com/l/?kh=-1&uddg=')) {
-          finalLink = decodeURIComponent(link.split('uddg=')[1].split('&amp;')[0])
+      if (title && rawLink) {
+        let finalLink = rawLink
+        
+        // Limpieza profunda del enlace para quitar el formato de redirección
+        if (rawLink.includes('uddg=')) {
+          let parts = rawLink.split('uddg=')[1]
+          if (parts) {
+            finalLink = decodeURIComponent(parts.split('&')[0].split('&amp;')[0])
+          }
         }
         
-        results.push({ title, link: finalLink, snippet: snippet || 'Sin descripción disponible.' })
+        results.push({ 
+          title, 
+          link: finalLink, 
+          snippet: snippet || 'Sin descripción disponible.' 
+        })
       }
     })
 
@@ -56,7 +62,8 @@ let handler = async (m, { text, usedPrefix }) => {
 
     let reply = `🔎 *Resultados de búsqueda para:* ${text}\n\n`
 
-    results.slice(0, 8).forEach((item, i) => {
+    // Recorta estrictamente para dar un máximo de 5 informaciones
+    results.slice(0, 5).forEach((item, i) => {
       reply += `✨ *${i + 1}.* ${item.title}\n`
       reply += `📝 ${item.snippet}\n`
       reply += `🔗 ${item.link}\n\n`
