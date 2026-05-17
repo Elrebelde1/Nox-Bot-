@@ -12,13 +12,12 @@ import * as cheerio from 'cheerio'
 
 let handler = async (m, { text, usedPrefix }) => {
   if (!text) {
-    return m.reply(`🔍 Por favor, dime qué deseas buscar en Google.\n\n📌 Ejemplo: ${usedPrefix}google Messi Inter Miami`)
+    return m.reply(`⚠️ *¡Falta la consulta!* Por favor, escribe lo que deseas buscar.\n\n💡 *Ejemplo:* ${usedPrefix}google Inteligencia Artificial`)
   }
 
   try {
-    await m.react('🔍')
+    await m.react('⚡')
 
-    // Agregamos el parámetro &kl=es-es para forzar los resultados en idioma español
     const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(text.trim())}&kl=es-es`
     
     const response = await fetch(url, {
@@ -51,34 +50,37 @@ let handler = async (m, { text, usedPrefix }) => {
         results.push({ 
           title, 
           link: finalLink, 
-          snippet: snippet || 'Sin descripción disponible.' 
+          snippet: snippet || 'Sin resumen disponible para este sitio web.' 
         })
       }
     })
 
     if (results.length === 0) {
       await m.react('❌')
-      return m.reply('😕 No se encontraron resultados para tu búsqueda.')
+      return m.reply('❌ *No se hallaron coincidencias para tu búsqueda.*')
     }
 
-    let reply = `🔎 *Resultados de búsqueda para:* ${text}\n\n`
+    let ui = `╭🌐 ──── [ *GOOGLE SEARCH* ] ──── 🌐\n`
+    ui += `│ 🔍 *Búsqueda:* ${text.trim()}\n`
+    ui += `╰───────────────────────────\n\n`
 
     results.slice(0, 5).forEach((item, i) => {
-      reply += `✨ *${i + 1}.* ${item.title}\n`
-      reply += `📝 ${item.snippet}\n`
-      reply += `🔗 ${item.link}\n\n`
+      ui += `🔷 *[ 0${i + 1} ]* ── *${item.title.toUpperCase()}*\n`
+      ui += `📝 *Resumen:* _${item.snippet}_\n`
+      ui += `🔗 *Enlace:* ${item.link}\n\n`
     })
 
-    reply += `━━━━━━━━━━━━━━━━━━━━\n`
-    reply += `⚡ *By: Barboza Developer*\n`
-    reply += `🌐 *Zona Developers*`
+    ui += `╭───────────────────────────\n`
+    ui += `│ ⚡ *By: Barboza Developer*\n`
+    ui += `│ 🌐 *Zona Developers*\n`
+    ui += `╰───────────────────────────`
 
-    await m.reply(reply.trim())
+    await m.reply(ui.trim())
     await m.react('✅')
 
   } catch (err) {
     await m.react('❌')
-    m.reply(`🚨 Ocurrió un error al realizar la búsqueda con el scraper nativo.`)
+    m.reply(`⚠️ *Ocurrió un fallo en el sistema al procesar el scraper.*`)
   }
 }
 
