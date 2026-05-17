@@ -41,137 +41,112 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         }, { quoted: m })
     }
 
-    const isAudio = /^(yta|ytmp3|ytmp3doc)$/i.test(command)
-    const isVideo = /^(ytv|ytmp4|ytmp4doc)$/i.test(command)
+    const isPlay = /^(play|play2|play3)$/i.test(command)
+    const isAudio = /^(yta|ytmp3|ytmp3doc)$/i.test(command) || isPlay
+    const isVideo = /^(ytv|mp4|ytmp4|ytmp4doc)$/i.test(command)
     const isDocMp3 = /^(ytmp3doc)$/i.test(command)
     const isDocMp4 = /^(ytmp4doc)$/i.test(command)
 
-    if (isAudio || isVideo) {
-        if (m.react) await m.react('📥')
-        try {
-            let link = text.trim()
-            let titulo = 'Media_File'
-            let videoId = Date.now()
-
-            if (!link.includes('youtube.com') && !link.includes('youtu.be')) {
-                let searchUrl = await yts(text)
-                if (searchUrl && searchUrl.videos[0]) {
-                    link = searchUrl.videos[0].url
-                    titulo = searchUrl.videos[0].title
-                    videoId = searchUrl.videos[0].videoId
-                } else {
-                    throw 'No encontrado'
-                }
-            } else {
-                let searchInfo = await yts(link)
-                if (searchInfo && searchInfo.videos[0]) {
-                    titulo = searchInfo.videos[0].title
-                    videoId = searchInfo.videos[0].videoId
-                }
-            }
-
-            if (isAudio || isDocMp3) {
-                const outputAudio = `./${videoId}.mp3`
-
-                await ytDlpWrap.execPromise([
-                    link,
-                    "-x",
-                    "--audio-format", "mp3",
-                    "--audio-quality", "0",
-                    "-o", outputAudio
-                ])
-
-                if (isDocMp3) {
-                    await conn.sendMessage(m.chat, { document: { url: outputAudio }, mimetype: 'audio/mpeg', fileName: `${titulo}.mp3` }, { quoted: m })
-                } else {
-                    let infoAudio = `🎧 *𝚄𝙲𝙷𝙸𝙷𝙰 𝙰𝚄𝙳𝙸𝙾 𝙿𝙻𝙰𝚈𝙴𝚁*\n` +
-                                    `─━━━━━━⊱ 🪐 ⊰━━━━━━─\n\n` +
-                                    `📌 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${titulo}\n` +
-                                    `📦 *𝙵𝙾𝚁𝙼𝙰𝚃𝙾:* MP3\n` +
-                                    `✅ *𝙴𝚂𝚃𝙰𝙳𝙾:* Enviando...\n\n` +
-                                    `─━━━━━━⊱ 🪐 ⊰━━━━━━─\n` +
-                                    `🛠️ 𝑩𝒚 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑼𝒄𝒉𝒊𝒉𝒂 ⚡\n` +
-                                    `📡 𝒁𝒐𝒏𝒂 𝑫𝒆𝒗𝒔 𝑶𝒇𝒇𝒊𝒄𝒊𝒂𝒍`
-                    await conn.reply(m.chat, infoAudio, m)
-                    await conn.sendMessage(m.chat, { audio: { url: outputAudio }, mimetype: 'audio/mpeg' }, { quoted: m })
-                }
-
-                if (existsSync(outputAudio)) unlinkSync(outputAudio)
-            } else if (isVideo || isDocMp4) {
-                const outputVideo = `./${videoId}.mp4`
-
-                await ytDlpWrap.execPromise([
-                    link,
-                    "-f", "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]",
-                    "-o", outputVideo
-                ])
-
-                if (isDocMp4) {
-                    await conn.sendMessage(m.chat, { document: { url: outputVideo }, mimetype: 'video/mp4', fileName: `${titulo}.mp4` }, { quoted: m })
-                } else {
-                    await conn.sendMessage(m.chat, { video: { url: outputVideo }, caption: `✅ *Video:* ${titulo}\n\n🛠️ ${dev}` }, { quoted: m })
-                }
-
-                if (existsSync(outputVideo)) unlinkSync(outputVideo)
-            }
-
-            if (m.react) await m.react('🔥')
-
-        } catch (e) {
-            if (m.react) await m.react('❌')
-            return conn.reply(m.chat, `🛑 Error al procesar el scraper nativo.`, m)
-        }
-        return 
-    }
-
+    if (m.react) await m.react('📥')
+    
     try {
-        if (m.react) await m.react('🔍')
-        const search = await yts(text)
-        if (!search || !search.all.length) {
-            if (m.react) await m.react('❌')
-            return conn.reply(m.chat, '❌ Sin resultados.', m)
+        let link = text.trim()
+        let titulo = 'Media_File'
+        let videoId = Date.now()
+        let result = null
+
+        if (!link.includes('youtube.com') && !link.includes('youtu.be')) {
+            let searchUrl = await yts(text)
+            if (searchUrl && searchUrl.videos[0]) {
+                result = searchUrl.videos[0]
+                link = result.url
+                titulo = result.title
+                videoId = result.videoId
+            } else {
+                throw 'No encontrado'
+            }
+        } else {
+            let searchInfo = await yts(link)
+            if (searchInfo && searchInfo.videos[0]) {
+                result = searchInfo.videos[0]
+                titulo = result.title
+                videoId = result.videoId
+            }
         }
 
-        const result = search.videos[0]
-        const videoUrl = `https://www.youtube.com/watch?v=${result.videoId}`
+        if (isPlay && result) {
+            let report = `| 🎵 *𝖴𝖢𝖧𝖨𝖧𝙰 𝖯𝖫𝙰𝖸* 🎵\n` +
+                        `|═══════════════════\n` +
+                        `| 💿 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${result.title}\n` +
+                        `| ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾́𝙽:* ${result.timestamp}\n` +
+                        `| 📡 *𝚂𝚃𝙰𝚃𝚄𝚂:* ✅ Scraper Activo\n` +
+                        `|═══════════════════\n` +
+                        `| 🛠️ *⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓*\n` +
+                        `| ⛩️ *⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕*`
 
-        let report = `| 🎵 *𝖴𝖢𝖧𝖨𝖧𝖠 𝖯𝖫𝙰𝖸* 🎵\n` +
-                    `|═══════════════════\n` +
-                    `| 💿 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${result.title}\n` +
-                    `| ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾́𝙽:* ${result.timestamp}\n` +
-                    `| 📡 *𝚂𝚃𝙰𝚃𝚄𝚂:* ✅ Scraper Activo\n` +
-                    `|═══════════════════\n` +
-                    `| 🛠️ *⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓*\n` +
-                    `| ⛩️ *⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕*`
+            await conn.sendMessage(m.chat, { 
+                image: { url: result.thumbnail }, 
+                caption: report
+            }, { quoted: m })
+            if (m.react) await m.react('⏳')
+        }
 
-        await conn.sendMessage(m.chat, { 
-            image: { url: result.thumbnail }, 
-            caption: report
-        }, { quoted: m })
+        if (isVideo || isDocMp4) {
+            const outputVideo = `./${videoId}.mp4`
 
-        if (m.react) await m.react('⏳')
+            await ytDlpWrap.execPromise([
+                link,
+                "-f", "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]",
+                "-o", outputVideo
+            ])
 
-        const outputAudioAuto = `./${result.videoId}.mp3`
+            if (existsSync(outputVideo)) {
+                const videoBuffer = readFileSync(outputVideo)
+                if (isDocMp4) {
+                    await conn.sendMessage(m.chat, { document: videoBuffer, mimetype: 'video/mp4', fileName: `${titulo}.mp4` }, { quoted: m })
+                } else {
+                    await conn.sendMessage(m.chat, { video: videoBuffer, caption: `✅ *Video:* ${titulo}\n\n🛠️ ${dev}` }, { quoted: m })
+                }
+                unlinkSync(outputVideo)
+            }
+        } else if (isAudio || isDocMp3) {
+            const outputAudio = `./${videoId}.mp3`
 
-        await ytDlpWrap.execPromise([
-            videoUrl,
-            "-x",
-            "--audio-format", "mp3",
-            "--audio-quality", "0",
-            "-o", outputAudioAuto
-        ])
+            await ytDlpWrap.execPromise([
+                link,
+                "-x",
+                "--audio-format", "mp3",
+                "--audio-quality", "0",
+                "-o", outputAudio
+            ])
 
-        await conn.sendMessage(m.chat, { 
-            audio: { url: outputAudioAuto }, 
-            mimetype: 'audio/mpeg',
-            fileName: `${result.title}.mp3`
-        }, { quoted: m })
-
-        if (existsSync(outputAudioAuto)) unlinkSync(outputAudioAuto)
+            if (existsSync(outputAudio)) {
+                const audioBuffer = readFileSync(outputAudio)
+                if (isDocMp3) {
+                    await conn.sendMessage(m.chat, { document: audioBuffer, mimetype: 'audio/mpeg', fileName: `${titulo}.mp3` }, { quoted: m })
+                } else {
+                    if (!isPlay) {
+                        let infoAudio = `🎧 *𝚄𝙲𝙷𝙸𝙷𝙰 𝙰𝚄𝙳𝙸𝙾 𝙿𝙻𝙰𝚈𝙴𝚁*\n` +
+                                        `─━━━━━━⊱ 🪐 ⊰━━━━━━─\n\n` +
+                                        `📌 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${titulo}\n` +
+                                        `📦 *𝙵𝙾𝚁𝙼𝙰𝚃𝙾:* MP3\n` +
+                                        `✅ *𝙴𝚂𝚃𝙰𝙳𝙾:* Enviando...\n\n` +
+                                        `─━━━━━━⊱ 🪐 ⊰━━━━━━─\n` +
+                                        `🛠️ 𝑩𝒚 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑼𝒄𝒉𝒊𝒉𝒂 ⚡\n` +
+                                        `📡 𝒁𝒐𝒏𝒂 𝑫𝒆𝒗𝒔 𝑶𝒇𝒇𝒊𝒄𝒊𝒂𝒍`
+                        await conn.reply(m.chat, infoAudio, m)
+                    }
+                    await conn.sendMessage(m.chat, { audio: audioBuffer, mimetype: 'audio/mpeg', fileName: `${titulo}.mp3` }, { quoted: m })
+                }
+                unlinkSync(outputAudio)
+            }
+        }
 
         if (m.react) await m.react('🔥')
+
     } catch (e) {
         if (m.react) await m.react('❌')
+        return conn.reply(m.chat, `🛑 Error al procesar el scraper nativo.`, m)
     }
 }
 
