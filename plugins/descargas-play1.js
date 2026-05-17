@@ -1,4 +1,13 @@
-import { existsSync, unlinkSync } from 'fs'
+/**
+ * 📂 COMANDO: play / play2 / ytmp3 / ytmp4
+ * 📝 DESCRIPCIÓN: Descarga música y video de YouTube usando el extractor de Android contra bloqueos.
+ * 👤 CREADOR: Barboza Developer
+ * ⚡ CANAL: Barboza Developer x Zona Developers
+ * ⚠️ IMPORTANTE: Funciona con yt-dlp y yt-search de la base.
+ * ¡Ahora los códigos son mejores!
+ */
+
+import { existsSync, unlinkSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
 import yts from 'yt-search'
@@ -6,28 +15,36 @@ import YTDlpWrap from 'yt-dlp-wrap'
 
 const ytDlpPath = './yt-dlp'
 
-await YTDlpWrap.downloadFromGithub(ytDlpPath)
+if (!existsSync(ytDlpPath)) {
+  YTDlpWrap.downloadFromGithub(ytDlpPath).catch(() => {})
+}
 
 const ytDlp = new YTDlpWrap(ytDlpPath)
 
-async function downloadAudio(url, output) {
+// Función unificada para descargar Audio o Video
+async function downloadMedia(url, output, isVideo = false) {
   return new Promise((resolve, reject) => {
-    ytDlp.exec([
+    let args = [
       url,
       '--no-playlist',
-      '-x',
-      '--audio-format',
-      'mp3',
-      '--audio-quality',
-      '128K',
+      '--no-check-certificates',
+      '--prefer-insecure',
       '--extractor-args',
       'youtube:player_client=android',
       '-o',
       output
-    ])
+    ]
+
+    if (isVideo) {
+      args.push('-f', 'bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]')
+    } else {
+      args.push('-x', '--audio-format', 'mp3', '--audio-quality', '128K')
+    }
+
+    ytDlp.exec(args)
     .on('close', () => {
       if (!existsSync(output)) {
-        reject(new Error('No se generó el audio'))
+        reject(new Error('No se pudo generar el archivo multimedia.'))
       } else {
         resolve()
       }
@@ -36,17 +53,21 @@ async function downloadAudio(url, output) {
   })
 }
 
-const handler = async (m, { conn, args, usedPrefix }) => {
+const handler = async (m, { conn, args, usedPrefix, command }) => {
   if (!args[0]) {
     return conn.reply(
       m.chat,
-      `🎧 Usa así:\n${usedPrefix}sonido <nombre>`,
+      `╭─〔 ♆ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴* ♆ 〕─╮\n│\n│ 🎬 *ᴜsᴏ ᴄᴏʀʀᴇᴄᴛᴏ:* \n│ ${usedPrefix + command} [nombre o link]\n│\n│ 🌑 "ʙᴜsᴄᴀ ᴛᴜ ᴅᴇsᴛɪɴᴏ ᴇɴ ʟᴀ ᴍᴜsɪᴄᴀ"\n╰────────────────────────────╯`,
       m
     )
   }
 
+  const isPlay = /^(play|play2)$/i.test(command)
+  const isVideo = /^(ytmp4|mp4)$/i.test(command)
+  
   const query = args.join(' ')
-  const tempFile = join(tmpdir(), `audio_${Date.now()}.mp3`)
+  const ext = isVideo ? 'mp4' : 'mp3'
+  const tempFile = join(tmpdir(), `uchiha_${Date.now()}.${ext}`)
 
   try {
     await m.react('🔍')
@@ -54,70 +75,98 @@ const handler = async (m, { conn, args, usedPrefix }) => {
     const search = await yts(query)
 
     if (!search.videos.length) {
-      throw new Error('No encontrado')
+      await m.react('❌')
+      throw new Error('No se encontraron resultados.')
     }
 
     const video = search.videos[0]
 
-    const caption = `
-╭─❍ 「 ʟᴏɴᴇʟʏ ᴍᴜsɪᴄ 」
-│
-├ 🎵 ${video.title}
-├ ⏱️ ${video.timestamp}
-├ 👀 ${video.views.toLocaleString()}
-│
-╰──────────────❍
-`.trim()
+    // Si es .play o .play2, manda primero la carátula con la info
+    if (isPlay) {
+      let ui = `| 🎵 *𝖴𝖢𝖧𝖨𝖧𝙰 𝖯𝖫𝙰𝖸* 🎵\n` +
+               `|═══════════════════\n` +
+               `| 💿 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${video.title}\n` +
+               `| ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾́𝙽:* ${video.timestamp}\n` +
+               `| 📡 *𝚂𝚃𝙰𝚃𝚄𝚂:* ✅ Scraper Android Activo\n` +
+               `|═══════════════════\n` +
+               `| 🛠️ *⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓*\n` +
+               `| ⛩️ *⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕*`
 
-    await conn.sendMessage(
-      m.chat,
-      {
-        image: { url: video.thumbnail },
-        caption
-      },
-      { quoted: m }
-    )
+      await conn.sendMessage(
+        m.chat,
+        { image: { url: video.thumbnail }, caption: ui },
+        { quoted: m }
+      )
+    }
 
-    await m.react('📥')
+    await m.react('⏳')
 
-    await downloadAudio(video.url, tempFile)
-
-    await conn.sendMessage(
-      m.chat,
-      {
-        audio: { url: tempFile },
-        mimetype: 'audio/mpeg',
-        fileName: `${video.title}.mp3`,
-        ptt: false
-      },
-      { quoted: m }
-    )
+    // Llama al descargador dependiendo de si el comando pide video o audio
+    await downloadMedia(video.url, tempFile, isVideo)
 
     if (existsSync(tempFile)) {
+      const buffer = readFileSync(tempFile)
+      
+      if (isVideo) {
+        // Enviar Video
+        await conn.sendMessage(
+          m.chat,
+          {
+            video: buffer,
+            caption: `✅ *Video:* ${video.title}\n\n🛠️ By Barboza Uchiha ⚡`,
+            mimetype: 'video/mp4'
+          },
+          { quoted: m }
+        )
+      } else {
+        // Enviar Audio
+        if (!isPlay) {
+          let infoAudio = `🎧 *𝚄𝙲𝙷𝙸𝙷𝙰 𝙰𝚄𝙳𝙸𝙾 𝙿𝙻𝙰𝚈𝙴𝚁*\n` +
+                          `─━━━━━━⊱ 🪐 ⊰━━━━━━─\n\n` +
+                          `📌 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${video.title}\n` +
+                          `📦 *𝙵𝙾𝚁𝙼𝙰𝚃𝙾:* MP3\n` +
+                          `✅ *𝙴𝚂𝚃𝙰𝙳𝙾:* Enviando...\n\n` +
+                          `─━━━━━━⊱ 🪐 ⊰━━━━━━─\n` +
+                          `🛠️ 𝑩𝒚 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑼𝒄𝒉𝒊𝒉𝒂 ⚡\n` +
+                          `📡 𝒁𝒐𝒏𝒂 𝑫𝒆𝒗𝒔 𝑶𝒇𝒇𝒊𝒄𝒊𝒂𝒍`
+          await conn.reply(m.chat, infoAudio, m)
+        }
+        
+        await conn.sendMessage(
+          m.chat,
+          {
+            audio: buffer,
+            mimetype: 'audio/mpeg',
+            fileName: `${video.title}.mp3`,
+            ptt: false
+          },
+          { quoted: m }
+        )
+      }
+      
       unlinkSync(tempFile)
     }
 
-    await m.react('🟢')
+    await m.react('🔥')
 
   } catch (e) {
     if (existsSync(tempFile)) {
       unlinkSync(tempFile)
     }
 
-    console.log(e)
-
-    await m.react('🔴')
+    console.error("-> [Error en Uchiha Downloader]:", e)
+    await m.react('❌')
 
     return conn.reply(
       m.chat,
-      '❌ Error al descargar el audio',
+      `🛑 *Error al procesar la descarga.*\n\n💬 *Detalle:* ${e.message || e}`,
       m
     )
   }
 }
 
-handler.help = ['sonido']
+handler.help = ['play', 'play2', 'ytmp3', 'ytmp4']
 handler.tags = ['descargas']
-handler.command = /^(play)$/i
+handler.command = /^(play|play2|ytmp3|ytmp4|mp4)$/i
 
 export default handler
