@@ -7,7 +7,7 @@
 
 import YTDlpWrap from "yt-dlp-wrap"
 import yts from 'yt-search'
-import { readFileSync, existsSync, mkdirSync, unlinkSync } from 'fs'
+import { readFileSync, existsSync, mkdirSync, unlinkSync, chmodSync } from 'fs'
 import { join } from 'path'
 
 const binFolder = "./src/bin"
@@ -15,7 +15,11 @@ const binPath = `${binFolder}/yt-dlp`
 if (!existsSync(binFolder)) mkdirSync(binFolder, { recursive: true })
 
 if (!existsSync(binPath)) {
-    YTDlpWrap.default.downloadFromGithub(binPath).catch(() => {})
+    YTDlpWrap.default.downloadFromGithub(binPath)
+        .then(() => {
+            try { chmodSync(binPath, '755') } catch {}
+        })
+        .catch(() => {})
 }
 
 const ytDlpWrap = new YTDlpWrap.default(binPath)
@@ -41,6 +45,9 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         }, { quoted: m })
     }
 
+    // Asegurar permisos en cada ejecución por si acaso
+    try { if (existsSync(binPath)) chmodSync(binPath, '755') } catch {}
+
     const isPlay = /^(play|play2|play3)$/i.test(command)
     const isAudio = /^(yta|ytmp3|ytmp3doc)$/i.test(command) || isPlay
     const isVideo = /^(ytv|mp4|ytmp4|ytmp4doc)$/i.test(command)
@@ -63,7 +70,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                 titulo = result.title
                 videoId = result.videoId
             } else {
-                throw 'No encontrado'
+                throw new Error('No se encontraron videos en la búsqueda.')
             }
         } else {
             let searchInfo = await yts(link)
@@ -145,8 +152,9 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         if (m.react) await m.react('🔥')
 
     } catch (e) {
+        console.error("-> [Error en yt-dlp Scraper]:", e) // Esto te dirá exactamente qué falla en la consola del bot
         if (m.react) await m.react('❌')
-        return conn.reply(m.chat, `🛑 Error al procesar el scraper nativo.`, m)
+        return conn.reply(m.chat, `🛑 Error al procesar el scraper nativo.\n\n💬 *Detalle:* ${e.message || e}`, m)
     }
 }
 
