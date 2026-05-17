@@ -1,28 +1,12 @@
 /**
- * 📂 COMANDO: Uchiha YouTube Downloader (Scraper Nativo Puro)
- * 📝 DESCRIPCIÓN: Descarga e instala yt-dlp automáticamente. Envía info + foto + audio directo.
+ * 📂 COMANDO: Uchiha YouTube Downloader (API-Scraper Híbrido)
+ * 📝 DESCRIPCIÓN: Descarga música y video saltándose el bloqueo de IP de YouTube usando buffers directos.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  */
 
-import YTDlpWrap from "yt-dlp-wrap"
 import yts from 'yt-search'
-import { readFileSync, existsSync, mkdirSync, unlinkSync, chmodSync } from 'fs'
-import { join } from 'path'
-
-const binFolder = "./src/bin"
-const binPath = `${binFolder}/yt-dlp`
-if (!existsSync(binFolder)) mkdirSync(binFolder, { recursive: true })
-
-if (!existsSync(binPath)) {
-    YTDlpWrap.default.downloadFromGithub(binPath)
-        .then(() => {
-            try { chmodSync(binPath, '755') } catch {}
-        })
-        .catch(() => {})
-}
-
-const ytDlpWrap = new YTDlpWrap.default(binPath)
+import fetch from 'node-fetch'
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
     const dev = "By Barboza Uchiha ⚡"
@@ -33,19 +17,15 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     ]
 
     if (!text.trim()) {
-        const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
-        let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
         let intro = `╭─〔 ♆ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴* ♆ 〕─╮\n│\n│ 🎬 *ᴜsᴏ ᴄᴏʀʀᴇᴄᴛᴏ:* \n│ ${usedPrefix + command} [nombre o link]\n│\n│ 🌑 "ʙᴜsᴄᴀ ᴛᴜ ᴅᴇsᴛɪɴᴏ ᴇɴ ʟᴀ ᴍᴜsɪᴄᴀ"\n╰────────────────────────────╯`
         return await conn.sendMessage(m.chat, { 
-            image: catalogoImg.byteLength ? catalogoImg : { url: catalogoImg.url }, 
+            image: { url: 'https://files.catbox.moe/t7uytz.png' }, 
             caption: intro, 
             footer: "By Barboza-Team ⚡", 
             buttons: botonesCanal, 
             headerType: 4 
         }, { quoted: m })
     }
-
-    try { if (existsSync(binPath)) chmodSync(binPath, '755') } catch {}
 
     const isPlay = /^(play|play2|play3)$/i.test(command)
     const isAudio = /^(yta|ytmp3|ytmp3doc)$/i.test(command) || isPlay
@@ -57,35 +37,33 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     
     try {
         let link = text.trim()
-        let titulo = 'Media_File'
-        let videoId = Date.now()
         let result = null
 
+        // Buscador integrado usando tu librería yt-search nativa
         if (!link.includes('youtube.com') && !link.includes('youtu.be')) {
             let searchUrl = await yts(text)
             if (searchUrl && searchUrl.videos[0]) {
                 result = searchUrl.videos[0]
                 link = result.url
-                titulo = result.title
-                videoId = result.videoId
             } else {
-                throw new Error('No se encontraron videos en la búsqueda.')
+                throw new Error('No se encontraron resultados.')
             }
         } else {
             let searchInfo = await yts(link)
             if (searchInfo && searchInfo.videos[0]) {
                 result = searchInfo.videos[0]
-                titulo = result.title
-                videoId = result.videoId
             }
         }
 
+        const titulo = result ? result.title : 'Uchiha_Media'
+
+        // Si es el comando informativo principal (.play) manda la carátula primero
         if (isPlay && result) {
             let report = `| 🎵 *𝖴𝖢𝖧𝖨𝖧𝙰 𝖯𝖫𝙰𝖸* 🎵\n` +
                         `|═══════════════════\n` +
                         `| 💿 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${result.title}\n` +
                         `| ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾́𝙽:* ${result.timestamp}\n` +
-                        `| 📡 *𝚂𝚃𝙰𝚃𝚄𝚂:* ✅ Scraper Activo\n` +
+                        `| 📡 *𝚂𝚃𝙰𝚃𝚄𝚂:* ✅ Bypass Activo\n` +
                         `|═══════════════════\n` +
                         `| 🛠️ *⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓*\n` +
                         `| ⛩️ *⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕*`
@@ -97,71 +75,50 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             if (m.react) await m.react('⏳')
         }
 
+        // Consultamos al backend bypass para obtener la descarga limpia
+        const type = (isAudio || isDocMp3) ? 'mp3' : 'mp4'
+        const apiRes = await fetch(`https://api.vreden.my.id/api/v1/download/youtube?url=${encodeURIComponent(link)}&type=${type}`)
+        const json = await apiRes.json()
+
+        if (!json.status || !json.result || !json.result.download) {
+            throw new Error('El servidor de descargas rechazó la petición.')
+        }
+
+        const downloadUrl = json.result.download
+        const mediaBuffer = await fetch(downloadUrl).then(res => res.buffer())
+
+        // Filtrado de envíos según formato seleccionado
         if (isVideo || isDocMp4) {
-            const outputVideo = `./${videoId}.mp4`
-
-            await ytDlpWrap.execPromise([
-                link,
-                "-f", "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]",
-                "--no-check-certificates",
-                "--prefer-insecure",
-                "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-                // "--cookies", "./cookies.txt", 
-                "-o", outputVideo
-            ])
-
-            if (existsSync(outputVideo)) {
-                const videoBuffer = readFileSync(outputVideo)
-                if (isDocMp4) {
-                    await conn.sendMessage(m.chat, { document: videoBuffer, mimetype: 'video/mp4', fileName: `${titulo}.mp4` }, { quoted: m })
-                } else {
-                    await conn.sendMessage(m.chat, { video: videoBuffer, caption: `✅ *Video:* ${titulo}\n\n🛠️ ${dev}` }, { quoted: m })
-                }
-                unlinkSync(outputVideo)
+            if (isDocMp4) {
+                await conn.sendMessage(m.chat, { document: mediaBuffer, mimetype: 'video/mp4', fileName: `${titulo}.mp4` }, { quoted: m })
+            } else {
+                await conn.sendMessage(m.chat, { video: mediaBuffer, caption: `✅ *Video:* ${titulo}\n\n🛠️ ${dev}` }, { quoted: m })
             }
         } else if (isAudio || isDocMp3) {
-            const outputAudio = `./${videoId}.mp3`
-
-            await ytDlpWrap.execPromise([
-                link,
-                "-x",
-                "--audio-format", "mp3",
-                "--audio-quality", "0",
-                "--no-check-certificates",
-                "--prefer-insecure",
-                "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-                // "--cookies", "./cookies.txt", 
-                "-o", outputAudio
-            ])
-
-            if (existsSync(outputAudio)) {
-                const audioBuffer = readFileSync(outputAudio)
-                if (isDocMp3) {
-                    await conn.sendMessage(m.chat, { document: audioBuffer, mimetype: 'audio/mpeg', fileName: `${titulo}.mp3` }, { quoted: m })
-                } else {
-                    if (!isPlay) {
-                        let infoAudio = `🎧 *𝚄𝙲𝙷𝙸𝙷𝙰 𝙰𝚄𝙳𝙸𝙾 𝙿𝙻𝙰𝚈𝙴𝚁*\n` +
-                                        `─━━━━━━⊱ 🪐 ⊰━━━━━━─\n\n` +
-                                        `📌 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${titulo}\n` +
-                                        `📦 *𝙵𝙾𝚁𝙼𝙰𝚃𝙾:* MP3\n` +
-                                        `✅ *𝙴𝚂𝚃𝙰𝙳𝙾:* Enviando...\n\n` +
-                                        `─━━━━━━⊱ 🪐 ⊰━━━━━━─\n` +
-                                        `🛠️ 𝑩𝒚 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑼𝒄𝒉𝒊𝒉𝒂 ⚡\n` +
-                                        `📡 𝒁𝒐𝒏𝒂 𝑫𝒆𝒗𝒔 𝑶𝒇𝒇𝒊𝒄𝒊𝒂𝒍`
-                        await conn.reply(m.chat, infoAudio, m)
-                    }
-                    await conn.sendMessage(m.chat, { audio: audioBuffer, mimetype: 'audio/mpeg', fileName: `${titulo}.mp3` }, { quoted: m })
+            if (isDocMp3) {
+                await conn.sendMessage(m.chat, { document: mediaBuffer, mimetype: 'audio/mpeg', fileName: `${titulo}.mp3` }, { quoted: m })
+            } else {
+                if (!isPlay) {
+                    let infoAudio = `🎧 *𝚄𝙲𝙷𝙸𝙷𝙰 𝙰𝚄𝙳𝙸𝙾 𝙿𝙻𝙰𝚈𝙴𝚁*\n` +
+                                    `─━━━━━━⊱ 🪐 ⊰━━━━━━─\n\n` +
+                                    `📌 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${titulo}\n` +
+                                    `📦 *𝙵𝙾𝚁𝙼𝙰𝚃𝙾:* MP3\n` +
+                                    `✅ *𝙴𝚂𝚃𝙰𝙳𝙾:* Enviando...\n\n` +
+                                    `─━━━━━━⊱ 🪐 ⊰━━━━━━─\n` +
+                                    `🛠️ 𝑩𝒚 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑼𝒄𝒉𝒊𝒉𝒂 ⚡\n` +
+                                    `📡 𝒁𝒐𝒏𝒂 𝑫𝒆𝒗𝒔 𝑶𝒇𝒇𝒊𝒄𝒊𝒂𝒍`
+                    await conn.reply(m.chat, infoAudio, m)
                 }
-                unlinkSync(outputAudio)
+                await conn.sendMessage(m.chat, { audio: mediaBuffer, mimetype: 'audio/mpeg', fileName: `${titulo}.mp3` }, { quoted: m })
             }
         }
 
         if (m.react) await m.react('🔥')
 
     } catch (e) {
-        console.error("-> [Error en yt-dlp Scraper]:", e)
+        console.error("-> [Error en Uchiha Player Bypass]:", e)
         if (m.react) await m.react('❌')
-        return conn.reply(m.chat, `🛑 Error al procesar el scraper nativo.\n\n💬 *Detalle:* ${e.message || e}`, m)
+        return conn.reply(m.chat, `🛑 *Error General:* No se pudo descargar la pista musical.\n> Intenta de nuevo con otro término o verifica el enlace.`, m)
     }
 }
 
