@@ -55,11 +55,15 @@ async function downloadMedia(url, output, isVideo = false) {
 
 const handler = async (m, { conn, args, usedPrefix, command }) => {
   if (!args[0]) {
-    return conn.reply(
-      m.chat,
-      `╭─〔 ♆ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴* ♆ 〕─╮\n│\n│ 🎬 *ᴜsᴏ ᴄᴏʀʀᴇᴄᴛᴏ:* \n│ ${usedPrefix + command} [nombre o link]\n│\n│ 🌑 "ʙᴜsᴄᴀ ᴛᴜ ᴅᴇsᴛɪɴᴏ ᴇɴ ʟᴀ ᴍᴜsɪᴄᴀ"\n╰────────────────────────────╯`,
-      m
-    )
+    // Imagen corregida y funcional para el menú interactivo del comando vacío
+    let menuImg = 'https://files.catbox.moe/gcl8y0.jpg'
+    let textIntro = `╭─〔 ♆ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴* ♆ 〕─╮\n│\n│ 🎬 *ᴜsᴏ ᴄᴏʀʀᴇᴄᴛᴏ:* \n│ ${usedPrefix + command} [nombre o link]\n│\n│ 🌑 "ʙᴜsᴄᴀ ᴛᴜ ᴅᴇsᴛɪɴᴏ ᴇɴ ʟᴀ ᴍᴜsɪᴄᴀ"\n╰────────────────────────────╯`
+    
+    try {
+      return await conn.sendMessage(m.chat, { image: { url: menuImg }, caption: textIntro }, { quoted: m })
+    } catch {
+      return conn.reply(m.chat, textIntro, m)
+    }
   }
 
   const isPlay = /^(play|play2)$/i.test(command)
@@ -92,11 +96,16 @@ const handler = async (m, { conn, args, usedPrefix, command }) => {
                `| 🛠️ *⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓*\n` +
                `| ⛩️ *⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕*`
 
-      await conn.sendMessage(
-        m.chat,
-        { image: { url: video.thumbnail }, caption: ui },
-        { quoted: m }
-      )
+      try {
+        await conn.sendMessage(
+          m.chat,
+          { image: { url: video.thumbnail }, caption: ui },
+          { quoted: m }
+        )
+      } catch {
+        // Anticaídas por si falla el fetch de la miniatura de YouTube
+        await conn.reply(m.chat, ui, m)
+      }
     }
 
     await m.react('⏳')
