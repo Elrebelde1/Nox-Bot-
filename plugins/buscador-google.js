@@ -18,11 +18,13 @@ let handler = async (m, { text, usedPrefix }) => {
   try {
     await m.react('🔍')
 
-    const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(text.trim())}`
+    // Agregamos el parámetro &kl=es-es para forzar los resultados en idioma español
+    const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(text.trim())}&kl=es-es`
     
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'es-ES,es;q=0.9'
       }
     })
     
@@ -39,7 +41,6 @@ let handler = async (m, { text, usedPrefix }) => {
       if (title && rawLink) {
         let finalLink = rawLink
         
-        // Limpieza profunda del enlace para quitar el formato de redirección
         if (rawLink.includes('uddg=')) {
           let parts = rawLink.split('uddg=')[1]
           if (parts) {
@@ -62,7 +63,6 @@ let handler = async (m, { text, usedPrefix }) => {
 
     let reply = `🔎 *Resultados de búsqueda para:* ${text}\n\n`
 
-    // Recorta estrictamente para dar un máximo de 5 informaciones
     results.slice(0, 5).forEach((item, i) => {
       reply += `✨ *${i + 1}.* ${item.title}\n`
       reply += `📝 ${item.snippet}\n`
