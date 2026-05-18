@@ -1,6 +1,6 @@
 /**
  * 📂 COMANDO: play / play2 / yta / ytv / ytmp3 / ytmp4 / ytmp3doc / ytmp4doc
- * 📝 DESCRIPCIÓN: Sistema interactivo con Scraper Local (yt-dlp) e importación de Cookies de YouTube.
+ * 📝 DESCRIPCIÓN: Sistema interactivo con Scraper Local (yt-dlp) corregido para evitar fallos de video.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  * ¡Ahora los códigos son mejores!
@@ -21,7 +21,7 @@ if (!existsSync(ytDlpPath)) {
 
 const ytDlp = new YTDlpWrap(ytDlpPath)
 
-// Función del Scraper con inyección de Cookies
+// Función del Scraper con inyección de Cookies y formato corregido
 async function downloadWithScraper(url, output, isVideo = false) {
   return new Promise((resolve, reject) => {
     let args = [
@@ -36,13 +36,14 @@ async function downloadWithScraper(url, output, isVideo = false) {
     // Inyecta las cookies de YouTube si el archivo existe en la raíz
     if (existsSync(cookiesPath)) {
       args.push('--cookies', cookiesPath)
-    } else {
-      // Respaldo de agentes cliente si no hay cookies
-      args.push('--extractor-args', 'youtube:player_client=android')
     }
+    
+    // Forzar el cliente player de Android para agilizar la respuesta y saltar bloqueos
+    args.push('--extractor-args', 'youtube:player_client=android')
 
     if (isVideo) {
-      args.push('-f', 'bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]')
+      // Formato directo compatible sin requerir fusión compleja de FFmpeg externo
+      args.push('-f', 'b[ext=mp4]/best[ext=mp4]/best')
     } else {
       args.push('-x', '--audio-format', 'mp3', '--audio-quality', '128K')
     }
@@ -88,7 +89,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     if (isAudio || isVideo || isDocMp3 || isDocMp4) {
         if (m.react) await m.react('📥')
         
-        // Obtener el título real buscando por la URL que viene en el botón
         let titulo = 'Multimedia'
         try {
             const vInfo = await yts(text)
@@ -100,7 +100,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const tempFile = join(tmpdir(), `uchiha_scraper_${Date.now()}.${ext}`)
 
         try {
-            // Ejecutar descarga con las cookies ya cargadas internamente
+            // Ejecutar descarga
             await downloadWithScraper(text, tempFile, needVideo)
 
             if (!existsSync(tempFile)) throw new Error('Archivo temporal no encontrado.')
@@ -110,14 +110,14 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             if (isAudio) {
                 await conn.sendMessage(m.chat, { audio: buffer, mimetype: 'audio/mpeg' }, { quoted: m })
             } else if (isVideo) {
-                await conn.sendMessage(m.chat, { video: buffer, caption: `✅ *Video:* ${titulo}`, footer: "By Barboza-Team ⚡" }, { quoted: m })
+                await conn.sendMessage(m.chat, { video: buffer, caption: `✅ *Video:* ${titulo}`, footer: "By Barboza-Team ⚡", mimetype: 'video/mp4' }, { quoted: m })
             } else if (isDocMp3) {
                 await conn.sendMessage(m.chat, { document: buffer, mimetype: 'audio/mpeg', fileName: `${titulo}.mp3` }, { quoted: m })
             } else if (isDocMp4) {
                 await conn.sendMessage(m.chat, { document: buffer, mimetype: 'video/mp4', fileName: `${titulo}.mp4` }, { quoted: m })
             }
 
-            // Limpieza del almacenamiento del contenedor
+            // Limpieza del almacenamiento
             unlinkSync(tempFile)
             if (m.react) await m.react('🔥')
 
@@ -143,7 +143,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const { title, thumbnail, timestamp, videoId, author, ago } = result
         const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
 
-        // BOTONES INTERACTIVOS DE TU INTERFAZ
+        // BOTONES INTERACTIVOS
         const buttons = [
             { buttonId: `${usedPrefix}yta ${videoUrl}`, buttonText: { displayText: "🎵 Audio" }, type: 1 },
             { buttonId: `${usedPrefix}ytv ${videoUrl}`, buttonText: { displayText: "🎥 Video" }, type: 1 },
