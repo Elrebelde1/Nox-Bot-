@@ -1,6 +1,6 @@
 /**
  * 📂 COMANDO: play / play2 / yta / ytv / ytmp3 / ytmp4 / ytmp3doc / ytmp4doc
- * 📝 DESCRIPCIÓN: Sistema interactivo puro con Scraper Local (yt-dlp) e importación de Cookies de YouTube.
+ * 📝 DESCRIPCIÓN: Sistema interactivo puro con Scraper Local (yt-dlp) corregido y asíncrono.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  * ¡Ahora los códigos son mejores!
@@ -14,16 +14,27 @@ import YTDlpWrap from 'yt-dlp-wrap'
 
 const ytDlpPath = './yt-dlp'
 const cookiesPath = join(process.cwd(), 'youtube-cookies.txt')
+let ytDlp = null
 
-if (!existsSync(ytDlpPath)) {
-  YTDlpWrap.downloadFromGithub(ytDlpPath).catch(() => {})
+// Inicialización asíncrona segura del ejecutable
+async function initYtdlp() {
+  if (!existsSync(ytDlpPath)) {
+    console.log("-> [Uchiha Bot]: Descargando binario yt-dlp indispensable...")
+    try {
+      await YTDlpWrap.downloadFromGithub(ytDlpPath)
+      console.log("-> [Uchiha Bot]: Binario guardado con éxito.")
+    } catch (err) {
+      console.error("-> [Error Crítico]: No se pudo descargar yt-dlp desde GitHub:", err)
+    }
+  }
+  ytDlp = new YTDlpWrap(ytDlpPath)
 }
+initYtdlp()
 
-const ytDlp = new YTDlpWrap(ytDlpPath)
-
-// Función pura del Scraper con inyección de Cookies y formato directo
 async function downloadWithScraper(url, output, isVideo = false) {
   return new Promise((resolve, reject) => {
+    if (!ytDlp) return reject(new Error('El componente yt-dlp aún se está inicializando en el servidor. Reintenta en unos segundos.'))
+
     let args = [
       url,
       '--no-playlist',
@@ -33,16 +44,13 @@ async function downloadWithScraper(url, output, isVideo = false) {
       output
     ]
 
-    // Inyecta las cookies de YouTube si el archivo existe en la raíz
     if (existsSync(cookiesPath)) {
       args.push('--cookies', cookiesPath)
     }
     
-    // Forzar el cliente player de Android para agilizar la respuesta y saltar bloqueos
     args.push('--extractor-args', 'youtube:player_client=android')
 
     if (isVideo) {
-      // Formato directo compatible sin requerir fusión compleja de FFmpeg externo
       args.push('-f', 'b[ext=mp4]/best[ext=mp4]/best')
     } else {
       args.push('-x', '--audio-format', 'mp3', '--audio-quality', '128K')
@@ -70,7 +78,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
         let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
         let txt = `╭─〔 ♆ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴* ♆ 〕─╮\n│\n│ 🎬 *ᴜsᴏ ᴄᴏʀʀᴇᴄᴛᴏ:* \n│ ${usedPrefix + command} [nombre o link]\n│\n│ 🌑 "ʙᴜsᴄᴀ ᴛᴜ ᴅᴇsᴛɪɴᴏ ᴇɴ ʟᴀ ᴍᴜsɪᴄᴀ"\n╰────────────────────────────╯`
-        
+
         return await conn.sendMessage(m.chat, { 
             image: catalogoImg.byteLength ? catalogoImg : { url: catalogoImg.url }, 
             caption: txt, 
@@ -80,33 +88,44 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         }, { quoted: m })
     }
 
-    // 2. LÓGICA DE PROCESAMIENTO NATIVA DEL SCRAPER (AL PRESIONAR LOS BOTONES)
+    // 2. LÓGICA DE PROCESAMIENTO NATIVA DEL SCRAPER
     const isAudio = /^(yta|ytmp3)$/i.test(command)
-    const isVideo = /^(ytv|ytmp4)$/i.test(command)
+    const isVideo = /^(ytv|ytmp4|mp4)$/i.test(command)
     const isDocMp3 = /^(ytmp3doc)$/i.test(command)
     const isDocMp4 = /^(ytmp4doc)$/i.test(command)
 
     if (isAudio || isVideo || isDocMp3 || isDocMp4) {
         if (m.react) await m.react('📥')
-        
+
+        let queryTarget = text.trim()
         let titulo = 'Multimedia'
-        try {
-            const vInfo = await yts(text)
-            if (vInfo.videos.length) titulo = vInfo.videos[0].title
-        } catch {}
+
+        // Si pasan texto en vez de link directo a los botones de descarga, busca el link primero
+        if (!queryTarget.includes('youtube.com') && !queryTarget.includes('youtu.be')) {
+            try {
+                const searchData = await yts(text)
+                if (searchData.videos.length) {
+                    queryTarget = searchData.videos[0].url
+                    titulo = searchData.videos[0].title
+                }
+            } catch {}
+        } else {
+            try {
+                const vInfo = await yts(queryTarget)
+                if (vInfo.videos.length) titulo = vInfo.videos[0].title
+            } catch {}
+        }
 
         const needVideo = isVideo || isDocMp4
         const ext = needVideo ? 'mp4' : 'mp3'
         const tempFile = join(tmpdir(), `uchiha_scraper_${Date.now()}.${ext}`)
 
         try {
-            // Ejecutar descarga directa desde el scraper local
-            await downloadWithScraper(text, tempFile, needVideo)
+            await downloadWithScraper(queryTarget, tempFile, needVideo)
 
-            if (!existsSync(tempFile)) throw new Error('Archivo temporal no encontrado.')
+            if (!existsSync(tempFile)) throw new Error('Archivo temporal no encontrado o no generado.')
             const buffer = readFileSync(tempFile)
 
-            // Manejo de envíos por Buffers locales seguros
             if (isAudio) {
                 await conn.sendMessage(m.chat, { audio: buffer, mimetype: 'audio/mpeg' }, { quoted: m })
             } else if (isVideo) {
@@ -117,7 +136,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                 await conn.sendMessage(m.chat, { document: buffer, mimetype: 'video/mp4', fileName: `${titulo}.mp4` }, { quoted: m })
             }
 
-            // Limpieza del almacenamiento del contenedor
             unlinkSync(tempFile)
             if (m.react) await m.react('🔥')
 
@@ -143,7 +161,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const { title, thumbnail, timestamp, videoId, author, ago } = result
         const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
 
-        // BOTONES INTERACTIVOS DE TU INTERFAZ
         const buttons = [
             { buttonId: `${usedPrefix}yta ${videoUrl}`, buttonText: { displayText: "🎵 Audio" }, type: 1 },
             { buttonId: `${usedPrefix}ytv ${videoUrl}`, buttonText: { displayText: "🎥 Video" }, type: 1 },
