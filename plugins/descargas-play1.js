@@ -11,7 +11,10 @@ import { existsSync, unlinkSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
 import yts from 'yt-search'
-import YTDlpWrap from 'yt-dlp-wrap'
+import YTDlpWrapPackage from 'yt-dlp-wrap'
+
+// Corrección para evitar el error "YTDlpWrap is not a constructor" en módulos ESM
+const YTDlpWrap = YTDlpWrapPackage.default || YTDlpWrapPackage
 
 const apiKey = 'sylphy-6f150d'
 const ytDlpPath = './yt-dlp'
