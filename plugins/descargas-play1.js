@@ -1,3 +1,11 @@
+/**
+ * 📂 COMANDO: play / play2 / yta / ytv / ytmp3 / ytmp4 / ytmp3doc / ytmp4doc
+ * 📝 DESCRIPCIÓN: Sistema interactivo de descargas usando Sylphyy API v2 con API Key.
+ * 👤 CREADOR: Barboza Developer
+ * ⚡ CANAL: Barboza Developer x Zona Developers
+ * ¡Ahora los códigos son mejores!
+ */
+
 import fetch from "node-fetch"
 import yts from 'yt-search'
 import { readFileSync, existsSync } from 'fs'
@@ -14,6 +22,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
         let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
         let txt = `╭─〔 ♆ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴* ♆ 〕─╮\n│\n│ 🎬 *ᴜsᴏ ᴄᴏʀʀᴇᴄᴛᴏ:* \n│ ${usedPrefix + command} [nombre o link]\n│\n│ 🌑 "ʙᴜsᴄᴀ ᴛᴜ ᴅᴇsᴛɪɴᴏ ᴇɴ ʟᴀ ᴍᴜsɪᴄᴀ"\n╰────────────────────────────╯`
+        
         return await conn.sendMessage(m.chat, { 
             image: catalogoImg.byteLength ? catalogoImg : { url: catalogoImg.url }, 
             caption: txt, 
@@ -23,7 +32,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         }, { quoted: m })
     }
 
-    // 2. LÓGICA DE DESCARGA (AL PRESIONAR BOTONES)
+    // 2. LÓGICA DE DESCARGA DIRECTA (AL PRESIONAR LOS BOTONES DE LA CARÁTULA)
     const isAudio = /^(yta|ytmp3)$/i.test(command)
     const isVideo = /^(ytv|ytmp4)$/i.test(command)
     const isDocMp3 = /^(ytmp3doc)$/i.test(command)
@@ -35,26 +44,25 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             let dlUrl = ''
             let titulo = ''
 
-            if (isAudio || isDocMp3) {
-                // API DELIRIUS MP3 V2
-                let res = await fetch(`https://api.delirius.store/download/ytmp3v2?url=${encodeURIComponent(text)}`)
-                let json = await res.json()
-                if (json.success && json.data) {
-                    dlUrl = json.data.download
-                    titulo = json.data.title || 'Audio'
-                }
-            } else if (isVideo || isDocMp4) {
-                // API DELIRIUS MP4
-                let res = await fetch(`https://api.delirius.store/download/ytmp4?url=${encodeURIComponent(text)}`)
-                let json = await res.json()
-                if (json.status && json.data) {
-                    dlUrl = json.data.download
-                    titulo = json.data.title || 'Video'
-                }
+            // Determinar si se solicita audio o video para la ruta de la API v2
+            const typeEndpoint = (isAudio || isDocMp3) ? 'ytmp3' : 'ytmp4'
+            
+            // Petición estructurada a Sylphyy API v2 con tu API KEY
+            let res = await fetch(`https://sylphyy.xyz/download/v2/${typeEndpoint}?url=${encodeURIComponent(text)}&api_key=${apiKey}`)
+            let json = await res.json()
+
+            // Validación exacta según la respuesta del JSON v2 de Sylphyy
+            if (json.status && json.result) {
+                dlUrl = json.result.dl_url
+                titulo = json.result.title || (typeEndpoint === 'ytmp3' ? 'Audio.mp3' : 'Video.mp4')
             }
 
-            if (!dlUrl) throw 'No se pudo obtener el enlace de descarga'
+            // Manejo de errores específicos de la base de datos de la API externa
+            if (!dlUrl || dlUrl.includes('Error')) {
+                throw new Error('La API devolvió un enlace inválido o error en su base de datos.')
+            }
 
+            // Envíos de archivos multimedia procesando la URL directa
             if (isAudio) {
                 return await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: 'audio/mpeg' }, { quoted: m })
             }
@@ -62,21 +70,21 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                 return await conn.sendMessage(m.chat, { video: { url: dlUrl }, caption: `✅ *Video:* ${titulo}`, footer: "By Barboza-Team ⚡" }, { quoted: m })
             }
             if (isDocMp3) {
-                return await conn.sendMessage(m.chat, { document: { url: dlUrl }, mimetype: 'audio/mpeg', fileName: `${titulo}.mp3` }, { quoted: m })
+                return await conn.sendMessage(m.chat, { document: { url: dlUrl }, mimetype: 'audio/mpeg', fileName: `${titulo}` }, { quoted: m })
             }
             if (isDocMp4) {
-                return await conn.sendMessage(m.chat, { document: { url: dlUrl }, mimetype: 'video/mp4', fileName: `${titulo}.mp4` }, { quoted: m })
+                return await conn.sendMessage(m.chat, { document: { url: dlUrl }, mimetype: 'video/mp4', fileName: `${titulo}` }, { quoted: m })
             }
 
         } catch (e) {
-            console.error(e)
+            console.error("-> [Error en Sylphyy v2]:", e)
             if (m.react) await m.react('❌')
-            return conn.reply(m.chat, `🛑 Error al descargar el archivo.`, m)
+            return conn.reply(m.chat, `🛑 *Error al descargar el archivo con Sylphyy v2.*\n💬 *Detalle:* ${e.message || e}`, m)
         }
         return 
     }
 
-    // 3. BUSCADOR (COMANDO PLAY PRINCIPAL)
+    // 3. BUSCADOR PRINCIPAL (CUANDO ESCRIBEN .PLAY O .PLAY2)
     try {
         if (m.react) await m.react('⏳')
         const search = await yts(text)
@@ -89,7 +97,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const { title, thumbnail, timestamp, videoId, author, ago } = result
         const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
 
-        // BOTONES ORDENADOS SEGÚN TU SOLICITUD
+        // BOTONES INTERACTIVOS INTEGRADOS CON EL RECEPTOR DE COMANDOS
         const buttons = [
             { buttonId: `${usedPrefix}yta ${videoUrl}`, buttonText: { displayText: "🎵 Audio" }, type: 1 },
             { buttonId: `${usedPrefix}ytv ${videoUrl}`, buttonText: { displayText: "🎥 Video" }, type: 1 },
@@ -116,7 +124,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
         if (m.react) await m.react('✅')
     } catch (e) {
-        console.error(e)
+        console.error("-> [Error en Buscador Uchiha]:", e)
         if (m.react) await m.react('❌')
     }
 }
