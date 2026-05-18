@@ -1,39 +1,40 @@
 /**
  * 📂 COMANDO: play / play2 / yta / ytv / ytmp3 / ytmp4 / ytmp3doc / ytmp4doc
- * 📝 DESCRIPCIÓN: Sistema interactivo puro con Scraper Local (yt-dlp) corregido y asíncrono.
+ * 📝 DESCRIPCIÓN: Sistema híbrido. Audio por Sylphyy API v2 y Video por Scraper Local (yt-dlp) con cookies.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  * ¡Ahora los códigos son mejores!
  */
 
+import fetch from "node-fetch"
 import { existsSync, unlinkSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
 import yts from 'yt-search'
 import YTDlpWrap from 'yt-dlp-wrap'
 
+const apiKey = 'sylphy-6f150d'
 const ytDlpPath = './yt-dlp'
 const cookiesPath = join(process.cwd(), 'youtube-cookies.txt')
 let ytDlp = null
 
-// Inicialización asíncrona segura del ejecutable
+// Inicialización asíncrona segura del ejecutable local para videos
 async function initYtdlp() {
   if (!existsSync(ytDlpPath)) {
-    console.log("-> [Uchiha Bot]: Descargando binario yt-dlp indispensable...")
     try {
       await YTDlpWrap.downloadFromGithub(ytDlpPath)
-      console.log("-> [Uchiha Bot]: Binario guardado con éxito.")
     } catch (err) {
-      console.error("-> [Error Crítico]: No se pudo descargar yt-dlp desde GitHub:", err)
+      console.error("-> [Error binario]:", err)
     }
   }
   ytDlp = new YTDlpWrap(ytDlpPath)
 }
 initYtdlp()
 
-async function downloadWithScraper(url, output, isVideo = false) {
+// Función del Scraper local para procesar el Video sin fallar
+async function downloadVideoWithScraper(url, output) {
   return new Promise((resolve, reject) => {
-    if (!ytDlp) return reject(new Error('El componente yt-dlp aún se está inicializando en el servidor. Reintenta en unos segundos.'))
+    if (!ytDlp) return reject(new Error('El componente de video se está inicializando. Reintenta en un momento.'))
 
     let args = [
       url,
@@ -49,17 +50,12 @@ async function downloadWithScraper(url, output, isVideo = false) {
     }
     
     args.push('--extractor-args', 'youtube:player_client=android')
-
-    if (isVideo) {
-      args.push('-f', 'b[ext=mp4]/best[ext=mp4]/best')
-    } else {
-      args.push('-x', '--audio-format', 'mp3', '--audio-quality', '128K')
-    }
+    args.push('-f', 'b[ext=mp4]/best[ext=mp4]/best') // Formato directo compatible
 
     ytDlp.exec(args)
     .on('close', () => {
       if (!existsSync(output)) {
-        reject(new Error('El Scraper local no pudo generar el archivo multimedia.'))
+        reject(new Error('El Scraper local no pudo procesar el archivo de video.'))
       } else {
         resolve()
       }
@@ -88,7 +84,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         }, { quoted: m })
     }
 
-    // 2. LÓGICA DE PROCESAMIENTO NATIVA DEL SCRAPER
+    // 2. LÓGICA DE PROCESAMIENTO NATIVA
     const isAudio = /^(yta|ytmp3)$/i.test(command)
     const isVideo = /^(ytv|ytmp4|mp4)$/i.test(command)
     const isDocMp3 = /^(ytmp3doc)$/i.test(command)
@@ -100,7 +96,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         let queryTarget = text.trim()
         let titulo = 'Multimedia'
 
-        // Si pasan texto en vez de link directo a los botones de descarga, busca el link primero
+        // Convertir texto plano a enlace si es necesario
         if (!queryTarget.includes('youtube.com') && !queryTarget.includes('youtu.be')) {
             try {
                 const searchData = await yts(text)
@@ -116,36 +112,58 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             } catch {}
         }
 
-        const needVideo = isVideo || isDocMp4
-        const ext = needVideo ? 'mp4' : 'mp3'
-        const tempFile = join(tmpdir(), `uchiha_scraper_${Date.now()}.${ext}`)
+        // --- CASO A: AUDIOS (USANDO LA API V2 DE SYLPHYY) ---
+        if (isAudio || isDocMp3) {
+            try {
+                let res = await fetch(`https://sylphyy.xyz/download/v2/ytmp3?url=${encodeURIComponent(queryTarget)}&api_key=${apiKey}`)
+                let json = await res.json()
 
-        try {
-            await downloadWithScraper(queryTarget, tempFile, needVideo)
+                if (json.status && json.result && json.result.dl_url) {
+                    let dlUrl = json.result.dl_url
+                    let audioTitle = json.result.title || titulo
 
-            if (!existsSync(tempFile)) throw new Error('Archivo temporal no encontrado o no generado.')
-            const buffer = readFileSync(tempFile)
-
-            if (isAudio) {
-                await conn.sendMessage(m.chat, { audio: buffer, mimetype: 'audio/mpeg' }, { quoted: m })
-            } else if (isVideo) {
-                await conn.sendMessage(m.chat, { video: buffer, caption: `✅ *Video:* ${titulo}`, footer: "By Barboza-Team ⚡", mimetype: 'video/mp4' }, { quoted: m })
-            } else if (isDocMp3) {
-                await conn.sendMessage(m.chat, { document: buffer, mimetype: 'audio/mpeg', fileName: `${titulo}.mp3` }, { quoted: m })
-            } else if (isDocMp4) {
-                await conn.sendMessage(m.chat, { document: buffer, mimetype: 'video/mp4', fileName: `${titulo}.mp4` }, { quoted: m })
+                    if (isAudio) {
+                        await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: 'audio/mpeg' }, { quoted: m })
+                    } else {
+                        await conn.sendMessage(m.chat, { document: { url: dlUrl }, mimetype: 'audio/mpeg', fileName: `${audioTitle}` }, { quoted: m })
+                    }
+                    if (m.react) await m.react('🔥')
+                    return
+                } else {
+                    throw new Error('La API de Sylphyy falló con el audio.')
+                }
+            } catch (err) {
+                console.error("-> [Fallo API Audio]:", err)
+                if (m.react) await m.react('❌')
+                return conn.reply(m.chat, `🛑 *Error en el servidor de audio.*\n💬 *Detalle:* ${err.message}`, m)
             }
-
-            unlinkSync(tempFile)
-            if (m.react) await m.react('🔥')
-
-        } catch (e) {
-            console.error("-> [Error Scraper Local]:", e)
-            if (existsSync(tempFile)) unlinkSync(tempFile)
-            if (m.react) await m.react('❌')
-            return conn.reply(m.chat, `🛑 *Error en el Scraper local.*\n💬 *Detalle:* ${e.message || e}`, m)
         }
-        return 
+
+        // --- CASO B: VIDEOS (USANDO EL SCRAPER LOCAL CON COOKIES) ---
+        if (isVideo || isDocMp4) {
+            const tempFile = join(tmpdir(), `uchiha_video_${Date.now()}.mp4`)
+            try {
+                await downloadVideoWithScraper(queryTarget, tempFile)
+
+                if (!existsSync(tempFile)) throw new Error('No se pudo generar el archivo de video local.')
+                const buffer = readFileSync(tempFile)
+
+                if (isVideo) {
+                    await conn.sendMessage(m.chat, { video: buffer, caption: `✅ *Video:* ${titulo}`, footer: "By Barboza-Team ⚡", mimetype: 'video/mp4' }, { quoted: m })
+                } else {
+                    await conn.sendMessage(m.chat, { document: buffer, mimetype: 'video/mp4', fileName: `${titulo}.mp4` }, { quoted: m })
+                }
+
+                unlinkSync(tempFile)
+                if (m.react) await m.react('🔥')
+            } catch (err) {
+                console.error("-> [Fallo Scraper Video]:", err)
+                if (existsSync(tempFile)) unlinkSync(tempFile)
+                if (m.react) await m.react('❌')
+                return conn.reply(m.chat, `🛑 *Error local al procesar el video.*\n💬 *Detalle:* ${err.message}`, m)
+            }
+        }
+        return
     }
 
     // 3. BUSCADOR PRINCIPAL (.PLAY / .PLAY2)
@@ -187,7 +205,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
         if (m.react) await m.react('✅')
     } catch (e) {
-        console.error("-> [Error Buscador Scraper]:", e)
+        console.error("-> [Error Buscador]:", e)
         if (m.react) await m.react('❌')
     }
 }
