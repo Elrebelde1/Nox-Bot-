@@ -1,6 +1,6 @@
 /**
  * 📂 COMANDO: play / play2 / yta / ytv / ytmp3 / ytmp4 / ytmp3doc / ytmp4doc
- * 📝 DESCRIPCIÓN: Sistema interactivo con Scraper Local (yt-dlp) corregido para evitar fallos de video.
+ * 📝 DESCRIPCIÓN: Sistema interactivo puro con Scraper Local (yt-dlp) e importación de Cookies de YouTube.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  * ¡Ahora los códigos son mejores!
@@ -21,7 +21,7 @@ if (!existsSync(ytDlpPath)) {
 
 const ytDlp = new YTDlpWrap(ytDlpPath)
 
-// Función del Scraper con inyección de Cookies y formato corregido
+// Función pura del Scraper con inyección de Cookies y formato directo
 async function downloadWithScraper(url, output, isVideo = false) {
   return new Promise((resolve, reject) => {
     let args = [
@@ -51,7 +51,7 @@ async function downloadWithScraper(url, output, isVideo = false) {
     ytDlp.exec(args)
     .on('close', () => {
       if (!existsSync(output)) {
-        reject(new Error('El Scraper no pudo generar el archivo multimedia.'))
+        reject(new Error('El Scraper local no pudo generar el archivo multimedia.'))
       } else {
         resolve()
       }
@@ -100,7 +100,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const tempFile = join(tmpdir(), `uchiha_scraper_${Date.now()}.${ext}`)
 
         try {
-            // Ejecutar descarga
+            // Ejecutar descarga directa desde el scraper local
             await downloadWithScraper(text, tempFile, needVideo)
 
             if (!existsSync(tempFile)) throw new Error('Archivo temporal no encontrado.')
@@ -117,7 +117,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                 await conn.sendMessage(m.chat, { document: buffer, mimetype: 'video/mp4', fileName: `${titulo}.mp4` }, { quoted: m })
             }
 
-            // Limpieza del almacenamiento
+            // Limpieza del almacenamiento del contenedor
             unlinkSync(tempFile)
             if (m.react) await m.react('🔥')
 
@@ -143,7 +143,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const { title, thumbnail, timestamp, videoId, author, ago } = result
         const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
 
-        // BOTONES INTERACTIVOS
+        // BOTONES INTERACTIVOS DE TU INTERFAZ
         const buttons = [
             { buttonId: `${usedPrefix}yta ${videoUrl}`, buttonText: { displayText: "🎵 Audio" }, type: 1 },
             { buttonId: `${usedPrefix}ytv ${videoUrl}`, buttonText: { displayText: "🎥 Video" }, type: 1 },
