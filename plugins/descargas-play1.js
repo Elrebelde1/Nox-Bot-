@@ -1,18 +1,65 @@
 /**
  * 📂 COMANDO: play / play2 / yta / ytv / ytmp3 / ytmp4 / ytmp3doc / ytmp4doc
- * 📝 DESCRIPCIÓN: Sistema interactivo de descargas usando Sylphyy API v2 con API Key.
+ * 📝 DESCRIPCIÓN: Sistema interactivo con Scraper Local (yt-dlp) e importación de Cookies de YouTube.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  * ¡Ahora los códigos son mejores!
  */
 
-import fetch from "node-fetch"
-import yts from 'yt-search'
-import { readFileSync, existsSync } from 'fs'
+import { existsSync, unlinkSync, readFileSync } from 'fs'
 import { join } from 'path'
+import { tmpdir } from 'os'
+import yts from 'yt-search'
+import YTDlpWrap from 'yt-dlp-wrap'
+
+const ytDlpPath = './yt-dlp'
+const cookiesPath = join(process.cwd(), 'youtube-cookies.txt')
+
+if (!existsSync(ytDlpPath)) {
+  YTDlpWrap.downloadFromGithub(ytDlpPath).catch(() => {})
+}
+
+const ytDlp = new YTDlpWrap(ytDlpPath)
+
+// Función del Scraper con inyección de Cookies
+async function downloadWithScraper(url, output, isVideo = false) {
+  return new Promise((resolve, reject) => {
+    let args = [
+      url,
+      '--no-playlist',
+      '--no-check-certificates',
+      '--prefer-insecure',
+      '-o',
+      output
+    ]
+
+    // Inyecta las cookies de YouTube si el archivo existe en la raíz
+    if (existsSync(cookiesPath)) {
+      args.push('--cookies', cookiesPath)
+    } else {
+      // Respaldo de agentes cliente si no hay cookies
+      args.push('--extractor-args', 'youtube:player_client=android')
+    }
+
+    if (isVideo) {
+      args.push('-f', 'bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]')
+    } else {
+      args.push('-x', '--audio-format', 'mp3', '--audio-quality', '128K')
+    }
+
+    ytDlp.exec(args)
+    .on('close', () => {
+      if (!existsSync(output)) {
+        reject(new Error('El Scraper no pudo generar el archivo multimedia.'))
+      } else {
+        resolve()
+      }
+    })
+    .on('error', reject)
+  })
+}
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    const apiKey = 'sylphy-6f150d'
     const botonesCanal = [
         { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
     ]
@@ -32,7 +79,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         }, { quoted: m })
     }
 
-    // 2. LÓGICA DE DESCARGA DIRECTA (AL PRESIONAR LOS BOTONES DE LA CARÁTULA)
+    // 2. LÓGICA DE PROCESAMIENTO NATIVA DEL SCRAPER (AL PRESIONAR LOS BOTONES)
     const isAudio = /^(yta|ytmp3)$/i.test(command)
     const isVideo = /^(ytv|ytmp4)$/i.test(command)
     const isDocMp3 = /^(ytmp3doc)$/i.test(command)
@@ -40,51 +87,50 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
     if (isAudio || isVideo || isDocMp3 || isDocMp4) {
         if (m.react) await m.react('📥')
+        
+        // Obtener el título real buscando por la URL que viene en el botón
+        let titulo = 'Multimedia'
         try {
-            let dlUrl = ''
-            let titulo = ''
+            const vInfo = await yts(text)
+            if (vInfo.videos.length) titulo = vInfo.videos[0].title
+        } catch {}
 
-            // Determinar si se solicita audio o video para la ruta de la API v2
-            const typeEndpoint = (isAudio || isDocMp3) ? 'ytmp3' : 'ytmp4'
-            
-            // Petición estructurada a Sylphyy API v2 con tu API KEY
-            let res = await fetch(`https://sylphyy.xyz/download/v2/${typeEndpoint}?url=${encodeURIComponent(text)}&api_key=${apiKey}`)
-            let json = await res.json()
+        const needVideo = isVideo || isDocMp4
+        const ext = needVideo ? 'mp4' : 'mp3'
+        const tempFile = join(tmpdir(), `uchiha_scraper_${Date.now()}.${ext}`)
 
-            // Validación exacta según la respuesta del JSON v2 de Sylphyy
-            if (json.status && json.result) {
-                dlUrl = json.result.dl_url
-                titulo = json.result.title || (typeEndpoint === 'ytmp3' ? 'Audio.mp3' : 'Video.mp4')
-            }
+        try {
+            // Ejecutar descarga con las cookies ya cargadas internamente
+            await downloadWithScraper(text, tempFile, needVideo)
 
-            // Manejo de errores específicos de la base de datos de la API externa
-            if (!dlUrl || dlUrl.includes('Error')) {
-                throw new Error('La API devolvió un enlace inválido o error en su base de datos.')
-            }
+            if (!existsSync(tempFile)) throw new Error('Archivo temporal no encontrado.')
+            const buffer = readFileSync(tempFile)
 
-            // Envíos de archivos multimedia procesando la URL directa
+            // Manejo de envíos por Buffers locales seguros
             if (isAudio) {
-                return await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: 'audio/mpeg' }, { quoted: m })
+                await conn.sendMessage(m.chat, { audio: buffer, mimetype: 'audio/mpeg' }, { quoted: m })
+            } else if (isVideo) {
+                await conn.sendMessage(m.chat, { video: buffer, caption: `✅ *Video:* ${titulo}`, footer: "By Barboza-Team ⚡" }, { quoted: m })
+            } else if (isDocMp3) {
+                await conn.sendMessage(m.chat, { document: buffer, mimetype: 'audio/mpeg', fileName: `${titulo}.mp3` }, { quoted: m })
+            } else if (isDocMp4) {
+                await conn.sendMessage(m.chat, { document: buffer, mimetype: 'video/mp4', fileName: `${titulo}.mp4` }, { quoted: m })
             }
-            if (isVideo) {
-                return await conn.sendMessage(m.chat, { video: { url: dlUrl }, caption: `✅ *Video:* ${titulo}`, footer: "By Barboza-Team ⚡" }, { quoted: m })
-            }
-            if (isDocMp3) {
-                return await conn.sendMessage(m.chat, { document: { url: dlUrl }, mimetype: 'audio/mpeg', fileName: `${titulo}` }, { quoted: m })
-            }
-            if (isDocMp4) {
-                return await conn.sendMessage(m.chat, { document: { url: dlUrl }, mimetype: 'video/mp4', fileName: `${titulo}` }, { quoted: m })
-            }
+
+            // Limpieza del almacenamiento del contenedor
+            unlinkSync(tempFile)
+            if (m.react) await m.react('🔥')
 
         } catch (e) {
-            console.error("-> [Error en Sylphyy v2]:", e)
+            console.error("-> [Error Scraper Local]:", e)
+            if (existsSync(tempFile)) unlinkSync(tempFile)
             if (m.react) await m.react('❌')
-            return conn.reply(m.chat, `🛑 *Error al descargar el archivo con Sylphyy v2.*\n💬 *Detalle:* ${e.message || e}`, m)
+            return conn.reply(m.chat, `🛑 *Error en el Scraper local.*\n💬 *Detalle:* ${e.message || e}`, m)
         }
         return 
     }
 
-    // 3. BUSCADOR PRINCIPAL (CUANDO ESCRIBEN .PLAY O .PLAY2)
+    // 3. BUSCADOR PRINCIPAL (.PLAY / .PLAY2)
     try {
         if (m.react) await m.react('⏳')
         const search = await yts(text)
@@ -97,7 +143,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const { title, thumbnail, timestamp, videoId, author, ago } = result
         const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
 
-        // BOTONES INTERACTIVOS INTEGRADOS CON EL RECEPTOR DE COMANDOS
+        // BOTONES INTERACTIVOS DE TU INTERFAZ
         const buttons = [
             { buttonId: `${usedPrefix}yta ${videoUrl}`, buttonText: { displayText: "🎵 Audio" }, type: 1 },
             { buttonId: `${usedPrefix}ytv ${videoUrl}`, buttonText: { displayText: "🎥 Video" }, type: 1 },
@@ -124,7 +170,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
         if (m.react) await m.react('✅')
     } catch (e) {
-        console.error("-> [Error en Buscador Uchiha]:", e)
+        console.error("-> [Error Buscador Scraper]:", e)
         if (m.react) await m.react('❌')
     }
 }
