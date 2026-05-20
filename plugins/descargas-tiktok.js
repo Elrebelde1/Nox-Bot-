@@ -1,10 +1,3 @@
-/**
- * 📂 COMANDO: TikTok Uchiha Downloader
- * 📝 DESCRIPCIÓN: Soporte total de enlaces (Cortos/Largos). Envía video + botones.
- * 👤 CREADOR: Barboza Developer
- * ⚡ CANAL: Barboza Developer x Zona Developers
- * 🔗 API: https://sylphyy.xyz
-
 import fetch from "node-fetch"
 
 const handler = async (m, { conn, text, args, usedPrefix, command }) => {
