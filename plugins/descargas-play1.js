@@ -96,12 +96,13 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const buttons = [
             { buttonId: `${usedPrefix}yta ${videoUrl}`, buttonText: { displayText: "🎵 Audio" }, type: 1 },
             { buttonId: `${usedPrefix}ytv ${videoUrl}`, buttonText: { displayText: "🎥 Video" }, type: 1 },
-            { buttonId: `${usedPrefix}ehh`, buttonText: { displayText: "Ehh" }, type: 1 },
+            { buttonId: `${usedPrefix}ytmp3doc ${videoUrl}`, buttonText: { displayText: "📁 Documento MP3" }, type: 1 },
+            { buttonId: `${usedPrefix}ytmp4doc ${videoUrl}`, buttonText: { displayText: "📁 Documento MP4" }, type: 1 },
             { buttonId: `${nextCommand} ${querySearch}`, buttonText: { displayText: "🔄 Ver más Resultados" }, type: 1 }
         ]
 
         let info = `「 🎬 𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴 」\n─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n`
-        info += `│ 👤 *𝙱𝙰𝙽𝙰𝙻:* ${author.name}\n`
+        info += `│ 👤 *𝙲𝙰𝙽𝙰𝙻:* ${author.name}\n`
         info += `│ 🎵 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${title}\n`
         info += `│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾́𝙽:* ${timestamp}\n`
         info += `│ 📅 *𝙿𝚄𝙱𝙻𝙸𝙲𝙰𝙳𝙾:* ${ago || 'Reciente'}\n`
