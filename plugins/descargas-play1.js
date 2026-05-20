@@ -1,51 +1,10 @@
-import axios from 'axios'
+import fetch from "node-fetch"
 import yts from 'yt-search'
 import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 
-async function getSavetubeData(url, type, quality) {
-    const infoConfig = {
-        method: 'post',
-        url: 'https://cdn401.savetube.vip/v2/info',
-        headers: {
-            'Accept': 'application/json, text/plain, */*',
-            'Content-Type': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Origin': 'https://savetube.vip',
-            'Referer': 'https://savetube.vip/'
-        },
-        data: { url },
-        timeout: 30000
-    }
-    
-    const infoResponse = await axios(infoConfig)
-    const encryptedData = infoResponse.data.data
-
-    const downloadConfig = {
-        method: 'post',
-        url: `https://cdn400.savetube.vip/download`,
-        headers: {
-            'Content-Type': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Origin': 'https://savetube.vip',
-            'Referer': 'https://savetube.vip/'
-        },
-        data: {
-            downloadType: type,
-            quality: quality,
-            key: encryptedData.key
-        },
-        timeout: 30000
-    }
-
-    const dlResponse = await axios(downloadConfig)
-    return {
-        title: encryptedData.title || 'Multimedia',
-        link: dlResponse.data.data.url || dlResponse.data.url || dlResponse.data.data.downloadUrl
-    }
-}
-
 const handler = async (m, { conn, text, usedPrefix, command }) => {
+    const apiKey = 'sylphy-6f150d'
     const botonesCanal = [
         { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
     ]
@@ -71,28 +30,37 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     if (isAudio || isVideo || isDocMp3 || isDocMp4) {
         if (m.react) await m.react('📥')
         try {
-            let queryTarget = text.trim()
-            if (!queryTarget.includes('youtube.com') && !queryTarget.includes('youtu.be')) {
-                const searchData = await yts(text)
-                if (searchData.videos.length) queryTarget = searchData.videos[0].url
+            let dlUrl = ''
+            let titulo = ''
+
+            if (isAudio || isDocMp3) {
+                let res = await fetch(`https://sylphyy.xyz/download/v2/ytmp3?url=${encodeURIComponent(text)}&api_key=${apiKey}`)
+                let json = await res.json()
+                if (json.status && json.result) {
+                    dlUrl = json.result.dl_url
+                    titulo = json.result.title || 'Audio'
+                }
+            } else if (isVideo || isDocMp4) {
+                let res = await fetch(`https://api.delirius.store/download/ytmp4?url=${encodeURIComponent(text)}`)
+                let json = await res.json()
+                if (json.status && json.data) {
+                    dlUrl = json.data.download
+                    titulo = json.data.title || 'Video'
+                }
             }
 
-            const type = (isAudio || isDocMp3) ? 'audio' : 'video'
-            const quality = type === 'audio' ? '128' : '720'
-            
-            const media = await getSavetubeData(queryTarget, type, quality)
-            if (!media.link) throw 'No se obtuvo el enlace de descarga'
+            if (!dlUrl) throw 'No se pudo obtener el enlace de descarga'
 
             if (isAudio) {
-                await conn.sendMessage(m.chat, { audio: { url: media.link }, mimetype: 'audio/mpeg' }, { quoted: m })
+                await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: 'audio/mpeg' }, { quoted: m })
             } else if (isVideo) {
-                await conn.sendMessage(m.chat, { video: { url: media.link }, caption: `✅ *Video:* ${media.title}`, footer: "By Barboza-Team ⚡" }, { quoted: m })
+                await conn.sendMessage(m.chat, { video: { url: dlUrl }, caption: `✅ *Video:* ${titulo}`, footer: "By Barboza-Team ⚡" }, { quoted: m })
             } else if (isDocMp3) {
-                await conn.sendMessage(m.chat, { document: { url: media.link }, mimetype: 'audio/mpeg', fileName: `${media.title}.mp3` }, { quoted: m })
+                await conn.sendMessage(m.chat, { document: { url: dlUrl }, mimetype: 'audio/mpeg', fileName: `${titulo}.mp3` }, { quoted: m })
             } else if (isDocMp4) {
-                await conn.sendMessage(m.chat, { document: { url: media.link }, mimetype: 'video/mp4', fileName: `${media.title}.mp4` }, { quoted: m })
+                await conn.sendMessage(m.chat, { document: { url: dlUrl }, mimetype: 'video/mp4', fileName: `${titulo}.mp4` }, { quoted: m })
             }
-            
+
             if (m.react) await m.react('🔥')
 
         } catch (e) {
