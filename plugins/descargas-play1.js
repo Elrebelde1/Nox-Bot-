@@ -60,7 +60,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             } else if (isDocMp4) {
                 await conn.sendMessage(m.chat, { document: { url: dlUrl }, mimetype: 'video/mp4', fileName: `${titulo}.mp4` }, { quoted: m })
             }
-            
+
             if (m.react) await m.react('🔥')
 
         } catch (e) {
@@ -73,29 +73,40 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
     try {
         if (m.react) await m.react('⏳')
-        const search = await yts(text)
-        if (!search || !search.all.length) {
-            if (m.react) await m.react('❌')
-            return conn.reply(m.chat, '❌ No se encontraron resultados.', m)
+
+        let index = 0
+        let querySearch = text
+        const matchIndex = command.match(/^play(\d+)$/i)
+        
+        if (matchIndex) {
+            index = parseInt(matchIndex[1]) - 1
         }
 
-        const result = search.videos[0]
+        const search = await yts(querySearch)
+        if (!search || !search.videos.length || !search.videos[index]) {
+            if (m.react) await m.react('❌')
+            return conn.reply(m.chat, '❌ No se encontraron más resultados para esta búsqueda.', m)
+        }
+
+        const result = search.videos[index]
         const { title, thumbnail, timestamp, videoId, author, ago } = result
         const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
+        const nextCommand = `${usedPrefix}play${index + 2}`
 
         const buttons = [
             { buttonId: `${usedPrefix}yta ${videoUrl}`, buttonText: { displayText: "🎵 Audio" }, type: 1 },
             { buttonId: `${usedPrefix}ytv ${videoUrl}`, buttonText: { displayText: "🎥 Video" }, type: 1 },
             { buttonId: `${usedPrefix}ytmp3doc ${videoUrl}`, buttonText: { displayText: "📁 Documento MP3" }, type: 1 },
             { buttonId: `${usedPrefix}ytmp4doc ${videoUrl}`, buttonText: { displayText: "📁 Documento MP4" }, type: 1 },
-            { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
+            { buttonId: `${nextCommand} ${querySearch}`, buttonText: { displayText: "🔄 Ver más Resultados" }, type: 1 }
         ]
 
         let info = `「 🎬 𝚄𝙲𝙷𝙸𝙷𝙰 𝚈𝙾𝚄𝚃𝚄𝙱𝙴 」\n─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n`
         info += `│ 👤 *𝙲𝙰𝙽𝙰𝙻:* ${author.name}\n`
         info += `│ 🎵 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${title}\n`
-        info += `│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾𝙽:* ${timestamp}\n`
+        info += `│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾́𝙽:* ${timestamp}\n`
         info += `│ 📅 *𝙿𝚄𝙱𝙻𝙸𝙲𝙰𝙳𝙾:* ${ago || 'Reciente'}\n`
+        info += `│ 📊 *𝚁𝙴𝚂𝚄𝙻𝚃𝙰𝙳𝙾:* #${index + 1}\n`
         info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n`
         info += `*Seleccione una opción para descargar:*`
 
@@ -114,5 +125,5 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 }
 
-handler.command = /^(play|yta|ytmp3|play2|ytv|mp4|ytmp4|ytmp3doc|ytmp4doc)$/i
+handler.command = /^(play|play\d+|yta|ytmp3|ytv|mp4|ytmp4|ytmp3doc|ytmp4doc)$/i
 export default handler
