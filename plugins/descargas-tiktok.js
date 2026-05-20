@@ -1,50 +1,94 @@
+/**
+ * 📂 COMANDO: TikTok Uchiha Downloader
+ * 📝 DESCRIPCIÓN: Soporte total de enlaces (Cortos/Largos). Envía video + botones.
+ * 👤 CREADOR: Barboza Developer
+ * ⚡ CANAL: Barboza Developer x Zona Developers
+ * 🔗 API: https://sylphyy.xyz
+
 import fetch from "node-fetch"
-import { readFileSync, existsSync } from 'fs'
-import { join } from 'path'
 
-const handler = async (m, { conn, text, usedPrefix, command }) => {
-    const botonesCanal = [
-        { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
-    ]
+const handler = async (m, { conn, text, args, usedPrefix, command }) => {
+    const dev = "⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓"
+    const net = "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕"
+    
+    const decode = (s) => Buffer.from(s, 'base64').toString('utf-8')
+    const api = decode("aHR0cHM6Ly9zeWxwaHl5Lnh5ei9kb3dubG9hZC90aWt0b2s=")
+    const key = decode("c3lscGh5LTZmMTUwZA==")
 
-    if (!text.trim()) {
-        const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
-        let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
-        let txt = `╭─〔 ♆ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚃𝙸𝙺𝚃𝙾𝙺* ♆ 〕─╮\n│\n│ 🎬 *ᴜsᴏ ᴄᴏʀʀᴇᴄᴛᴏ:* \n│ ${usedPrefix + command} [enlace de tiktok]\n│\n│ 🌑 "ᴅᴇsᴄᴀʀɢᴀ ᴛᴜ ᴄᴏɴᴛᴇɴɪᴅᴏ ᴀʟ ɪɴsᴛᴀɴᴛᴇ"\n╰────────────────────────────╯`
-        return await conn.sendMessage(m.chat, { 
-            image: catalogoImg.byteLength ? catalogoImg : { url: catalogoImg.url }, 
-            caption: txt, 
-            footer: "By Barboza-Team ⚡", 
-            buttons: botonesCanal, 
-            headerType: 4 
-        }, { quoted: m })
+    const type = args[0]
+    const link = args[1]
+
+    if (type && link) {
+        await m.react('⏳')
+        try {
+            const res = await fetch(`${api}?url=${link}&api_key=${key}`)
+            const json = await res.json()
+            const data = json.result
+
+            if (type === 'hd') {
+                await conn.sendMessage(m.chat, { 
+                    video: { url: data.hdplay || data.play }, 
+                    caption: `🎬 *CALIDAD ULTRA HD*\n📌 ${data.title}\n\n${net}` 
+                }, { quoted: m })
+            } else if (type === 'audio') {
+                await conn.sendMessage(m.chat, { 
+                    audio: { url: data.music }, 
+                    mimetype: 'audio/mpeg', 
+                    fileName: `${data.title}.mp3` 
+                }, { quoted: m })
+            }
+            return await m.react('🔥')
+        } catch (e) {
+            return m.react('✖️')
+        }
     }
 
-    if (m.react) await m.react('📥')
-    const queryTarget = text.trim()
+    if (!text) return conn.reply(m.chat, `⚔️ *SISTEMA UCHIHA*\n\n> 🔗 *Pega cualquier enlace de TikTok*\n> *(Soporta enlaces cortos y largos)*`, m)
+    
+    const tiktokRegex = /http(?:s?):\/\/(?:www\.|vt\.|vm\.)?tiktok\.com\/([^\s]+)/g
+    const match = text.match(tiktokRegex)
+    if (!match) return m.reply('🚫 Enlace de TikTok no detectado.')
+    const cleanUrl = match[0]
+
+    await m.react('🔍')
 
     try {
-        let dlUrl = ''
-        let descCaption = ''
+        const res = await fetch(`${api}?url=${encodeURIComponent(cleanUrl)}&api_key=${key}`)
+        const json = await res.json()
 
-        let res = await fetch(`https://api.delirius.store/download/tiktok?url=${encodeURIComponent(queryTarget)}`)
-        let json = await res.json()
-        if (json.status && json.data) {
-            dlUrl = json.data.video || json.data.meta?.video?.no_watermark
-            descCaption = json.data.title || 'TikTok Video'
-        }
+        if (!json.status) return m.reply('🚫 El servidor no pudo procesar este enlace.')
 
-        if (!dlUrl) throw 'No se pudo obtener el enlace de descarga directa de la API'
+        const data = json.result
+        const caption = `| 🎵 *𝖴𝖢𝖧𝖨𝖧𝖠 𝖳𝖨𝖪𝖳𝖮𝖪* 🎵\n` +
+                        `|═══════════════════\n` +
+                        `| 👤 *𝙰𝚄𝚃𝙾𝚁:* ${data.author.nickname}\n` +
+                        `| 📝 *𝙳𝙴𝚂𝙲:* ${data.title}\n` +
+                        `| ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾́𝙽:* ${data.duration}s\n` +
+                        `|═══════════════════\n` +
+                        `| 🛠️ *${dev}*\n` +
+                        `| ⛩️ *${net}*`
 
-        await conn.sendMessage(m.chat, { video: { url: dlUrl }, caption: `✅ *Resultado:* ${descCaption}`, footer: "By Barboza-Team ⚡" }, { quoted: m })
-        if (m.react) await m.react('🔥')
+        const buttons = [
+            { buttonId: `${usedPrefix + command} hd ${cleanUrl}`, buttonText: { displayText: "🎬 Descargar en HD" }, type: 1 },
+            { buttonId: `${usedPrefix + command} audio ${cleanUrl}`, buttonText: { displayText: "🎧 Extraer Audio" }, type: 1 }
+        ]
+
+        await conn.sendMessage(m.chat, {
+            video: { url: data.play },
+            caption: caption,
+            buttons: buttons,
+            viewOnce: true
+        }, { quoted: m })
+
+        await m.react('✅')
 
     } catch (e) {
-        console.error(e)
-        if (m.react) await m.react('❌')
-        return conn.reply(m.chat, `🛑 Error al procesar la descarga de TikTok.`, m)
+        await m.react('✖️')
     }
 }
 
-handler.command = /^(tiktok)$/i
+handler.help = ['tiktok']
+handler.tags = ['descargas']
+handler.command = ['tiktok', 'tt']
+
 export default handler
