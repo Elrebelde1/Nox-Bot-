@@ -36,33 +36,33 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     try {
         if (m.react) await m.react("🔄");
 
-        const res = await axios.get(`https://api.evogb.org/search/tiktok?query=${encodeURIComponent(text)}&key=sasuke`);
+        const res = await axios.get(`https://sylphyy.xyz/search/tiktok?q=${encodeURIComponent(text)}&count=15&api_key=sylphy-6f150d`);
         
-        if (!res.data || !res.data.status || !res.data.data || res.data.data.length === 0) {
+        if (!res.data || !res.data.status || !res.data.result || res.data.result.length === 0) {
             if (m.react) await m.react("❌");
             return m.reply("⚠️ *Sin resultados para esta búsqueda.*");
         }
 
-        const videos = res.data.data;
+        const videos = res.data.result;
         const videoAleatorio = videos[Math.floor(Math.random() * videos.length)];
 
-        const { title, id, dl, duration, author, stats, music } = videoAleatorio;
+        const { title, id, duration, author, stats, media } = videoAleatorio;
 
         global.db.data.tiktokCache[id] = {
             id: id,
             title: title || "TikTok Video",
-            dl: dl,
-            music: music.url
+            dl: media.no_watermark,
+            music: media.music
         };
 
         let mensaje = `╭─〔 📥 *𝚃𝙸𝙺𝚃𝙾𝙺 𝚂𝙴𝙰𝚁𝙲𝙷* 〕─╮\n`;
         mensaje += `│ 👤 *𝙰𝚄𝚃𝙾𝚁:* ${author.nickname || 'Anónimo'}\n`;
         mensaje += `│ 📝 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${title ? title.trim() : 'Sin descripción'}\n`;
-        mensaje += `│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾́𝙽:* ${duration}\n`;
+        mensaje += `│ ⏱️ *𝙳𝚄𝚁𝙰𝙲𝙸𝙾́𝙽:* ${duration}s\n`;
         mensaje += `├───────────────────\n`;
-        mensaje += `│ 👀 *𝚅𝙸𝚂𝚃𝙰𝚂:* ${Number(stats.views).toLocaleString()}\n`;
-        mensaje += `│ ❤️ *𝙻𝙸𝙺𝙴𝚂:* ${Number(stats.likes).toLocaleString()}\n`;
-        mensaje += `│ 💬 *𝙲𝙾𝙼𝙴𝙽𝚃𝙰𝚁𝙸𝙾𝚂:* ${Number(stats.comments).toLocaleString()}\n`;
+        mensaje += `│ 👀 *𝚅𝙸𝚂𝚃𝙰𝚂:* ${Number(stats.play_count).toLocaleString()}\n`;
+        mensaje += `│ ❤️ *𝙻𝙸𝙺𝙴𝚂:* ${Number(stats.digg_count).toLocaleString()}\n`;
+        mensaje += `│ 💬 *𝙲𝙾𝙼𝙴𝙽𝚃𝙰𝚁𝙸𝙾𝚂:* ${Number(stats.comment_count).toLocaleString()}\n`;
         mensaje += `╰───────────────────╯`;
 
         const buttons = [
@@ -72,7 +72,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         ];
 
         await conn.sendMessage(m.chat, {
-            video: { url: dl },
+            video: { url: media.no_watermark },
             caption: mensaje,
             footer: 'By Barboza-Team ⚡',
             buttons: buttons,
@@ -88,5 +88,5 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 };
 
-handler.command = /^(tiktoksearch|tts_vid|tts_aud)$/i;
+handler.command = /^(tiktoksearch|tts|tts_vid|tts_aud)$/i;
 export default handler;
