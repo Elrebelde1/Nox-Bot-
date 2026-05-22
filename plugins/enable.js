@@ -20,7 +20,14 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
       chat.bienvenida = isEnable
       break
     case 'antilag':
-      chat.antiLag = isEnable
+      // Modificado: Recorre todos los chats de la base de datos y activa/desactiva si son grupos
+      for (let c in global.db.data.chats) {
+        if (c.endsWith('@g.us')) { // Filtra solo los grupos
+          global.db.data.chats[c].antiLag = isEnable
+        }
+      }
+      // También lo asegura en el chat actual por si acaso
+      if (chat) chat.antiLag = isEnable
       break
     case 'subbots': case 'serbot':
       if (!isROwner) { global.dfail('rowner', m, conn); fail = true; break }
@@ -71,11 +78,15 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
     catalogoImg = { url: 'https://files.catbox.moe/t7uytz.png' }
   }
 
+  // Personalización del mensaje para el antilag global
+  let estadoTexto = isEnable ? 'Activado ✅' : 'Desactivado ❌'
+  if (type === 'antilag') estadoTexto += ' (En todos los grupos)'
+
   let statusTxt = `┏━━━━━━━━━━━━━━━━━━┓\n`
   statusTxt += `✨ *AJUSTE ACTUALIZADO* ✨\n`
   statusTxt += `┠━━━━━━━━━━━━━━━━━━┫\n`
   statusTxt += `⚙️ *Función:* ${type}\n`
-  statusTxt += `📊 *Estado:* ${isEnable ? 'Activado ✅' : 'Desactivado ❌'}\n`
+  statusTxt += `📊 *Estado:* ${estadoTexto}\n`
   statusTxt += `┗━━━━━━━━━━━━━━━━━━┛`
 
   // --- BOTÓN VINCULADO AL COMANDO scanal ---
