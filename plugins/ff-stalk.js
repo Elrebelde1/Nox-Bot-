@@ -1,34 +1,85 @@
-// Sistema de Postulación - Barboza Developer
-let handler = async (m, { conn, text, usedPrefix, command }) => {
-    if (!text) return m.reply(`╔══🔥 • 𝕾𝕬𝕾𝖀𝕶𝕰 𝕭𝕺𝕿 • 🔥══╗\n   📝  *𝙍𝙀𝘾𝙇𝙐𝙏𝘼𝙈𝙄𝙀𝙉𝙏𝙊* \n╚════════════════════╝\n\n𝙋𝙖𝙧𝙖 𝙥𝙤𝙨𝙩𝙪𝙡𝙖𝙧𝙩𝙚, 𝙪𝙨𝙖 𝙚𝙡 𝙘𝙤𝙢𝙖𝙣𝙙𝙤 𝙖𝙨𝙞́:\n${usedPrefix + command} 𝙉𝙞𝙘𝙠, 𝙄𝘿, 𝙉𝙞𝙫𝙚𝙡, 𝙍𝙖𝙣𝙜𝙤, 𝙍𝙚𝙜𝙞𝙤́𝙣\n\n*𝙀𝙟𝙚𝙢𝙥𝙡𝙤:* ${usedPrefix + command} 𝙎𝙖𝙨𝙪𝙠𝙚𝙁𝙁, 3244028885, 72, 𝙂𝙧𝙖𝙣 𝙈𝙖𝙚𝙨𝙩𝙧𝙤, 𝙀𝙀𝙐𝙐`)
+import fetch from 'node-fetch';
 
-    let [nick, id, nivel, rango, region] = text.split(',')
-    if (!nick || !id || !nivel || !rango || !region) return m.reply(`⚠️ *𝙁𝙖𝙡𝙩𝙖𝙣 𝙙𝙖𝙩𝙤𝙨.* 𝘼𝙨𝙚𝙜𝙪́𝙧𝙖𝙩𝙚 𝙙𝙚 𝙪𝙨𝙖𝙧 𝙘𝙤𝙢𝙖𝙨 ( , ) 𝙥𝙖𝙧𝙖 𝙨𝙚𝙥𝙖𝙧𝙖𝙧 𝙡𝙖 𝙞𝙣𝙛𝙤.`)
+var handler = async (m, { conn, args, usedPrefix, command }) => {
+  const emoji = '🔫';
+  const emoji2 = '⚠️';
 
-    await m.react('📝')
+  if (!args[0]) {
+    return conn.reply(m.chat, `${emoji2} Debes proporcionar el ID de jugador de Free Fire y opcionalmente la región.\n\nEjemplo:\n*${usedPrefix}${command} 907719977*\n*${usedPrefix}${command} 1633864660 IND*`, m);
+  }
 
-    let info = `╔══🔥 • 𝕾𝕬𝕾𝖀𝕶𝕰 𝕭𝕺𝕿 • 🔥══╗
-   ⚔️  *𝙎𝙊𝙇𝙄𝘾𝙄𝙏𝙐𝘿 𝘿𝙀 𝙄𝙉𝙂𝙍𝙀𝙎𝙊* ╚════════════════════╝
+  const uid = args[0].trim();
+  // Regiones soportadas comunes: US (Norte/Suramérica), IND (India), BR (Brasil), SG (Singapur)
+  let regionInput = args[1] ? args[1].toUpperCase().trim() : 'US'; 
+  
+  if (m.react) await m.react("🔄");
 
-👤 *𝙉𝙄𝘾𝙆:* ${nick.trim()}
-🆔 *𝙄𝘿:* ${id.trim()}
-🏆 *𝙉𝙄𝙑𝙀𝙇:* ${nivel.trim()}
-🎖️ *𝙍𝘼𝙉𝙂𝙊:* ${rango.trim()}
-🌎 *𝙍𝙀𝙂𝙄𝙊́𝙉:* ${region.trim()}
+  let info = '';
+  let data = null;
+  const regionesABuscar = [regionInput, 'US', 'BR', 'IND']; // Lista de fallback automático por si no se especifica bien
 
-📝 *𝙀𝙎𝙏𝘼𝘿𝙊:* 𝙀𝙣 𝙚𝙨𝙥𝙚𝙧𝙖 𝙙𝙚 𝙧𝙚𝙫𝙞𝙨𝙞𝙤́𝙣...
+  // Eliminar duplicados para no repetir peticiones innecesarias
+  const regionesUnicas = [...new Set(regionesABuscar)];
 
-*◈────────── • ☄️ • ──────────◈*
-✨ 𝑺𝒂𝒔𝒖𝒌𝒆 𝑩𝒐𝒕 | 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 ✨`
+  for (let region of regionesUnicas) {
+    try {
+      const res = await fetch(`https://free-ff-api-src-5plp.onrender.com/api/v1/account?region=${region}&uid=${uid}`);
+      const json = await res.json();
 
-    await conn.sendMessage(m.chat, { 
-        image: { url: 'https://files.catbox.moe/qmmttw.jpg' }, 
-        caption: info 
-    }, { quoted: m })
-}
+      // Si la API responde con éxito y encuentra la cuenta
+      if (json && json.basicInfo) {
+        data = json;
+        regionInput = region; // Guardar la región real donde se encontró
+        break;
+      }
+    } catch (e) {
+      console.log(`Fallo buscando en la región ${region}, intentando la siguiente...`);
+    }
+  }
 
-handler.help = ['postular']
-handler.tags = ['clan']
-handler.command = /^(postular|reclutar|solicitud)$/i
+  if (!data) {
+    if (m.react) await m.react("❌");
+    return conn.reply(m.chat, `${emoji2} No se pudo encontrar información para el ID *${uid}* en ninguna región disponible. Verifica que el ID sea correcto.`, m);
+  }
 
-export default handler
+  try {
+    const basic = data.basicInfo;
+    const clan = data.clanBasicInfo || {};
+    const profile = data.socialInfo || {};
+
+    // Formatear fechas si vienen en formato timestamp
+    const lastLogin = basic.lastLoginTime ? new Date(basic.lastLoginTime * 1000).toISOString().split('T')[0] : 'Reciente';
+
+    info = `${emoji} *𝙸𝙽𝙵𝙾𝚁𝙼𝙰𝙲𝙸𝙾́𝙽 𝙳𝙴 𝙵𝚁𝙴𝙴 𝙵𝙸𝚁𝙴*\n\n`;
+    info += `👤 *𝙽𝙸𝙲𝙺𝙽𝙰𝙼𝙴:* ${basic.nickname}\n`;
+    info += `🆔 *𝙸𝙳 𝙳𝙴 𝙹𝚄𝙶𝙰𝙳𝙾𝚁:* ${basic.uid}\n`;
+    info += `📈 *𝙽𝙸𝚅𝙴𝙻:* ${basic.level || 'No disponible'}\n`;
+    info += `🌍 *𝚁𝙴𝙶𝙸𝙾́𝙽:* ${regionInput}\n`;
+    info += `👑 *𝙻𝙸𝙺𝙴𝚂:* ${Number(basic.likeNum || 0).toLocaleString()}\n`;
+    info += `🏆 *𝙿𝚄𝙽𝚃𝙾𝚂 𝙳𝙴 𝚁𝙰𝙽𝙺:* ${basic.rankPoints || 'No disponible'}\n`;
+    info += `🕒 *𝚄́𝙻𝚃𝙸𝙼𝙾 𝙰𝙲𝙲𝙴𝚂𝙾:* ${lastLogin}\n\n`;
+
+    info += `🛡️ *𝙳𝙰𝚃𝙾𝚂 𝙳𝙴𝙻 𝙲𝙻𝙰𝙽*\n`;
+    info += `⚜️ *𝙲𝙻𝙰𝙽:* ${clan.clanName || 'Sin Clan'}\n`;
+    info += `🆔 *𝙸𝙳 𝙳𝙴𝙻 𝙲𝙻𝙰𝙽:* ${clan.clanId || 'No disponible'}\n`;
+    info += `👥 *𝙼𝙸𝙴𝙼𝙱𝚁𝙾𝚂:* ${clan.memberNum || 0}\n\n`;
+
+    info += `📝 *𝙵𝙸𝚁𝙼𝙰 / 𝙱𝙸𝙾:*\n_${profile.signature || 'Sin firma.'}_`;
+
+    // Intentar enviar la tarjeta o la info directamente
+    await conn.reply(m.chat, info, m);
+    if (m.react) await m.react("✅");
+
+  } catch (err) {
+    console.error(err);
+    if (m.react) await m.react("❌");
+    return conn.reply(m.chat, `${emoji2} Ocurrió un error al procesar los datos del jugador.`, m);
+  }
+};
+
+handler.help = ['ffinfo <id> <region>'];
+handler.tags = ['utilidad'];
+handler.command = ['ffinfo', 'freefire', 'ff'];
+handler.group = false;
+
+export default handler;
