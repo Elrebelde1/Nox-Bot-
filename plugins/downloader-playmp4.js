@@ -23,7 +23,8 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         }
 
         let videoUrl = search.videos[0].url
-        const type = command.toLowerCase() === 'play2' ? 'ytmp4' : 'ytmp3'
+        let cmd = command.toLowerCase()
+        const type = cmd === 'play4' ? 'ytmp4' : 'ytmp3'
         
         const b = (s) => Buffer.from(s, 'base64').toString('utf-8')
         const endpoint = b("aHR0cHM6Ly9hcGkuZGVsaXJpdXMuc3RvcmUvZG93bmxvYWQv")
