@@ -4,8 +4,8 @@ import delay from 'delay'
 const canal = '120363409416185213@newsletter'
 
 const queryStickers = [
-  'memes', 'anime stickers', 'sasuke', 'naruto', 
-  'graciosos', 'reacciones', 'gatos chistosos', 'flork'
+  'memes', 'sasuke uchiha', 'naruto', 'graciosos', 
+  'reacciones', 'gatos chistosos', 'flork', 'anime sticker'
 ]
 
 const frasesSasuke = [
@@ -19,59 +19,78 @@ const frasesSasuke = [
 async function obtenerPackStickers(cantidad = 5) {
   const keyword = queryStickers[Math.floor(Math.random() * queryStickers.length)]
   try {
-    const { data } = await axios.get(`https://api.giphy.com/v1/stickers/search?api_key=5g7XG2u02V2LdE8Z7d7X8Xg7d8Z7d8Z7&q=${encodeURIComponent(keyword)}&limit=20`)
-    const images = data?.data
-    if (!images || images.length === 0) return []
+    const { data } = await axios.get(`https://api.delirius.store/search/stickerly?q=${encodeURIComponent(keyword)}`)
+    if (!data || !data.status || !data.data || data.data.length === 0) return []
     
-    let pack = []
-    for (let i = 0; i < cantidad; i++) {
-      const random = images[Math.floor(Math.random() * images.length)]
-      if (random && random.images?.fixed_height?.url) {
-        pack.push(random.images.fixed_height.url)
+    const packAleatorio = data.data[Math.floor(Math.random() * data.data.length)]
+    if (!packAleatorio || !packAleatorio.preview) return []
+
+    let stickersUrls = []
+    const basePreview = packAleatorio.preview
+    
+    if (basePreview.includes('/sticker_pack/')) {
+      const parts = basePreview.split('/')
+      const packId = parts[parts.indexOf('sticker_pack') + 1]
+      const subId = parts[parts.indexOf('sticker_pack') + 2]
+      
+      for (let i = 1; i <= cantidad; i++) {
+        stickersUrls.push(`https://stickerly.pstatic.net/sticker_pack/${packId}/${subId}/${i}/${i}.png`)
       }
+    } else {
+      stickersUrls.push(basePreview)
     }
-    return pack
+
+    return {
+      nombre: packAleatorio.name,
+      autor: packAleatorio.author,
+      urls: stickersUrls
+    }
   } catch (e) {
-    return []
+    return null
   }
 }
 
 async function procesarYEnviarPack(conn, targetId, conSimulacion = false) {
-  const packStickers = await obtenerPackStickers(5)
+  const packInfo = await obtenerPackStickers(5)
+  if (!packInfo || packInfo.urls.length === 0) return false
+
   const frase = frasesSasuke[Math.floor(Math.random() * frasesSasuke.length)]
 
-  if (packStickers.length > 0) {
-    if (conSimulacion) {
-      await conn.sendPresenceUpdate('available', targetId)
-      await delay(2000)
-      await conn.sendPresenceUpdate('composing', targetId)
-      await delay(4000)
-    }
-
-    await conn.sendMessage(targetId, { text: `📦 *𝙿𝙰𝙲𝙺 𝙳𝙴 𝚂𝚃𝙸𝙲𝙺𝙴𝚁𝚂 𝙰𝙲𝚃𝚄𝙰𝙻𝙸𝚉𝙰𝙳𝙾*\n\n${frase}` })
-    await delay(3000)
-
-    for (const stickerUrl of packStickers) {
-      try {
-        const response = await axios.get(stickerUrl, { responseType: 'arraybuffer' })
-        const buffer = Buffer.from(response.data, 'binary')
-        
-        await conn.sendMessage(targetId, { 
-          sticker: buffer,
-          mimetype: 'image/webp'
-        })
-        await delay(1500)
-      } catch (stErr) {
-        console.error(stErr)
-      }
-    }
-    
-    if (conSimulacion) {
-      await conn.sendPresenceUpdate('paused', targetId)
-    }
-    return true
+  if (conSimulacion) {
+    await conn.sendPresenceUpdate('available', targetId)
+    await delay(2000)
+    await conn.sendPresenceUpdate('composing', targetId)
+    await delay(4000)
   }
-  return false
+
+  let caption = `📦 *𝙿𝙰𝙲𝙺:* ${packInfo.nombre}\n`
+  caption += `👤 *𝙰𝚄𝚃𝙾𝚁:* ${packInfo.autor}\n\n`
+  caption += `${frase}\n\n`
+  caption += `By Barboza-Team ⚡\nCode creado por Barboza Developer x Zona Developers`
+
+  await conn.sendMessage(targetId, { text: caption })
+  await delay(3000)
+
+  for (const stickerUrl of packInfo.urls) {
+    try {
+      const response = await axios.get(stickerUrl, { responseType: 'arraybuffer' }).catch(() => null)
+      if (!response) continue
+      
+      const buffer = Buffer.from(response.data, 'binary')
+      await conn.sendMessage(targetId, { 
+        sticker: buffer,
+        mimetype: 'image/webp'
+      })
+      await delay(2000)
+    } catch (stErr) {
+      console.error(stErr)
+    }
+  }
+  
+  if (conSimulacion) {
+    await conn.sendPresenceUpdate('paused', targetId)
+  }
+  return true
 }
 
 var handler = async (m, { conn, command }) => {
@@ -93,12 +112,11 @@ var handler = async (m, { conn, command }) => {
 }
 
 handler.init = async (conn) => {
-  console.log('🛡️ Sasuke Bot: Auto-Post de Packs de Stickers (Cada 8 min) Activo');
+  console.log('🛡️ Sasuke Bot: Auto-Post de Sticker.ly (Cada 8 min) Activo');
 
   while (true) {
     try {
       await procesarYEnviarPack(conn, canal, true)
-      
       const tiempoEspera = 8 * 60 * 1000;
       await delay(tiempoEspera);
     } catch (err) {
