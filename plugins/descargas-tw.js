@@ -19,30 +19,25 @@ const frasesSasuke = [
 async function obtenerPackStickers(cantidad = 5) {
   const keyword = queryStickers[Math.floor(Math.random() * queryStickers.length)]
   try {
-    const { data } = await axios.get(`https://api.delirius.store/search/stickerly?q=${encodeURIComponent(keyword)}`)
-    if (!data || !data.status || !data.data || data.data.length === 0) return []
+    const searchRes = await axios.get(`https://api.delirius.store/search/stickerly?query=${encodeURIComponent(keyword)}`)
+    if (!searchRes.data || !searchRes.data.status || !searchRes.data.data || searchRes.data.data.length === 0) return null
     
-    const packAleatorio = data.data[Math.floor(Math.random() * data.data.length)]
-    if (!packAleatorio || !packAleatorio.preview) return []
+    const packAleatorio = searchRes.data.data[Math.floor(Math.random() * searchRes.data.data.length)]
+    if (!packAleatorio || !packAleatorio.url) return null
 
+    const downloadRes = await axios.get(`https://api.delirius.store/download/stickerly?url=${encodeURIComponent(packAleatorio.url)}`)
+    if (!downloadRes.data || !downloadRes.data.status || !downloadRes.data.data || !downloadRes.data.data.stickers) return null
+
+    const allStickers = downloadRes.data.data.stickers
     let stickersUrls = []
-    const basePreview = packAleatorio.preview
     
-    if (basePreview.includes('/sticker_pack/')) {
-      const parts = basePreview.split('/')
-      const packId = parts[parts.indexOf('sticker_pack') + 1]
-      const subId = parts[parts.indexOf('sticker_pack') + 2]
-      
-      for (let i = 1; i <= cantidad; i++) {
-        stickersUrls.push(`https://stickerly.pstatic.net/sticker_pack/${packId}/${subId}/${i}/${i}.png`)
-      }
-    } else {
-      stickersUrls.push(basePreview)
+    for (let i = 0; i < Math.min(cantidad, allStickers.length); i++) {
+      stickersUrls.push(allStickers[i])
     }
 
     return {
-      nombre: packAleatorio.name,
-      autor: packAleatorio.author,
+      nombre: downloadRes.data.data.name || packAleatorio.name,
+      autor: downloadRes.data.data.author || packAleatorio.author,
       urls: stickersUrls
     }
   } catch (e) {
@@ -112,7 +107,7 @@ var handler = async (m, { conn, command }) => {
 }
 
 handler.init = async (conn) => {
-  console.log('🛡️ Sasuke Bot: Auto-Post de Sticker.ly (Cada 8 min) Activo');
+  console.log('🛡️ Sasuke Bot: Auto-Post de Sticker.ly Completo (Cada 8 min) Activo');
 
   while (true) {
     try {
