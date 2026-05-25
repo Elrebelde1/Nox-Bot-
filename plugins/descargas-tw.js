@@ -64,7 +64,8 @@ async function procesarYEnviarPack(conn, targetId, conSimulacion = false) {
   caption += `By Barboza-Team ⚡\nCode creado por Barboza Developer x Zona Developers`
 
   await conn.sendMessage(targetId, { text: caption })
-  await delay(3000)
+  // Esperar un momento a que el texto base se asiente en el canal antes de saturar con archivos
+  await delay(4000) 
 
   for (const stickerUrl of packInfo.urls) {
     try {
@@ -72,13 +73,16 @@ async function procesarYEnviarPack(conn, targetId, conSimulacion = false) {
       if (!response) continue
       
       const buffer = Buffer.from(response.data, 'binary')
+      
       await conn.sendMessage(targetId, { 
         sticker: buffer,
         mimetype: 'image/webp'
       })
-      await delay(2000)
+      
+      // Incrementamos el delay a 3.5 segundos entre sticker y sticker para asegurar la subida completa a los servidores de WhatsApp
+      await delay(3500) 
     } catch (stErr) {
-      console.error(stErr)
+      console.error('Error al subir sticker individual:', stErr)
     }
   }
   
