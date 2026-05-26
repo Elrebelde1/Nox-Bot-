@@ -1,68 +1,45 @@
-/**
- * 📂 COMANDO: Uchiha Audio Downloader
- * 📝 DESCRIPCIÓN: Extractor de audio MP3 con imagen.
- * 👤 CREADOR: Barboza Developer
- * ⚡ CANAL: Barboza Developer x Zona Developers
- * 🔗 API: https://sylphyy.xyz/download/v2/ytmp3
- */
+import axios from 'axios'
 
-import fetch from "node-fetch"
-import yts from 'yt-search'
+// Función auxiliar para obtener el Buffer
+async function getBuffer(url) {
+    const response = await axios.get(url, { responseType: 'arraybuffer' })
+    return Buffer.from(response.data)
+}
 
-const handler = async (m, { conn, text, usedPrefix, command }) => {
-    const dev = "⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓"
-    const net = "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕"
+var handler = async (m, { conn, text, command }) => {
+    if (!text) return m.reply(`《✧》 Por favor, ingresa un enlace de YouTube.\n\n*Ejemplo:* _.${command} https://www.youtube.com/watch?v=dQw4w9WgXcQ_`)
 
-    if (!text) return conn.reply(m.chat, `⚔️ *SISTEMA UCHIHA*\n\n> 🎵 *Escribe el nombre del audio*\n> 🔗 *Ej:* ${usedPrefix + command} Lose Yourself`, m)
-
-    await m.react('💿')
+    // Reacción de procesamiento
+    if (m.react) await m.react("⏳")
 
     try {
-        const decode = (s) => Buffer.from(s, 'base64').toString('utf-8')
-        const endpoint = decode("aHR0cHM6Ly9zeWxwaHl5Lnh5ei9kb3dubG9hZC92Mi95dG1wMw==")
-        const key = decode("c3lscGh5LTZmMTUwZA==")
-
-        let search = await yts(text)
-        if (!search.videos[0]) return m.reply('❌ No se encontró el audio.')
+        const apiUrl = `https://api.evogb.org/dl/ytmp3?url=${encodeURIComponent(text)}&key=abcd1234`
+        const { data: res } = await axios.get(apiUrl)
         
-        let v = search.videos[0].url
-        let thumbnail = search.videos[0].thumbnail
-        let res = await fetch(`${endpoint}?url=${encodeURIComponent(v)}&api_key=${key}`)
-        let json = await res.json()
-
-        if (!json.status || !json.result) {
-            await m.react('🚫')
-            return m.reply('💀 *ERROR:* El rastro del audio se ha perdido.')
+        if (!res || !res.data || !res.data.dl) {
+            if (m.react) await m.react("❌")
+            return m.reply('《✧》 No se pudo obtener el enlace de descarga de la API.')
         }
 
-        const audio = json.result
+        const audioBuffer = await getBuffer(res.data.dl)
 
-        let report = `| 🎵 *𝖴𝖢𝖧𝖨𝖧𝖠 𝖤𝖷𝖳𝖱𝖠𝖢𝖴𝖮́𝖭* 🎵\n`
-        report += `|═══════════════════\n`
-        report += `| 💿 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${audio.title}\n`
-        report += `| 🎧 *𝙲𝙰𝙻𝙸𝙳𝙰𝙳:* 320kbps\n`
-        report += `| 📡 *𝚂𝚃𝙰𝚃𝚄𝚂:* ✅ Sincronizado\n`
-        report += `|═══════════════════\n`
-        report += `| 🛠️ *${dev}*\n`
-        report += `| ⛩️ *${net}*`
-
-        await conn.sendMessage(m.chat, { image: { url: thumbnail }, caption: report }, { quoted: m })
-
-        await conn.sendMessage(m.chat, { 
-            audio: { url: audio.dl_url }, 
-            mimetype: 'audio/mpeg',
-            fileName: `${audio.title}.mp3`
+        await conn.sendMessage(m.chat, {
+            audio: audioBuffer,
+            mimetype: 'audio/mpeg', 
+            ptt: false              // false = Envía como canción con reproductor completo
         }, { quoted: m })
 
-        await m.react('🔥')
+        if (m.react) await m.react("✅")
 
-    } catch (e) {
-        await m.react('✖️')
+    } catch (error) {
+        console.error("Error enviando audio:", error)
+        if (m.react) await m.react("❌")
+        return m.reply('《✧》 Ocurrió un error al procesar el audio.')
     }
 }
 
-handler.help = ['ytmp3']
-handler.tags = ['descargas']
-handler.command = ['ytmp3v2']
+handler.help = ['ytmp3v2 <url>']
+handler.tags = ['downloader']
+handler.command = ['ytmp3v2', 'yta2'] // Comandos asignados
 
 export default handler
