@@ -78,6 +78,6 @@ const handler = async (m, { conn, args, usedPrefix, command }) => {
 
 handler.help = ['ytmp3v2', 'ytmp4v3']
 handler.tags = ['downloader']
-handler.command = /['ytmp3v2','ytmp4v3']
+handler.command = ['ytmp3v2','ytmp4v3']
 
 export default handler
