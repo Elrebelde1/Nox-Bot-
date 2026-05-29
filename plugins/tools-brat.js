@@ -1,100 +1,75 @@
-// code creador por barboza 
-// Se te agradece que dejes mis créditos gracias disfruta el código
+/**
+ * 📂 COMANDO: Uchiha Brat Color Sticker
+ * 📝 DESCRIPCIÓN: Creador de stickers estilo Brat con selección de colores.
+ * 👤 CREADOR: Barboza Developer
+ * ⚡ CANAL: Barboza Developer x Zona Developers
+ * Usen los código porfa para traer más 
+ * 🔗 API: https://api.evogb.org
+ */
 
 import axios from 'axios'
 import fs from 'fs'
 import { exec } from 'child_process'
 
-var handler = async (m, { conn, usedPrefix, command, text }) => {
+const handler = async (m, { conn, usedPrefix, command, text }) => {
     let [txt, color] = text.split('|')
     let textoFinal = txt ? txt.trim() : (m.quoted?.text || null)
 
-    if (!textoFinal) return conn.reply(m.chat, '⚡ *Escribe el texto para tu sticker brat*\n> Ejemplo: .brat Sasuke Bot', m)
-
-    if (textoFinal.length > 35) {
-        return conn.reply(m.chat, `⚠️ *Texto muy largo.*\n\n📌 Máximo: *35 letras*`, m)
+    if (!textoFinal) {
+        let alert = `█║▌│█│║▌║││█║▌│║▌║\n`
+        alert += `    ⚠️  UCHIHA SYSTEM WARNING  ⚠️   \n`
+        alert += `█║▌│█│║▌║││█║▌│║▌║\n\n`
+        alert += `> *Escribe el texto y el color separado por una barra (|)*\n`
+        alert += `> *Ejemplo:* ${usedPrefix + command} Sasuke Bot | red\n\n`
+        alert += `🎨 *Colores soportados:* white, green, red, blue, yellow, pink, cyan, orange, purple`
+        return conn.reply(m.chat, alert, m)
     }
 
-    if (!color) {
-        const colores = [
-            { buttonId: `${usedPrefix + command} ${textoFinal}|white`, buttonText: { displayText: "Blanco 🤍" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|green`, buttonText: { displayText: "Verde 💚" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|red`, buttonText: { displayText: "Rojo ❤️" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|blue`, buttonText: { displayText: "Azul 💙" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|yellow`, buttonText: { displayText: "Amarillo 💛" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|pink`, buttonText: { displayText: "Rosa 🩷" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|cyan`, buttonText: { displayText: "Cian 🩵" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|orange`, buttonText: { displayText: "Naranja 🧡" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${textoFinal}|purple`, buttonText: { displayText: "Morado 💜" }, type: 1 }
-        ]
-
-        const buttonMessage = {
-            text: `👤 *𝖲𝖺𝗌𝗎𝗄𝖾 𝖡𝗈𝗍 𝖬𝖣 — 𝖡𝗋𝖺𝗍 𝖢𝗈𝗅𝗈𝗋*\n\n📝 *Texto:* ${textoFinal}\n\n*Seleccione el color de fondo:*`,
-            footer: "𝖡𝗒 𝖡𝖺𝗋𝖻𝗈𝘇𝗮-𝖳𝖾𝖺𝗆 ⚡",
-            buttons: colores,
-            headerType: 1
-        }
-        return await conn.sendMessage(m.chat, buttonMessage, { quoted: m })
+    if (textoFinal.length > 35) {
+        return conn.reply(m.chat, `⚠️ *Texto muy largo. Máximo 35 caracteres.*`, m)
     }
 
     await m.react('🕒')
 
+    const tmpImg = `./tmp-${Date.now()}.png`
+    const tmpWebp = `./tmp-${Date.now()}.webp`
+    const colorFondo = color ? color.trim().toLowerCase() : 'white'
+
     try {
-        const apiKey = "sylphy-6f150d"
-        const colorFondo = color.trim().toLowerCase()
-        const textoFormateado = wrapText(textoFinal, 28)
+        const b = (s) => Buffer.from(s, 'base64').toString('utf-8')
+        const endpoint = b("aHR0cHM6Ly9hcGkuZXZvZ2Iub3JnL3Rvb2xzL2JyYXQ=")
+        const access = b("c2FzdWtl")
+        
+        let requestUrl = `${endpoint}?text=${encodeURIComponent(textoFinal)}&animated=false&fondo=${colorFondo}&key=${access}`
 
-        const apiUrl = `https://sylphyy.xyz/tools/brat?text=${encodeURIComponent(textoFormateado)}&color=black&fondo=${colorFondo}&type=Nose&api_key=${apiKey}`
-
-        const response = await axios.get(apiUrl, { responseType: 'arraybuffer' })
-
-        const img = `./tmp-${Date.now()}.png`
-        const webp = `./tmp-${Date.now()}.webp`
-        fs.writeFileSync(img, response.data)
+        const response = await axios.get(requestUrl, { responseType: 'arraybuffer' })
+        fs.writeFileSync(tmpImg, response.data)
 
         await new Promise((resolve, reject) => {
-            exec(`ffmpeg -i ${img} -vcodec libwebp -vf "scale=512:512:force_original_aspect_ratio=decrease,format=rgba,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=#00000000" ${webp}`, (err) => {
+            exec(`ffmpeg -i ${tmpImg} -vcodec libwebp -vf "scale=512:512:force_original_aspect_ratio=decrease,format=rgba,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=#00000000" ${tmpWebp}`, (err) => {
                 if (err) reject(err)
                 else resolve()
             })
         })
 
         await conn.sendMessage(m.chat, { 
-            sticker: fs.readFileSync(webp), 
-            packname: "𝖲𝖺𝗌𝗎𝗄𝖾 𝖡𝗈𝗍 𝖬𝖣 👤", 
-            author: "𝖡𝗒 𝖡𝖺𝗋𝖻𝗈𝗓𝖺-𝖳𝖾𝖺𝗆 ⚡" 
+            sticker: fs.readFileSync(tmpWebp), 
+            packname: "𝖲𝖺𝗌𝗎倦𝖾 𝖡𝗈̣t 𝖬𝖣 👤", 
+            author: "𝖡𝗒 𝖡𝖺𝗋𝖻b𝗼𝘇𝗮-𝖳𝖾𝖺𝗆 ⚡" 
         }, { quoted: m })
 
-        await m.react('✔️')
-
-        if (fs.existsSync(img)) fs.unlinkSync(img)
-        if (fs.existsSync(webp)) fs.unlinkSync(webp)
+        await m.react('🔥')
 
     } catch (e) {
-        console.error(e)
-        await m.react('✖️')
-        m.reply('❌ *Error al generar el sticker.*')
+        await m.react('❌')
+    } finally {
+        if (fs.existsSync(tmpImg)) fs.unlinkSync(tmpImg)
+        if (fs.existsSync(tmpWebp)) fs.unlinkSync(tmpWebp)
     }
 }
 
-function wrapText(text, max = 22) {
-    let words = text.split(' ')
-    let lines = []
-    let current = []
-    for (let w of words) {
-        if ((current.join(' ').length + w.length + 1) > max) {
-            lines.push(current.join(' '))
-            current = [w]
-        } else {
-            current.push(w)
-        }
-    }
-    if (current.length) lines.push(current.join(' '))
-    return lines.join('\n')
-}
-
-handler.help = ['brat']
+handler.help = ['bratcolor']
 handler.tags = ['sticker']
-handler.command = /^(brat|bratcolor)$/i
+handler.command = /^(bratcolor|brat)$/i
 
 export default handler
