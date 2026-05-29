@@ -52,8 +52,8 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 }
 
-handler.help = ['gemini3']
+handler.help = ['gemini', 'ia']
 handler.tags = ['tools']
-handler.command = /^(gemini3)
+handler.command = /^(gemini3|ia|sasuke)$/i
 
 export default handler
