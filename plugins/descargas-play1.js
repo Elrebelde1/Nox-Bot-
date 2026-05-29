@@ -4,7 +4,7 @@ import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    const apiKey = 'sylphy-6f150d'
+    const apiKeySasuke = 'sasuke'
     const botonesCanal = [
         { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
     ]
@@ -34,22 +34,53 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             let titulo = ''
 
             if (isAudio || isDocMp3) {
-                let res = await fetch(`https://sylphyy.xyz/download/v2/ytmp3?url=${encodeURIComponent(text)}&api_key=${apiKey}`)
-                let json = await res.json()
-                if (json.status && json.result) {
-                    dlUrl = json.result.dl_url
-                    titulo = json.result.title || 'Audio'
+                // 1. Intento con EvoGB
+                try {
+                    let res = await fetch(`https://api.evogb.org/dl/ytmp3?url=${encodeURIComponent(text)}&key=${apiKeySasuke}`)
+                    let json = await res.json()
+                    if (json.status && json.data) {
+                        dlUrl = json.data.dl
+                        titulo = json.data.title || 'Audio'
+                    }
+                } catch (e) {
+                    console.log("Error en EvoGB MP3, intentando APINexus...")
                 }
+
+                // 2. Fallback con APINexus si falló la primera
+                if (!dlUrl) {
+                    let res = await fetch(`https://panel.apinexus.fun/test/Descargas/youtube-mp3?url=${encodeURIComponent(text)}`)
+                    let json = await res.json()
+                    if (json.success && json.data) {
+                        dlUrl = json.data.audio
+                        titulo = json.data.titulo || 'Audio'
+                    }
+                }
+
             } else if (isVideo || isDocMp4) {
-                let res = await fetch(`https://api.delirius.store/download/ytmp4?url=${encodeURIComponent(text)}`)
-                let json = await res.json()
-                if (json.status && json.data) {
-                    dlUrl = json.data.download
-                    titulo = json.data.title || 'Video'
+                // 1. Intento con EvoGB
+                try {
+                    let res = await fetch(`https://api.evogb.org/dl/ytmp4?url=${encodeURIComponent(text)}&quality=480&key=${apiKeySasuke}`)
+                    let json = await res.json()
+                    if (json.status && json.data) {
+                        dlUrl = json.data.dl
+                        titulo = json.data.title || 'Video'
+                    }
+                } catch (e) {
+                    console.log("Error en EvoGB MP4, intentando APINexus...")
+                }
+
+                // 2. Fallback con APINexus si falló la primera
+                if (!dlUrl) {
+                    let res = await fetch(`https://panel.apinexus.fun/test/Descargas/youtube-mp4?url=${encodeURIComponent(text)}`)
+                    let json = await res.json()
+                    if (json.success && json.data) {
+                        dlUrl = json.data.video
+                        titulo = json.data.titulo || 'Video'
+                    }
                 }
             }
 
-            if (!dlUrl) throw 'No se pudo obtener el enlace de descarga'
+            if (!dlUrl) throw 'No se pudo obtener el enlace de descarga de ninguna API'
 
             if (isAudio) {
                 await conn.sendMessage(m.chat, { audio: { url: dlUrl }, mimetype: 'audio/mpeg' }, { quoted: m })
@@ -77,7 +108,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         let index = 0
         let querySearch = text
         const matchIndex = command.match(/^play(\d+)$/i)
-        
+
         if (matchIndex) {
             index = parseInt(matchIndex[1]) - 1
         }
