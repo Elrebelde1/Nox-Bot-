@@ -55,23 +55,7 @@ const handler = async (m, { conn, usedPrefix, command, text }) => {
     const tmpImg = `./tmp-${Date.now()}.png`
     const tmpWebp = `./tmp-${Date.now()}.webp`
     
-    let colorFondo = color.trim().toLowerCase()
-    
-    const traductorColores = {
-        'blanco': 'white',
-        'verde': 'green',
-        'rojo': 'red',
-        'azul': 'blue',
-        'amarillo': 'yellow',
-        'rosa': 'pink',
-        'cian': 'cyan',
-        'naranja': 'orange',
-        'morado': 'purple'
-    }
-
-    if (traductorColores[colorFondo]) {
-        colorFondo = traductorColores[colorFondo]
-    }
+    let colorFondo = color.trim().toLowerCase().split(' ')[0]
 
     try {
         const b = (s) => Buffer.from(s, 'base64').toString('utf-8')
