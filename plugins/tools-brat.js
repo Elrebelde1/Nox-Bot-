@@ -4,7 +4,7 @@
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  * Usen los código porfa para traer más 
- * 🔗 API: https://api.evogb.org
+ * 🔗 API: https://sylphyy.xyz
  */
 
 import axios from 'axios'
@@ -58,10 +58,10 @@ const handler = async (m, { conn, usedPrefix, command, text }) => {
 
     try {
         const b = (s) => Buffer.from(s, 'base64').toString('utf-8')
-        const endpoint = b("aHR0cHM6Ly9hcGkuZXZvZ2Iub3JnL3Rvb2xzL2JyYXQ=")
-        const access = b("c2FzdWtl")
+        const endpoint = b("aHR0cHM6Ly9zeWxwaHl5Lnh5ei90b29scy9icmF0")
+        const access = b("c3lscGh5LTZmMTUwZA==")
         
-        let requestUrl = `${endpoint}?text=${encodeURIComponent(textoFinal)}&animated=false&fondo=${colorFondo}&key=${access}`
+        let requestUrl = `${endpoint}?text=${encodeURIComponent(textoFinal)}&color=white&fondo=${colorFondo}&type=&api_key=${access}`
 
         const response = await axios.get(requestUrl, { responseType: 'arraybuffer' })
         fs.writeFileSync(tmpImg, response.data)
@@ -75,7 +75,7 @@ const handler = async (m, { conn, usedPrefix, command, text }) => {
 
         await conn.sendMessage(m.chat, { 
             sticker: fs.readFileSync(tmpWebp), 
-            packname: "𝖲𝖺𝗌𝗎倦𝖾 𝖡𝗈̣t 𝖬𝖣 👤", 
+            packname: "𝖲𝖺𝗌𝗎倦𝖾 𝖡2𝗈̣t 𝖬𝖣 👤", 
             author: "𝖡𝗒 𝖡𝖺𝗋𝖻b𝗼𝘇𝒂-𝖳𝖾𝖺𝗆 ⚡" 
         }, { quoted: m })
 
