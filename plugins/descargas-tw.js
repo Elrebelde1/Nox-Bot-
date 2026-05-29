@@ -1,3 +1,4 @@
+
 /**
  * 📂 COMANDO: Uchiha AI Gemini
  * 📝 DESCRIPCIÓN: Chatbot interactivo con Inteligencia Artificial.
@@ -54,6 +55,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
 handler.help = ['gemini', 'ia']
 handler.tags = ['tools']
-handler.command = /^(gemini3|ia|sasuke)$/i
+handler.command = /^(gemini|ia|)$/i
 
 export default handler
