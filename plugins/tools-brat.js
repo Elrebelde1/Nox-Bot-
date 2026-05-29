@@ -1,6 +1,6 @@
 /**
- * 📂 COMANDO: Uchiha Brat Color Sticker
- * 📝 DESCRIPCIÓN: Creador de stickers estilo Brat con selección de colores.
+ * 📂 COMANDO: Uchiha Brat Color Buttons
+ * 📝 DESCRIPCIÓN: Creador de stickers Brat con menú interactivo de colores.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  * Usen los código porfa para traer más 
@@ -19,9 +19,8 @@ const handler = async (m, { conn, usedPrefix, command, text }) => {
         let alert = `█║▌│█│║▌║││█║▌│║▌║\n`
         alert += `    ⚠️  UCHIHA SYSTEM WARNING  ⚠️   \n`
         alert += `█║▌│█│║▌║││█║▌│║▌║\n\n`
-        alert += `> *Escribe el texto y el color separado por una barra (|)*\n`
-        alert += `> *Ejemplo:* ${usedPrefix + command} Sasuke Bot | red\n\n`
-        alert += `🎨 *Colores soportados:* white, green, red, blue, yellow, pink, cyan, orange, purple`
+        alert += `> *Escribe el texto para generar tu sticker estilo Brat.*\n`
+        alert += `> *Ejemplo:* ${usedPrefix + command} Sasuke Bot`
         return conn.reply(m.chat, alert, m)
     }
 
@@ -29,11 +28,33 @@ const handler = async (m, { conn, usedPrefix, command, text }) => {
         return conn.reply(m.chat, `⚠️ *Texto muy largo. Máximo 35 caracteres.*`, m)
     }
 
+    if (!color) {
+        const colores = [
+            { buttonId: `${usedPrefix + command} ${textoFinal}|white`, buttonText: { displayText: "Blanco 🤍" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|green`, buttonText: { displayText: "Verde 💚" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|red`, buttonText: { displayText: "Rojo ❤️" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|blue`, buttonText: { displayText: "Azul 💙" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|yellow`, buttonText: { displayText: "Amarillo 💛" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|pink`, buttonText: { displayText: "Rosa 🩷" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|cyan`, buttonText: { displayText: "Cian 🩵" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|orange`, buttonText: { displayText: "Naranja 🧡" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${textoFinal}|purple`, buttonText: { displayText: "Morado 💜" }, type: 1 }
+        ]
+
+        const buttonMessage = {
+            text: `┏━━━━━━━━━━━━━━━━━━━━━━━━┓\n┃     ⛩️  UCHIHA BRAT COLOR  ⛩️     ┃\n┗━━━━━━━━━━━━━━━━━━━━━━━━┛\n\n📝 *Texto:* ${textoFinal}\n\n*Selecciona un color de fondo para el sticker:*`,
+            footer: "By Barboza-Team ⚡",
+            buttons: colores,
+            headerType: 1
+        }
+        return await conn.sendMessage(m.chat, buttonMessage, { quoted: m })
+    }
+
     await m.react('🕒')
 
     const tmpImg = `./tmp-${Date.now()}.png`
     const tmpWebp = `./tmp-${Date.now()}.webp`
-    const colorFondo = color ? color.trim().toLowerCase() : 'white'
+    const colorFondo = color.trim().toLowerCase()
 
     try {
         const b = (s) => Buffer.from(s, 'base64').toString('utf-8')
@@ -55,7 +76,7 @@ const handler = async (m, { conn, usedPrefix, command, text }) => {
         await conn.sendMessage(m.chat, { 
             sticker: fs.readFileSync(tmpWebp), 
             packname: "𝖲𝖺𝗌𝗎倦𝖾 𝖡𝗈̣t 𝖬𝖣 👤", 
-            author: "𝖡𝗒 𝖡𝖺𝗋𝖻b𝗼𝘇𝗮-𝖳𝖾𝖺𝗆 ⚡" 
+            author: "𝖡𝗒 𝖡𝖺𝗋𝖻b𝗼𝘇𝒂-𝖳𝖾𝖺𝗆 ⚡" 
         }, { quoted: m })
 
         await m.react('🔥')
@@ -68,8 +89,8 @@ const handler = async (m, { conn, usedPrefix, command, text }) => {
     }
 }
 
-handler.help = ['bratcolor']
+handler.help = ['brat', 'bratcolor']
 handler.tags = ['sticker']
-handler.command = /^(bratcolor|brat)$/i
+handler.command = /^(brat|bratcolor)$/i
 
 export default handler
