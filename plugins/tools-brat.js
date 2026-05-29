@@ -54,7 +54,24 @@ const handler = async (m, { conn, usedPrefix, command, text }) => {
 
     const tmpImg = `./tmp-${Date.now()}.png`
     const tmpWebp = `./tmp-${Date.now()}.webp`
-    const colorFondo = color.trim().toLowerCase()
+    
+    let colorFondo = color.trim().toLowerCase()
+    
+    const traductorColores = {
+        'blanco': 'white',
+        'verde': 'green',
+        'rojo': 'red',
+        'azul': 'blue',
+        'amarillo': 'yellow',
+        'rosa': 'pink',
+        'cian': 'cyan',
+        'naranja': 'orange',
+        'morado': 'purple'
+    }
+
+    if (traductorColores[colorFondo]) {
+        colorFondo = traductorColores[colorFondo]
+    }
 
     try {
         const b = (s) => Buffer.from(s, 'base64').toString('utf-8')
@@ -75,7 +92,7 @@ const handler = async (m, { conn, usedPrefix, command, text }) => {
 
         await conn.sendMessage(m.chat, { 
             sticker: fs.readFileSync(tmpWebp), 
-            packname: "𝖲𝖺𝗌𝗎倦𝖾 𝖡2𝗈̣t 𝖬𝖣 👤", 
+            packname: "𝖲𝖺𝗌𝗎倦𝖾 𝖡𝗈̣t 𝖬𝖣 👤", 
             author: "𝖡𝗒 𝖡𝖺𝗋𝖻b𝗼𝘇𝒂-𝖳𝖾𝖺𝗆 ⚡" 
         }, { quoted: m })
 
