@@ -25,7 +25,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     try {
         const apiTarget = "https://api.evogb.org/search/pinterest"
         
-        const response = await axios.get(`${apiTarget}?query=${encodeURIComponent(query)}`)
+        const response = await axios.get(`${apiTarget}?query=${encodeURIComponent(query)}&key=sasuke`)
         const result = response.data
 
         if (!result?.status || !result.data || result.data.length < 5) {
