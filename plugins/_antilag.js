@@ -34,35 +34,35 @@ handler.tags = ['group']
 handler.command = /^(antilag)$/i
 
 handler.before = async function (m, { conn, isAdmin, isBotAdmin }) {
-    if (!m.isGroup) return !0
+    if (!m.isGroup) return 
 
-    const botNumber = conn.user.jid
-    if (m.sender === botNumber || m.fromMe || m.isBaileys) return !0
+    // Si el mensaje es el comando para encender/apagar, salimos del before 
+    // sin retornar nada (así no bloquea al handler principal)
+    if (m.text && /^[./#]antilag/i.test(m.text)) return
 
     const chat = global.db.data.chats[m.chat]
-    if (!chat?.antiLag) return !0
+    if (!chat?.antiLag) return
 
-    // --- FILTROS ESPECÍFICOS PARA LOS ENLACES ---
-    
     // 1. FILTRO DE GRUPOS: El Anti-Lag solo actuará en los 4 grupos configurados
     const esGrupoValido = gruposPermitidos.includes(m.chat)
     const tieneLinkValido = linksPermitidos.some(code => m.text && m.text.includes(code))
-    if (!esGrupoValido && !tieneLinkValido) return !0
+    if (!esGrupoValido && !tieneLinkValido) return
 
-    // 2. FILTRO AUTOMÁTICO DE SUBBOTS: 
-    // Si el JID del bot actual incluye ': ', significa que es una sesión secundaria (subbot/jadibot)
-    // Baileys suele asignar JIDs con formato 'número:sesion@s.whatsapp.net' a los subbots.
-    if (conn.user.jid.includes(':')) return !0
+    // 2. FILTRO AUTOMÁTICO DE SUBBOTS: Ignora si es sesión secundaria
+    if (conn.user.id.includes(':')) return
+
+    const botNumber = conn.user.jid
+    if (m.sender === botNumber || m.fromMe || m.isBaileys) return
 
     const isGroupLink = linkRegex.exec(m.text)
     const isChannelLink = channelLinkRegex.exec(m.text)
 
     if ((isGroupLink || isChannelLink) && !isAdmin) {
-        if (!isBotAdmin) return !0
+        if (!isBotAdmin) return 
 
         if (isGroupLink) {
             const groupCode = await conn.groupInviteCode(m.chat).catch(() => null)
-            if (groupCode && m.text.includes(groupCode)) return !0
+            if (groupCode && m.text.includes(groupCode)) return 
         }
 
         // Ejecución del Anti-Lag
@@ -75,7 +75,6 @@ handler.before = async function (m, { conn, isAdmin, isBotAdmin }) {
         )
         return await conn.groupParticipantsUpdate(m.chat, [m.sender], 'remove')
     }
-    return !0
 }
 
 export default handler
