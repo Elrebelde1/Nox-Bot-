@@ -1,9 +1,6 @@
 const linkRegex = /chat\.whatsapp\.com\/(?:invite\/)?([0-9A-Za-z]{20,24})/i
 const channelLinkRegex = /whatsapp\.com\/channel\/([0-9A-Za-z]{20,30})/i
 
-// JID de tu Bot Oficial (Reemplaza las 'x' por el número real de tu bot principal)
-const oficialJid = '584xxxxxxxxx@s.whatsapp.net' 
-
 // Lista de los 4 grupos permitidos (2 por JID y 2 por código de link)
 const gruposPermitidos = [
     '120363406315912646@g.us',
@@ -38,20 +35,24 @@ handler.command = /^(antilag)$/i
 
 handler.before = async function (m, { conn, isAdmin, isBotAdmin }) {
     if (!m.isGroup) return !0
-    
-    // 1. FILTRO DE GRUPOS: Solo actúa en los 4 grupos especificados
-    const esGrupoValido = gruposPermitidos.includes(m.chat)
-    const tieneLinkValido = linksPermitidos.some(code => m.text && m.text.includes(code))
-    if (!esGrupoValido && !tieneLinkValido) return !0
-
-    // 2. FILTRO DE SUBBOTS: Si NO es el bot oficial, no hace nada en estos grupos
-    if (conn.user.jid !== oficialJid) return !0
 
     const botNumber = conn.user.jid
     if (m.sender === botNumber || m.fromMe || m.isBaileys) return !0
 
     const chat = global.db.data.chats[m.chat]
     if (!chat?.antiLag) return !0
+
+    // --- FILTROS ESPECÍFICOS PARA LOS ENLACES ---
+    
+    // 1. FILTRO DE GRUPOS: El Anti-Lag solo actuará en los 4 grupos configurados
+    const esGrupoValido = gruposPermitidos.includes(m.chat)
+    const tieneLinkValido = linksPermitidos.some(code => m.text && m.text.includes(code))
+    if (!esGrupoValido && !tieneLinkValido) return !0
+
+    // 2. FILTRO AUTOMÁTICO DE SUBBOTS: 
+    // Si el JID del bot actual incluye ': ', significa que es una sesión secundaria (subbot/jadibot)
+    // Baileys suele asignar JIDs con formato 'número:sesion@s.whatsapp.net' a los subbots.
+    if (conn.user.jid.includes(':')) return !0
 
     const isGroupLink = linkRegex.exec(m.text)
     const isChannelLink = channelLinkRegex.exec(m.text)
@@ -64,7 +65,7 @@ handler.before = async function (m, { conn, isAdmin, isBotAdmin }) {
             if (groupCode && m.text.includes(groupCode)) return !0
         }
 
-        // Ejecución exclusiva del Bot Oficial
+        // Ejecución del Anti-Lag
         await conn.sendMessage(m.chat, { delete: m.key })
         await conn.reply(
             m.chat,
