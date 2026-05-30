@@ -1,71 +1,99 @@
+/**
+ * 📂 COMANDO: Downloader Pro (Multi API)
+ * 📝 DESCRIPCIÓN: Descarga de IG, FB, TikTok, Twitter y Terabox.
+ * 👤 CREADOR: Barboza Developer
+ * ⚡ CANAL: Barboza Developer x Zona Developers
+ * 🔌 API: https://api.evogb.org
+ */
+
 import axios from 'axios'
 
-let handler = async (m, { conn, text, command }) => {
-    if (!text) return m.reply(`¿Qué buscas en Pinterest?\n\nEjemplo: *!${command} Naruto Edit*`)
+var handler = async (m, { conn, text, usedPrefix, command }) => {
+    let query = text ? text.trim() : (m.quoted?.text || null)
+    if (!query) {
+        let alert = `✨ PLATFORM DOWNLOADER ✨\n`
+        alert += `✧ ────────────────── ✧\n`
+        alert += `> *Ingresa un enlace válido para procesar tu descarga.*\n`
+        alert += `> *Uso:* ${usedPrefix + command} https://...`
+        return conn.reply(m.chat, alert, m)
+    }
 
     await m.react('⏳')
 
     try {
-        // 1. PASO 1: Buscar con Vreden
-        const searchRes = await axios.get(`https://api.vreden.my.id/api/v1/search/pinterest?query=${encodeURIComponent(text)}`)
-        
-        if (!searchRes.data.status || !searchRes.data.result.search_data.length) {
-            await m.react('✖️')
-            return m.reply('❌ No se encontraron resultados.')
+        const _0x4a1b = 'ZWt1c2Fz' 
+        const key = Buffer.from(_0x4a1b, 'base64').toString('utf-8').split('').reverse().join('')
+        let endpoint = ''
+
+        if (/ig|instagram/i.test(command)) {
+            endpoint = `https://api.evogb.org/dl/instagram?url=${encodeURIComponent(query)}&key=${key}`
+        } else if (/fb|facebook/i.test(command)) {
+            endpoint = `https://api.evogb.org/dl/facebook?url=${encodeURIComponent(query)}&key=${key}`
+        } else if (/tk|tiktok/i.test(command)) {
+            endpoint = `https://api.evogb.org/dl/tiktok?url=${encodeURIComponent(query)}&key=${key}`
+        } else if (/tw|twitter/i.test(command)) {
+            endpoint = `https://api.evogb.org/dl/twitter?url=${encodeURIComponent(query)}&key=${key}`
+        } else if (/tera|terabox/i.test(command)) {
+            endpoint = `https://api.evogb.org/dl/terabox?url=${encodeURIComponent(query)}&key=${key}`
         }
 
-        // Tomamos un link al azar de la búsqueda de Vreden
-        const randomLink = searchRes.data.result.search_data[Math.floor(Math.random() * searchRes.data.result.search_data.length)]
-
-        // 2. PASO 2: Extraer info real con Dix Lat (pindl)
-        // Usamos el link que nos dio Vreden para obtener el video/imagen real
-        const dlRes = await axios.get(`https://api.dix.lat/pindl?url=${randomLink}`)
+        const { data } = await axios.get(endpoint)
         
-        if (!dlRes.data.success) {
-            // Si pindl falla, enviamos directamente lo que nos dio Vreden como imagen
-            return await conn.sendMessage(m.chat, { image: { url: randomLink }, caption: `🚀 *Sasuke Bot*\n📌 *Búsqueda:* ${text}` }, { quoted: m })
+        if (!data.status) {
+            await m.react('❌')
+            return m.reply('❌ La API no devolvió una respuesta válida para este enlace.')
         }
 
-        const res = dlRes.data.result
-        
-        // 3. Diseño Sasuke Style
-        let doc = `
-┏━━━━━━━『 𝐒𝐀𝐒𝐔𝐊𝐄 𝐏𝐈𝐍𝐓𝐄𝐑𝐄𝐒𝐓 』━━━━━━━┓
-┃
-┃  📌 *TÍTULO:* ${res.title || 'Pinterest Content'}
-┃  👤 *AUTOR:* ${res.author || res.author_username || 'Desconocido'}
-┃  📦 *TIPO:* ${res.type.toUpperCase()}
-┃  📅 *FECHA:* ${res.created_at || 'Reciente'}
-┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+        let downloadUrl = ''
+        let isDocument = false
+        let fileName = 'file'
 
-🚀 *Contenido de calidad...*`.trim()
+        if (/ig|instagram/i.test(command)) {
+            downloadUrl = data.data[0].url
+        } else if (/fb|facebook/i.test(command)) {
+            downloadUrl = data.resultados[0].url
+        } else if (/tk|tiktok/i.test(command)) {
+            downloadUrl = data.data.dl
+        } else if (/tw|twitter/i.test(command)) {
+            downloadUrl = data.data.result[0].url
+        } else if (/tera|terabox/i.test(command)) {
+            const fileData = data.data[0]
+            downloadUrl = fileData.dlink || fileData.url
+            fileName = fileData.server_filename || 'file.apk'
+            if (fileName.endsWith('.apk') || fileData.path.includes('.apk')) {
+                isDocument = true
+            }
+        }
 
-        // 4. Envío dinámico (Video o Imagen)
-        if (res.type === 'video') {
+        if (!downloadUrl) {
+            await m.react('❌')
+            return m.reply('❌ No se localizó el enlace directo de descarga en el servidor.')
+        }
+
+        if (isDocument) {
             await conn.sendMessage(m.chat, { 
-                video: { url: res.download }, 
-                caption: doc,
-                mimetype: 'video/mp4'
+                document: { url: downloadUrl }, 
+                mimetype: 'application/vnd.android.package-archive',
+                fileName: fileName
             }, { quoted: m })
         } else {
             await conn.sendMessage(m.chat, { 
-                image: { url: res.download || res.image }, 
-                caption: doc
+                video: { url: downloadUrl }, 
+                mimetype: 'video/mp4'
             }, { quoted: m })
         }
 
-        await m.react('✅')
+        await m.react('🔥')
 
     } catch (e) {
         console.error(e)
-        await m.react('✖️')
-        m.reply('🚀 *Error:* Hubo un problema al conectar las APIs de búsqueda y descarga.')
+        await m.react('❌')
+        m.reply('❌ Fallo de conexión en la infraestructura de la API.')
     }
 }
 
-handler.help = ['pinterest', 'pinvid']
-handler.tags = ['search', 'dl']
-handler.command = ['pinterest', 'pin', 'pinvid', 'pindl'] 
+handler.help = ['ig', 'fb', 'tk', 'tw', 'terabox']
+handler.tags = ['downloader']
+handler.command = ['ig3', 'fb3', 'tk3', 'tw3', 'terabox3']
 
 export default handler
