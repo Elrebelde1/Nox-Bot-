@@ -7,10 +7,6 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
   let bot = global.db.data.settings[conn.user.jid] || {}
   let type = command.toLowerCase()
 
-  if (m.isGroup) {
-    if (!('antiLag' in chat)) chat.antiLag = false
-  }
-
   if (!args[0]) return m.reply(`⚠️ *Formato incorrecto*\n\n📌 Uso: *${usedPrefix + command} on* o *${usedPrefix + command} off*`)
 
   let fail = false
@@ -18,16 +14,6 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
     case 'welcome': case 'bienvenida':
       if (m.isGroup && !isAdmin) { global.dfail('admin', m, conn); fail = true; break }
       chat.bienvenida = isEnable
-      break
-    case 'antilag':
-      // Modificado: Recorre todos los chats de la base de datos y activa/desactiva si son grupos
-      for (let c in global.db.data.chats) {
-        if (c.endsWith('@g.us')) { // Filtra solo los grupos
-          global.db.data.chats[c].antiLag = isEnable
-        }
-      }
-      // También lo asegura en el chat actual por si acaso
-      if (chat) chat.antiLag = isEnable
       break
     case 'subbots': case 'serbot':
       if (!isROwner) { global.dfail('rowner', m, conn); fail = true; break }
@@ -78,9 +64,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
     catalogoImg = { url: 'https://files.catbox.moe/t7uytz.png' }
   }
 
-  // Personalización del mensaje para el antilag global
   let estadoTexto = isEnable ? 'Activado ✅' : 'Desactivado ❌'
-  if (type === 'antilag') estadoTexto += ' (En todos los grupos)'
 
   let statusTxt = `┏━━━━━━━━━━━━━━━━━━┓\n`
   statusTxt += `✨ *AJUSTE ACTUALIZADO* ✨\n`
@@ -89,7 +73,6 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
   statusTxt += `📊 *Estado:* ${estadoTexto}\n`
   statusTxt += `┗━━━━━━━━━━━━━━━━━━┛`
 
-  // --- BOTÓN VINCULADO AL COMANDO scanal ---
   const botones = [
     { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
   ]
@@ -103,8 +86,8 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
   }, { quoted: m })
 }
 
-handler.help = ['welcome', 'antilag', 'antilink', 'antibot', 'modoadmin', 'subbots', 'nsfw', 'audios', 'antiprivado'].map(v => v + ' on/off')
+handler.help = ['welcome', 'antilink', 'antibot', 'modoadmin', 'subbots', 'nsfw', 'audios', 'antiprivado'].map(v => v + ' on/off')
 handler.tags = ['config']
-handler.command = ['welcome', 'bienvenida', 'antilag', 'subbots', 'serbot', 'antispam', 'antilink', 'antibot', 'modoadmin', 'nsfw', 'antinopor', 'audios', 'autoleer', 'autoread', 'antiprivado']
+handler.command = ['welcome', 'bienvenida', 'subbots', 'serbot', 'antispam', 'antilink', 'antibot', 'modoadmin', 'nsfw', 'antinopor', 'audios', 'autoleer', 'autoread', 'antiprivado']
 
 export default handler
