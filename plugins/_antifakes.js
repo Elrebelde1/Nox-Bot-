@@ -1,33 +1,79 @@
-let handler = async (m, { conn, text }) => {
-    // Verifica si el comando se está usando en un grupo
-    if (!m.isGroup) return m.reply('⚠️ Este comando solo puede ser utilizado dentro de un grupo.')
+/**
+ * 📂 COMANDO: Uchiha Deezer Downloader
+ * 📝 DESCRIPCIÓN: Busca y descarga pistas de música mediante Deezer.
+ * 👤 CREADOR: Barboza Developer
+ * ⚡ CANAL: Barboza Developer x Zona Developers
+ * Usen los código porfa para traer más 
+ * 🔗 API: https://api.evogb.org
+ */
 
-    // Si no pone nada, da el ID del grupo actual por defecto
-    if (!text) {
-        return await conn.reply(m.chat, `🆔 *ID de este grupo:* \n\n\`${m.chat}\``, m)
+import axios from 'axios'
+
+const handler = async (m, { conn, text, usedPrefix, command }) => {
+    let query = text || (m.quoted && m.quoted.text ? m.quoted.text : '')
+
+    if (!query) {
+        let alert = `🎵 DEEZER DOWNLOADER 🎵\n`
+        alert += `───────────────────────────────────────\n`
+        alert += `> *Escribe el nombre de la canción que quieres buscar.*\n`
+        alert += `> *Uso:* ${usedPrefix + command} Hay Lupita`
+        return conn.reply(m.chat, alert, m)
     }
 
-    // Extrae el código de invitación si el usuario pone un link
-    let linkRegex = /://whatsapp.com\/([0-9A-Za-z]{20,24})/i
-    let [_, code] = text.match(linkRegex) || []
-
-    if (!code) return m.reply('⚠️ El texto ingresado no es un enlace de invitación válido de WhatsApp.')
+    await m.react('🕒')
 
     try {
-        // Obtiene la información del grupo usando el código del enlace
-        let res = await conn.groupGetInviteInfo(code)
-        
-        if (!res || !res.id) return m.reply('❌ No se pudo obtener la información de ese grupo.')
+        const searchApi = "https://api.evogb.org/search/deezer"
+        const dlApi = "https://api.evogb.org/dl/deezer"
 
-        // Devuelve el ID del grupo del link
-        await conn.reply(m.chat, `🆔 *ID del grupo solicitado:* \n\n\`${res.id}\``, m)
+        const searchResponse = await axios.get(`${searchApi}?query=${encodeURIComponent(query)}&limit=1`)
+        const searchResult = searchResponse.data
+
+        if (!searchResult?.status || !searchResult.data || searchResult.data.length === 0) {
+            await m.react('❌')
+            return conn.reply(m.chat, '❌ No se encontraron resultados.', m)
+        }
+
+        const trackData = searchResult.data[0]
+        const trackUrl = trackData.url
+
+        const dlResponse = await axios.get(`${dlApi}?url=${encodeURIComponent(trackUrl)}`)
+        const dlResult = dlResponse.data
+
+        if (!dlResult?.status || !dlResult.data?.dl) {
+            await m.react('❌')
+            return conn.reply(m.chat, '❌ Error al procesar la descarga.', m)
+        }
+
+        let txt = `🪐 DEEZER CORE AUDIO TUNNEL 🪐\n`
+        txt += `───────────────────────────────────────\n`
+        txt += `  » 🎵 Track  : ${dlResult.data.title}\n`
+        txt += `  » 👤 Artist : ${dlResult.data.artist}\n`
+        txt += `  » 💿 Album  : ${dlResult.data.album}\n`
+        txt += `  » 📅 Year   : ${dlResult.data.release_date}\n`
+        txt += `  » ⏳ Length : ${dlResult.data.duration}\n`
+        txt += `───────────────────────────────────────\n`
+        txt += `[██████████] 100% Buffering Audio File...\n`
+        txt += `───────────────────────────────────────\n`
+        txt += `⚡ Barboza Developer x Zona Developers`
+
+        await conn.sendMessage(m.chat, { image: { url: dlResult.data.cover }, caption: txt }, { quoted: m })
+
+        await conn.sendMessage(m.chat, { 
+            audio: { url: dlResult.data.dl }, 
+            mimetype: 'audio/mpeg', 
+            fileName: `${dlResult.data.title}.mp3` 
+        }, { quoted: m })
+
+        await m.react('🔥')
+
     } catch (e) {
-        await conn.reply(m.chat, '❌ Hubo un error. Asegúrate de que el enlace sea válido y que el bot no esté baneado de ese grupo.', m)
+        await m.react('❌')
     }
 }
 
-handler.help = ['id <link>']
-handler.tags = ['group']
-handler.command = /^(id|jid|groupid)$/i
+handler.help = ['deezer', 'music']
+handler.tags = ['tools']
+handler.command = /^(deezer|music|song)$/i
 
 export default handler
