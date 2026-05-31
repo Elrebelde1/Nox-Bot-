@@ -25,12 +25,16 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const apiTarget = "https://api.evogb.org/tools/brat"
         const access = Buffer.from("c2FzdWtl", 'base64').toString('utf-8')
         
-        const isAnimated = command.includes('animado') || command.includes('gif') ? 'true' : 'false'
+        let isAnimated = 'false'
+        if (/animado|gif/i.test(command)) {
+            isAnimated = 'true'
+        }
         
         const mediaUrl = `${apiTarget}?text=${encodeURIComponent(query)}&animated=${isAnimated}&key=${access}`
 
         await conn.sendMessage(m.chat, { 
-            sticker: { url: mediaUrl }
+            sticker: { url: mediaUrl },
+            isAnimated: isAnimated === 'true'
         }, { quoted: m })
 
         await m.react('🔥')
@@ -44,6 +48,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
 handler.help = ['brat', 'bratanimado']
 handler.tags = ['sticker']
-handler.command = /^(bratgif)$/i
+handler.command = /^(brat|bratanimado|bratgif)$/i
 
 export default handler
