@@ -24,8 +24,11 @@ const handler = async (m, { conn, text, args }) => {
                 method: 'POST',
                 body: form
             })
+            
             let json = await res.json()
-            if (json.status) tempUrl = json.url
+            if (json && json.status === true && json.url) {
+                tempUrl = json.url
+            }
         } else if (args[0] && args[0].startsWith('http')) {
             tempUrl = args[0]
         }
@@ -40,30 +43,30 @@ const handler = async (m, { conn, text, args }) => {
         let hdResponse = await fetch(`${upscaleEndpoint}?method=url&url=${encodeURIComponent(cleanUrl)}&key=${access}`)
         let hdJson = await hdResponse.json()
 
-        if (!hdJson.status || !hdJson.url) {
+        if (hdJson && hdJson.status === true && hdJson.url) {
+            let finalHdUrl = hdJson.url.split(';')[0].trim()
+
+            const dev = "⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓"
+            const net = "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕"
+
+            let report = `| 🖼️ *𝖴𝖢𝖧𝖨𝖧𝖠 𝖨𝖬𝖠𝖦𝖤  𝖴𝖯𝖲𝖢𝖠𝖫𝖤𝖱* 🖼️\n`
+            report += `|═══════════════════\n`
+            report += `| 🟢 *𝚂𝚃𝙰𝚃𝚄𝚂:* Calidad Optimizada HD\n`
+            report += `| 🔗 *𝚄𝚁𝙻:* ${finalHdUrl}\n`
+            report += `|═══════════════════\n`
+            report += `| 🛠️ *${dev}*\n`
+            report += `| ⛩️ *${net}*`
+
+            await conn.sendMessage(m.chat, { 
+                image: { url: finalHdUrl }, 
+                caption: report 
+            }, { quoted: m })
+
+            await m.react('🔥')
+        } else {
             await m.react('❌')
-            return conn.reply(m.chat, `❌ El servidor no pudo procesar el escalado HD.`, m)
+            return conn.reply(m.chat, `❌ El JSON del servidor no devolvió un estado válido de conversión.`, m)
         }
-
-        let finalHdUrl = hdJson.url.split(';')[0].trim()
-
-        const dev = "⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓"
-        const net = "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕"
-
-        let report = `| 🖼️ *𝖴𝖢𝖧𝖨𝖧𝖠 𝖨𝖬𝖠𝖦𝖤  𝖴𝖯𝖲𝖢𝖠𝖫𝖤𝖱* 🖼️\n`
-        report += `|═══════════════════\n`
-        report += `| 🟢 *𝚂𝚃𝙰𝚃𝚄𝚂:* Calidad Optimizada HD\n`
-        report += `| 🔗 *𝚄𝚁𝙻:* ${finalHdUrl}\n`
-        report += `|═══════════════════\n`
-        report += `| 🛠️ *${dev}*\n`
-        report += `| ⛩️ *${net}*`
-
-        await conn.sendMessage(m.chat, { 
-            image: { url: finalHdUrl }, 
-            caption: report 
-        }, { quoted: m })
-
-        await m.react('🔥')
 
     } catch (e) {
         console.error(e)
