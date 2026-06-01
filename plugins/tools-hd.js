@@ -1,5 +1,4 @@
-import fetch from "node-fetch"
-import { FormData, Blob } from "formdata-node"
+import axios from 'axios'
 
 const handler = async (m, { conn, text, args }) => {
     let q = m.quoted ? m.quoted : m
@@ -16,18 +15,18 @@ const handler = async (m, { conn, text, args }) => {
 
         if (/image/.test(mime)) {
             let media = await q.download()
-            let form = new FormData()
-            let blob = new Blob([media], { type: mime })
-            form.append('file', blob, `image.${mime.split('/')[1]}`)
+            
+            // Reemplazo completo de FormData usando un constructor nativo en la petición de Axios
+            const blobData = new Blob([media], { type: mime })
+            const form = new FormData()
+            form.append('file', blobData, `image.${mime.split('/')[1]}`)
 
-            let res = await fetch(`${uploadEndpoint}?key=${access}`, {
-                method: 'POST',
-                body: form
+            let res = await axios.post(`${uploadEndpoint}?key=${access}`, form, {
+                headers: { 'Content-Type': 'multipart/form-data' }
             })
             
-            let json = await res.json()
-            if (json && json.status === true && json.url) {
-                tempUrl = json.url
+            if (res.data && res.data.status === true && res.data.url) {
+                tempUrl = res.data.url
             }
         } else if (args[0] && args[0].startsWith('http')) {
             tempUrl = args[0]
@@ -40,11 +39,21 @@ const handler = async (m, { conn, text, args }) => {
 
         let cleanUrl = tempUrl.split(';')[0].trim()
 
-        let hdResponse = await fetch(`${upscaleEndpoint}?method=url&url=${encodeURIComponent(cleanUrl)}&key=${access}`)
-        let hdJson = await hdResponse.json()
+        // Petición GET limpia usando Axios pasándole los parámetros exactos del JSON
+        let hdResponse = await axios.get(`${upscaleEndpoint}`, {
+            params: {
+                method: 'url',
+                url: cleanUrl,
+                key: access
+            }
+        })
 
-        if (hdJson && hdJson.status === true && hdJson.url) {
-            let finalHdUrl = hdJson.url.split(';')[0].trim()
+        if (hdResponse.data && hdResponse.data.status === true && hdResponse.data.url) {
+            let finalHdUrl = hdResponse.data.url.split(';')[0].trim()
+
+            // Descarga directa del búfer final mediante Axios (arraybuffer) para evitar bloqueos de renderizado
+            let imageStream = await axios.get(finalHdUrl, { responseType: 'arraybuffer' })
+            let imageBuffer = Buffer.from(imageStream.data, 'binary')
 
             const dev = "⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓"
             const net = "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕"
@@ -58,14 +67,14 @@ const handler = async (m, { conn, text, args }) => {
             report += `| ⛩️ *${net}*`
 
             await conn.sendMessage(m.chat, { 
-                image: { url: finalHdUrl }, 
+                image: imageBuffer, 
                 caption: report 
             }, { quoted: m })
 
             await m.react('🔥')
         } else {
             await m.react('❌')
-            return conn.reply(m.chat, `❌ El JSON del servidor no devolvió un estado válido de conversión.`, m)
+            return conn.reply(m.chat, `❌ El servidor no devolvió una respuesta válida de escalado.`, m)
         }
 
     } catch (e) {
