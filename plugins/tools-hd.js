@@ -25,7 +25,10 @@ const handler = async (m, { conn, text, args }) => {
                 body: form
             })
             let json = await res.json()
-            if (json.status && json.url) tempUrl = json.url
+            
+            if (json.status) {
+                tempUrl = json.url || (json.data && json.data.url) ? (json.url || json.data.url) : ""
+            }
         } else if (args[0] && args[0].startsWith('http')) {
             tempUrl = args[0]
         }
@@ -40,12 +43,19 @@ const handler = async (m, { conn, text, args }) => {
         let hdResponse = await fetch(`${upscaleEndpoint}?method=url&url=${encodeURIComponent(cleanUrl)}&key=${access}`)
         let hdJson = await hdResponse.json()
 
-        if (!hdJson.status || !hdJson.url) {
+        if (!hdJson.status) {
             await m.react('❌')
             return conn.reply(m.chat, `❌ El servidor no pudo procesar el escalado HD de esta imagen.`, m)
         }
 
-        let finalHdUrl = hdJson.url.split(';')[0].trim()
+        let finalHdUrl = hdJson.url || (hdJson.data && hdJson.data.url) ? (hdJson.url || hdJson.data.url) : ""
+
+        if (!finalHdUrl) {
+            await m.react('❌')
+            return conn.reply(m.chat, `❌ Error: No se encontró la URL procesada en el JSON del servidor.`, m)
+        }
+
+        finalHdUrl = finalHdUrl.split(';')[0].trim()
 
         const dev = "⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓"
         const net = "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕"
