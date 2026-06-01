@@ -8,10 +8,9 @@ const handler = async (m, { conn, text, args }) => {
     await m.react('🕒')
 
     try {
-        const b = (s) => Buffer.from(s, 'base64').toString('utf-8')
-        const uploadEndpoint = b("aHR0cHM6Ly9hcGkuZXZvZ2Iub3JnL3Rvb2xzL3VwbG9hZA==")
-        const reminiEndpoint = "https://api.evogb.org/tools/remini"
-        const access = b("c2FzdWtl")
+        const uploadEndpoint = "https://api.evogb.org/tools/upload"
+        const upscaleEndpoint = "https://api.evogb.org/tools/upscale"
+        const access = "sasuke"
 
         let tempUrl = ""
 
@@ -38,12 +37,12 @@ const handler = async (m, { conn, text, args }) => {
 
         let cleanUrl = tempUrl.split(';')[0].trim()
 
-        let hdResponse = await fetch(`${reminiEndpoint}?url=${encodeURIComponent(cleanUrl)}&key=${access}`)
+        let hdResponse = await fetch(`${upscaleEndpoint}?method=url&url=${encodeURIComponent(cleanUrl)}&key=${access}`)
         let hdJson = await hdResponse.json()
 
         if (!hdJson.status || !hdJson.url) {
             await m.react('❌')
-            return conn.reply(m.chat, `❌ El servidor no pudo procesar la mejora HD de esta imagen.`, m)
+            return conn.reply(m.chat, `❌ El servidor no pudo procesar el escalado HD de esta imagen.`, m)
         }
 
         let finalHdUrl = hdJson.url.split(';')[0].trim()
@@ -51,7 +50,7 @@ const handler = async (m, { conn, text, args }) => {
         const dev = "⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓"
         const net = "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕"
 
-        let report = `| 🖼️ *𝖴𝖢𝖧𝖨𝖧𝖠 𝖨𝖬𝖠𝖦𝖢 𝖤𝖭𝖧𝖠𝖢𝖤𝖱* 🖼️\n`
+        let report = `| 🖼️ *𝖴𝖢𝖧𝖨𝖧𝖠 𝖨𝖬𝖠𝖦𝖤  𝖴𝖯𝖲𝖢𝖠𝖫𝖤𝖱* 🖼️\n`
         report += `|═══════════════════\n`
         report += `| 🟢 *𝚂𝚃𝙰𝚃𝚄𝚂:* Calidad Optimizada HD\n`
         report += `| 🔗 *𝚄𝚁𝙻:* ${finalHdUrl}\n`
@@ -67,12 +66,13 @@ const handler = async (m, { conn, text, args }) => {
         await m.react('🔥')
 
     } catch (e) {
+        console.error(e)
         await m.react('❌')
     }
 }
 
-handler.help = ['remini', 'hd', 'mejorar']
+handler.help = ['remini', 'hd', 'mejorar', 'upscale']
 handler.tags = ['tools']
-handler.command = /^(remini|hd|mejorar|remini2)$/i
+handler.command = /^(remini|hd|mejorar|upscale)$/i
 
 export default handler
