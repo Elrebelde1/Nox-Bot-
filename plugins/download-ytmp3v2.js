@@ -1,83 +1,79 @@
 /**
- * 📂 COMANDO: Uchiha YouTube Downloader (Play3 & Play4)
- * 📝 DESCRIPCIÓN: Extractor de audio y video con Axios y Buffer por enlace directo.
+ * 📂 COMANDO: Uchiha YouTube MP3 Downloader
+ * 📝 DESCRIPCIÓN: Extrae y descarga el audio de YouTube con el mapeo del JSON de la API.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
- * Usen los código porfa para traer más 
- * 🔗 API: https://api.evogb.org
+ * 🔌 API: https://api.evogb.org
  */
 
-import axios from 'axios'
+import fetch from "node-fetch"
 
-async function getBuffer(url) {
-    const response = await axios.get(url, { responseType: 'arraybuffer' })
-    return Buffer.from(response.data)
-}
+const handler = async (m, { conn, text, usedPrefix, command }) => {
+    let enlace = text || (m.quoted && m.quoted.text ? m.quoted.text : '')
 
-const handler = async (m, { conn, args, usedPrefix, command }) => {
-    if (!args[0]) return conn.reply(m.chat, `⚔️ *SISTEMA UCHIHA*\n\n> 🔗 *Ingresa un enlace válido de YouTube.*\n> 📝 *Ej:* ${usedPrefix + command} https://www.youtube.com/watch?v=5M_n2UCe7DQ`, m)
+    if (!enlace || !/youtube\.com|youtu\.be/i.test(enlace)) {
+        let menuFallo = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n`
+        menuFallo += `┃ 📥 *UCHIHA AUDIO MULTIMEDIA* 📥\n`
+        menuFallo += `┃━━━━━━━━━━━━━━━━━━━━━━━━━━━━┃\n`
+        menuFallo += `┃ ⚠️ *ESTADO:* Enlace ausente o inválido.\n`
+        menuFallo += `┃ 📌 *ACCIÓN:* Proporcione un link de YouTube.\n`
+        menuFallo += `┃\n`
+        menuFallo += `┃ 💡 *EJEMPLO:* \n`
+        menuFallo += `┃ > ${usedPrefix + command} https://youtu.be/NjxFV1WKPiIn`
+        menuFallo += `┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛`
+        return conn.reply(m.chat, menuFallo, m)
+    }
 
-    await m.react('🕒')
+    await m.react('🎧')
 
     try {
-        let videoUrl = args[0]
-        const type = command.toLowerCase() === 'play4' ? 'ytmp4' : 'ytmp3'
-        
-        const b = (s) => Buffer.from(s, 'base64').toString('utf-8')
-        const endpoint = b("aHR0cHM6Ly9hcGkuZXZvZ2Iub3JnL2RsLw==")
-        const access = b("YWJjZDEyMzQ=")
+        const apiAudio = "https://api.evogb.org/dl/ytmp3"
+        const tokenB64 = Buffer.from("c2FzdWtl", 'base64').toString('utf-8')
+        const endpointFinal = `${apiAudio}?url=${encodeURIComponent(enlace)}&key=${tokenB64}`
 
-        let queryUrl = `${endpoint}${type}?url=${encodeURIComponent(videoUrl)}`
-        if (type === 'ytmp4') {
-            queryUrl += `&quality=auto&key=${access}`
-        } else {
-            queryUrl += `&key=${access}`
-        }
+        let conexion = await fetch(endpointFinal)
+        let objetoJson = await conexion.json()
 
-        const { data: res } = await axios.get(queryUrl)
+        if (objetoJson && objetoJson.status === true && objetoJson.data && objetoJson.data.dl) {
+            const dev = "⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓"
+            const net = "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕"
+            
+            const streamUrl = objetoJson.data.dl
+            const nombreVideo = objetoJson.data.title || 'Uchiha Audio Track'
+            const pesoArchivo = objetoJson.data.size || 'Desconocido'
 
-        if (!res || !res.data || !res.data.dl) {
-            await m.react('❌')
-            return m.reply('*Error al obtener el enlace de descarga del servidor.*')
-        }
+            let infoExtensa = `🔮 ━━━ 【 𝖲𝖨𝖲𝖳𝖤𝖬𝖠 𝖣𝖤 𝖠𝖴𝖣𝖨𝖮 𝖧𝖨𝖣𝖣𝖤𝖭 𝖫𝖤𝖠𝖥 】 ━━━ 🔮\n\n`
+            infoExtensa += `⬡ *𝖳𝖨𝖳𝖴𝖫𝖮:* ${nombreVideo}\n`
+            infoExtensa += `⬡ *𝖯𝖤𝖲𝖮:* ${pesoArchivo}\n`
+            infoExtensa += `⬡ *𝖥𝖮𝖱𝖬𝖠𝖳𝖮:* MP3 (MPEG Audio)\n\n`
+            infoExtensa += `📊 ─── 【 𝖤𝖲𝖳𝖠𝖣𝖨𝖲𝖳𝖨𝖢𝖠𝖲 𝖣𝖤𝖫 𝖲𝖤𝖱𝖵𝖨𝖣𝖮𝖱 】 ───\n`
+            infoExtensa += `⬡ *𝖢𝖠𝖫𝖨𝖣𝖠𝖣:* 128kbps Optimizada\n`
+            infoExtensa += `⬡ *𝖭𝖮𝖣𝖮:* Enlace de descarga directo generado con éxito\n\n`
+            infoExtensa += `🤝 ─── 【 𝖢𝖱𝖤𝖣𝖨𝖳𝖮𝖲 】 ───\n`
+            infoExtensa += `⬡ *𝖢𝖱𝖤𝖠𝖣𝖮𝖱:* ${dev}\n`
+            infoExtensa += `⬡ *𝖲𝖮𝖯𝖮𝖱𝖳𝖤:* ${net}\n`
+            infoExtensa += `👁️‍🗨️━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━👁️‍🗨️`
 
-        const dev = "⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓"
-        const net = "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕"
-
-        let report = `| ⛩️ *𝖴𝖢𝖧𝖨𝖧𝖠 𝖯𝖫𝖠𝖸𝖤𝖱* ⛩️\n`
-        report += `|═══════════════════\n`
-        report += `| 🟢 *𝚂𝚃𝙰𝚃𝚄𝚂:* Archivo Procesado\n`
-        report += `| 📦 *𝙵𝙾𝚁𝙼𝙰𝚃𝙾:* ${type === 'ytmp4' ? 'MP4 (VIDEO)' : 'MP3 (AUDIO)'}\n`
-        report += `|═══════════════════\n`
-        report += `| 🛠️ *${dev}*\n`
-        report += `| ⛩️ *${net}*`
-
-        await conn.reply(m.chat, report, m)
-
-        const fileBuffer = await getBuffer(res.data.dl)
-
-        if (type === 'ytmp3') {
             await conn.sendMessage(m.chat, { 
-                audio: fileBuffer, 
+                audio: { url: streamUrl }, 
                 mimetype: 'audio/mpeg',
-                ptt: false
+                caption: infoExtensa
             }, { quoted: m })
+            
+            await m.react('🔥')
         } else {
-            await conn.sendMessage(m.chat, { 
-                video: fileBuffer, 
-                mimetype: 'video/mp4'
-            }, { quoted: m })
+            await m.react('❌')
+            return conn.reply(m.chat, `❌ El servidor central de audio no procesó la solicitud correctamente.`, m)
         }
 
-        await m.react('🔥')
-
-    } catch (e) {
+    } catch (err) {
+        console.error(err)
         await m.react('❌')
     }
 }
 
-handler.help = ['ytmp3v2', 'ytmp4v3']
+handler.help = ['ytmp3']
 handler.tags = ['downloader']
-handler.command = ['ytmp3v2','ytmp4v3']
+handler.command = /^(ytmp3|yta)$/i
 
 export default handler
