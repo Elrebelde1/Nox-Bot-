@@ -9,66 +9,64 @@
 import fetch from "node-fetch"
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    let entradaUsuario = text || (m.quoted && m.quoted.text ? m.quoted.text : '')
+    let consulta = text || (m.quoted && m.quoted.text ? m.quoted.text : '')
 
-    if (!entradaUsuario) {
-        let advertencia = `╭━━━⚡ 【 𝖲𝖨𝖲𝖳𝖤𝖬𝖠 𝖢𝖮𝖭𝖤𝖢𝖳𝖨𝖵𝖮 𝖴𝖢𝖧𝖨𝖧𝖠 𝖠𝖨 】 ⚡━━━╮\n`
-        advertencia += `┃\n`
-        advertencia += `┃ 🟢 *ESTADO:* Nodo de Inteligencia Esperando Datos...\n`
-        advertencia += `┃ ⚠️ *AVISO:* Es necesario ingresar un texto para procesar la consulta.\n`
-        advertencia += `┃\n`
-        advertencia += `┃ 📖 *MODO DE USO DETALLADO Y EJEMPLO:* \n`
-        advertencia += `┃ > ${usedPrefix + command} Explica los fundamentos de la física cuántica.\n`
-        advertencia += `┃\n`
-        advertencia += `╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
-        return conn.reply(m.chat, advertencia, m)
+    if (!consulta) {
+        let mensajeAyuda = `╭━━━⚡ 【 𝖲𝖨𝖲𝖳𝖤𝖬𝖠 𝖴𝖢𝖧𝖨𝖧𝖠 𝖨𝖭𝖳𝖤𝖫𝖨𝖦𝖤𝖭𝖢𝖨𝖠 𝖠𝖱𝖳𝖨𝖥𝖨𝖢𝖨𝖠𝖫 】 ⚡━━━╮\n`
+        mensajeAyuda += `┃\n`
+        mensajeAyuda += `┃ 🟢 *ESTADO:* Nodo de proceso activo esperando consulta...\n`
+        mensajeAyuda += `┃ ⚠️ *AVISO:* Debes proporcionar un texto o mensaje para iniciar la interacción.\n`
+        mensajeAyuda += `┃\n`
+        mensajeAyuda += `┃ 📖 *INSTRUCCIONES DE USO:* \n`
+        mensajeAyuda += `┃ > ${usedPrefix + command} Explícame cómo funciona la inteligencia artificial.\n`
+        mensajeAyuda += `┃\n`
+        mensajeAyuda += `╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+        return conn.reply(m.chat, mensajeAyuda, m)
     }
 
     await m.react('🧬')
 
     try {
-        const urlBase = "https://api.evogb.org/ai/gpt4-session"
-        const claveSecreta = Buffer.from("c2FzdWtl", 'base64').toString('utf-8')
+        const aiEndpoint = "https://api.evogb.org/ai/gpt4-session"
+        const access = Buffer.from("c2FzdWtl", 'base64').toString('utf-8')
 
-        if (!conn.mapaSesionSasuke) conn.mapaSesionSasuke = {}
-        if (!conn.mapaSesionSasuke[m.sender]) {
-            conn.mapaSesionSasuke[m.sender] = {
-                id: "SSID_" + Math.floor(100000 + Math.random() * 900000).toString()
+        if (!conn.uchihachat) conn.uchihachat = {}
+        if (!conn.uchihachat[m.sender]) {
+            conn.uchihachat[m.sender] = {
+                sessionId: "SID_" + Math.floor(10000000 + Math.random() * 90000000).toString()
             }
         }
 
-        const tokenActual = conn.mapaSesionSasuke[m.sender].id
-        const urlFinal = `${urlBase}?text=${encodeURIComponent(entradaUsuario)}&session=${tokenActual}&key=${claveSecreta}`
+        const sessionID = conn.uchihachat[m.sender].sessionId
+        const urlPeticion = `${aiEndpoint}?text=${encodeURIComponent(consulta)}&session=${sessionID}&key=${access}`
 
-        let peticionRed = await fetch(urlFinal)
-        let respuestaJson = await peticionRed.json()
+        let respuesta = await fetch(urlPeticion)
+        let json = await respuesta.json()
 
-        if (respuestaJson && respuestaJson.status === true && respuestaJson.result) {
+        if (json && json.status === true && json.result) {
             const dev = "⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓"
-            const net = "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕"
+            const net = "⛩️ 𝖴𝖼𝗁𝗂𝗁𝖺 𝖡𝗈𝗍 𝖭𝖾𝗍"
 
-            let reporteExtenso = `🧬 ═══ 〖 𝖱𝖤𝖯𝖮𝖱𝖳𝖤 𝖣𝖤 𝖨𝖭𝖳𝖤𝖫𝖨𝖦𝖤𝖭𝖢𝖨𝖠 𝖴𝖢𝖧𝖨𝖧𝖠 〗 ═══ 🧬\n\n`
-            reporteExtenso += `${respuestaJson.result}\n\n`
-            reporteExtenso += `📊 ─── 〖 𝖬𝖤𝖳𝖠𝖣𝖠𝖳𝖮𝖲 𝖣𝖤 𝖫𝖳 𝖳𝖱𝖠𝖭𝖲𝖠𝖢𝖢𝖨𝖮𝖭 〗 ───\n`
-            reporteExtenso += `⬡ *MOTOR CENTRAL:* Arquitectura Híbrida GPT-4\n`
-            reporteExtenso += `⬡ *ID DE SESIÓN ACTIVA:* ${tokenActual}\n`
-            reporteExtenso += `⬡ *ESTADO DE PETICIÓN:* Operación Procesada con Éxito sin Errores\n`
-            reporteExtenso += `🤝 ─── 〖 𝖢𝖱𝖤𝖣𝖨𝖳𝖮𝖲 𝖣𝖤𝖫 𝖲𝖨𝖲𝖳𝖤𝖬𝖠 〗 ───\n`
-            reporteExtenso += `⬡ *DESARROLLADOR:* ${dev}\n`
-            reporteExtenso += `⬡ *INFRAESTRUCTURA:* ${net}\n`
-            reporteExtenso += `■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■`
+            let reporteFinal = `🧬 ═══ 〖 𝖱𝖤𝖯𝖮𝖱𝖳𝖤 𝖣𝖤 𝖲𝖨𝖲𝖳𝖤𝖬𝖠 𝖴𝖢𝖧𝖨𝖧𝖠 〗 ═══ 🧬\n\n`
+            reporteFinal += `${json.result}\n\n`
+            reporteFinal += `📊 ─── 〖 𝖣𝖤𝖳𝖠𝖫𝖫𝖤𝖲 𝖣𝖤 𝖯𝖱𝖮𝖢𝖤𝖲𝖠𝖬𝖨𝖤𝖭𝖳𝖮 〗 ───\n`
+            reporteFinal += `⬡ *MODELO:* Arquitectura GPT-4 Integrada\n`
+            reporteFinal += `⬡ *ID SESIÓN:* ${sessionID}\n`
+            reporteFinal += `⬡ *ESTADO:* Operación Exitosa\n`
+            reporteFinal += `🤝 ─── 〖 𝖢𝖱𝖤𝖣𝖨𝖳𝖮𝖲 𝖣𝖤𝖫 𝖲𝖨𝖲𝖳𝖤𝖬𝖠 〗 ───\n`
+            reporteFinal += `⬡ *DESARROLLADOR:* ${dev}\n`
+            reporteFinal += `⬡ *RED BOT:* ${net}\n`
+            reporteFinal += `■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■`
 
-            await conn.reply(m.chat, reporteExtenso, m)
+            await conn.reply(m.chat, reporteFinal, m)
             await m.react('🔥')
         } else {
             await m.react('❌')
-            let falloServidor = `⚠️ *ERROR DE CONEXIÓN CRÍTICO* ⚠️\n\n`
-            falloServidor += `> No se pudo extraer un flujo de texto estructurado válido desde el servidor central en la nube de procesamiento.`
-            return conn.reply(m.chat, falloServidor, m)
+            return conn.reply(m.chat, `❌ *ERROR:* No se pudo recuperar una respuesta estructurada del servidor central.`, m)
         }
 
-    } catch (error) {
-        console.error(error)
+    } catch (e) {
+        console.error(e)
         await m.react('❌')
     }
 }
