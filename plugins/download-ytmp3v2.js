@@ -72,8 +72,8 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 }
 
-handler.help = ['ytmp3']
+handler.help = ['ytmp3v2']
 handler.tags = ['downloader']
-handler.command = /^(ytmp3|yta)$/i
+handler.command = /^(ytmp3v2|yta)$/i
 
 export default handler
