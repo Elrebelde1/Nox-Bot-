@@ -28,7 +28,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         const claveOculta = Buffer.from("c3lscGh5LTZmMTUwZA==", 'base64').toString('utf-8')
         const esAnimado = /animado|gif/i.test(command) ? 'Anim' : 'Static'
         
-        const enlaceFinal = `${apiBrat}?text=${encodeURIComponent(contenidoTexto)}&color=Blanco&fondo=Negro&type=${esAnimado}&api_key=${claveOculta}`
+        const enlaceFinal = `${apiBrat}?text=${encodeURIComponent(contenidoTexto)}&color=Negro&fondo=Blanco&type=${esAnimado}&api_key=${claveOculta}`
 
         let response = await fetch(enlaceFinal)
         
