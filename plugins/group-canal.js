@@ -1,42 +1,58 @@
-import axios from 'axios'
+/**
+ * 📂 COMANDO: Uchiha Brat Generator (Session Code)
+ * 📝 DESCRIPCIÓN: Genera stickers estilo Brat (estáticos o animados) procesando la API con Key oculta.
+ * 👤 CREADOR: Barboza Developer
+ * ⚡ CANAL: Barboza Developer x Zona Developers
+ * 🔌 API: https://api.evogb.org
+ */
+
+import fetch from "node-fetch"
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    let contenido = text || (m.quoted && m.quoted.text ? m.quoted.text : '')
+    let contenidoTexto = text || (m.quoted && m.quoted.text ? m.quoted.text : '')
 
-    if (!contenido) {
-        let alert = `💚 BRAT DESIGNER 💚\n`
-        alert += `✧ ────────────────── ✧\n`
-        alert += `> *Escribe el texto que llevará el sticker.*\n`
-        alert += `> *Uso:* ${usedPrefix + command} Vete a la verga`
-        return conn.reply(m.chat, alert, m)
+    if (!contenidoTexto) {
+        let menuAlerta = `☠️ ═══ 〖 𝖡𝖱𝖠𝖳 𝖲𝖳𝖨𝖢𝖪𝖤𝖱 𝖦𝖤𝖭𝖤𝖱A𝖳𝖮𝖱 〗 ═══ ☠️\n\n`
+        menuAlerta += `☣️ *ESTADO:* Nodo esperando cadena de texto...\n`
+        menuAlerta += `⚠️ *REQUISITO:* Por favor introduce el texto para renderizar el sticker.\n\n`
+        menuAlerta += `📌 *EJEMPLO DE USO COMPLETO:* \n`
+        menuAlerta += `> ${usedPrefix + command} Sasuke Uchiha\n`
+        menuAlerta += `■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■`
+        return conn.reply(m.chat, menuAlerta, m)
     }
 
-    await m.react('⏳')
+    await m.react('🟢')
 
     try {
-        const principalApi = "https://api.evogb.org/tools/brat"
-        const estadoAnimacion = /animado|gif/i.test(command) ? 'true' : 'false'
+        const apiBrat = "https://api.evogb.org/tools/brat"
+        const claveOculta = Buffer.from("c2FzdWtl", 'base64').toString('utf-8')
+        const esAnimado = /animado|gif/i.test(command) ? 'true' : 'false'
         
-        const rutaDirecta = `${principalApi}?text=${encodeURIComponent(contenido)}&animated=${estadoAnimacion}`
+        const enlaceFinal = `${apiBrat}?text=${encodeURIComponent(contenidoTexto)}&animated=${esAnimado}&key=${claveOculta}`
 
-        const peticion = await axios.get(rutaDirecta, { responseType: 'arraybuffer' })
-        const finalSticker = Buffer.from(peticion.data, 'binary')
+        let response = await fetch(enlaceFinal)
+        
+        if (!response.ok) {
+            await m.react('❌')
+            return conn.reply(m.chat, `❌ Error del servidor externo al procesar el renderizado del sticker.`, m)
+        }
+
+        let bufferSticker = await response.buffer()
 
         await conn.sendMessage(m.chat, { 
-            sticker: finalSticker
+            sticker: bufferSticker
         }, { quoted: m })
 
         await m.react('🔥')
 
-    } catch (error) {
-        console.error(error)
+    } catch (e) {
+        console.error(e)
         await m.react('❌')
-        m.reply('❌ Error en el flujo de renderizado de la API.')
     }
 }
 
-handler.help = ['brat3', 'bratgif3']
+handler.help = ['brat', 'bratanimado']
 handler.tags = ['sticker']
-handler.command = /^(brat3|bratanimado3|bratgif3)$/i
+handler.command = /^(bratv|bratanimado|bratgif)$/i
 
 export default handler
