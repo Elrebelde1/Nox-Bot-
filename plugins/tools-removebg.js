@@ -1,51 +1,64 @@
-import fetch from 'node-fetch';
-import { FormData, Blob } from 'formdata-node';
+/**
+ * 📂 COMANDO: Uchiha RemoveBG File
+ * 📝 DESCRIPCIÓN: Remueve el fondo de una imagen respondiendo al archivo multimedia directamente en el chat.
+ * 👤 CREADOR: Barboza Developer
+ * ⚡ CANAL: Barboza Developer x Zona Developers
+ * 🔌 API: https://api.evogb.org
+ */
 
-const handler = async (m, { conn, text }) => {
-    let q = m.quoted ? m.quoted : m;
-    let mime = (q.msg || q || {}).mimetype || '';
-    
-    if (!/image/.test(mime) && !text) {
-        throw `*🧑‍💻 Responda a una imagen o ingrese una URL para quitar el fondo.*`;
+import FormData from "form-data"
+import fetch from "node-fetch"
+
+const handler = async (m, { conn, usedPrefix, command }) => {
+    let q = m.quoted ? m.quoted : m
+    let mime = (q.msg || q).mimetype || ''
+
+    if (!/image/.test(mime)) {
+        let panelArchivo = `🎨 ═══ 〖 𝖱𝖤𝖬𝖮𝖵𝖤𝖡𝖦 𝖥𝖨𝖫𝖤 𝖯𝖱𝖮𝖢𝖤𝖲𝖲 〗 ═══ 🎨\n\n`
+        panelArchivo += `⚠️ *ESTADO:* No se ha detectado ningún archivo de imagen.\n`
+        panelArchivo += `⚠️ *REQUISITO:* Responda o envíe una imagen con el comando *${usedPrefix + command}* para limpiar su fondo.\n`
+        panelArchivo += `■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■`
+        return conn.reply(m.chat, panelArchivo, m)
     }
 
-    m.react('🕒');
+    await m.react('⏳')
 
     try {
-        const formData = new FormData();
-        let api = `https://api.evogb.org/tools/removebg?key=sasuke`;
+        let mediaImg = await q.download()
+        const endpointFile = "https://api.evogb.org/tools/removebg"
+        const tokenOculto = Buffer.from("c2FzdWtl", 'base64').toString('utf-8')
 
-        if (/image/.test(mime)) {
-            let img = await q.download();
-            const blob = new Blob([img], { type: mime });
-            formData.append("method", "file");
-            formData.append("file", blob, "image.png");
-        } else if (text && text.startsWith('http')) {
-            formData.append("method", "url");
-            formData.append("url", text);
+        let formulario = new FormData()
+        formulario.append('image', mediaImg, { filename: 'image.jpg' })
+
+        let respuestaServidor = await fetch(`${endpointFile}?key=${tokenOculto}`, {
+            method: 'POST',
+            body: formulario,
+            headers: formulario.getHeaders()
+        })
+
+        if (!respuestaServidor.ok) {
+            await m.react('❌')
+            return conn.reply(m.chat, `❌ Ocurrió un fallo en el procesamiento del archivo binario.`, m)
         }
 
-        const response = await fetch(api, {
-            method: "POST",
-            body: formData,
-        });
+        let bufferResultado = await respuestaServidor.buffer()
 
-        if (!response.ok) throw new Error('API Error');
+        await conn.sendMessage(m.chat, { 
+            image: bufferResultado, 
+            caption: `💥 *Fondo eliminado correctamente del archivo enviado* 💥` 
+        }, { quoted: m })
 
-        const buffer = await response.arrayBuffer();
-        if (buffer.byteLength < 500) throw new Error('No se pudo procesar la imagen');
+        await m.react('🔥')
 
-        m.react('☑️');
-        await conn.sendMessage(m.chat, { image: Buffer.from(buffer) }, { quoted: m });
-
-    } catch (error) {
-        m.react('✖️');
-        throw `*⚠️ Error:* ${error.message}`;
+    } catch (err) {
+        console.error(err)
+        await m.react('❌')
     }
 }
 
-handler.tags = ['tools'];
-handler.help = ['removebg'];
-handler.command = ['removebg', 'bg'];
+handler.help = ['removebg']
+handler.tags = ['tools']
+handler.command = /^(removebg|rbg)$/i
 
-export default handler;
+export default handler
