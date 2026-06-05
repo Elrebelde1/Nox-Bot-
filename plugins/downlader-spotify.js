@@ -1,86 +1,106 @@
 /**
- * 📂 COMANDO: Uchiha Spotify Downloader
- * 📝 DESCRIPCIÓN: Extractor de audio de Spotify (Búsqueda + Descarga).
+ * 📂 COMANDO: Uchiha Spotify Play Dynamic System
+ * 📝 DESCRIPCIÓN: Busca canciones en Spotify y las descarga automáticamente en formato de audio MP3 junto con su carátula.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
- * Usen los código porfa para traer más 
- * 🔗 API: https://api.evogb.org/dl/spotify
+ * 🔌 API: https://api.evogb.org
  */
 
-import fetch from 'node-fetch'
+import fetch from "node-fetch"
 
-let handler = async (m, { conn, text, usedPrefix, command }) => {
-    const dev = "𝘽𝙮 𝘽𝙖𝙧𝙗𝙤𝙯𝙖"
-    const chn = "𝙕𝙤𝙣𝙖 𝘿𝙚𝙫𝙚𝙡𝙤𝙥𝙚𝙧𝙨"
-    
-    if (!text) return conn.reply(m.chat, `『 ⚡ 𝚄𝙲𝙷𝙸𝙷𝙰 𝚂𝚈𝚂𝚃𝙴𝙼 ⚡ 』\n\n> 🧩 *𝙸𝚗𝚐𝚛𝚎𝚜𝚎 𝚗𝚘𝚖𝚋𝚛𝚎 𝚘 𝚕𝚒𝚗𝚔.*\n> 💡 *𝙴𝚓:* ${usedPrefix + command} Mask Off`, m)
+const handler = async (m, { conn, text, usedPrefix, command }) => {
+    let busqueda = text || (m.quoted && m.quoted.text ? m.quoted.text : '')
 
-    await m.react('⚡') 
+    if (!busqueda) {
+        let menuFallo = `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n`
+        menuFallo += `┃ 🔍 *UCHIHA SPOTIFY SYSTEM* 🔍\n`
+        menuFallo += `┃━━━━━━━━━━━━━━━━━━━━━━━━━━━━┃\n`
+        menuFallo += `┃ ⚠️ *ESTADO:* Texto de búsqueda ausente.\n`
+        menuFallo += `┃ 📌 *ACCIÓN:* Ingrese el nombre de una canción o enlace.\n`
+        menuFallo += `┃\n`
+        menuFallo += `┃ 💡 *EJEMPLO:* \n`
+        menuFallo += `┃ > ${usedPrefix + command} Lupita\n`
+        menuFallo += `┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛`
+        return conn.reply(m.chat, menuFallo, m)
+    }
+
+    await m.react('🎧')
 
     try {
-        const b = (s) => Buffer.from(s, 'base64').toString('utf-8')
-        const a = b("aHR0cHM6Ly9hcGkuZXZvZ2Iub3Jn")
-        const k = b("c2FzdWtl")
+        const tokenB64 = process.env.SPOTIFY_KEY || Buffer.from("c2FzdWtl", 'base64').toString('utf-8')
+        const dev = "⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓"
+        const net = "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕"
 
-        let trackUrl = text
-        const isUrl = text.match(/^(https?:\/\/)?(open\.spotify\.com|spotify\.link)\/.+$/gi)
+        let enlaceSpotify = busqueda
 
-        if (!isUrl) {
-            const sRes = await fetch(`${a}/search/spotify?query=${encodeURIComponent(text)}&key=${k}`)
-            const sData = await sRes.json()
-            if (!sData.status || !sData.result.length) {
+        if (!busqueda.includes('spotify.com/track/')) {
+            const apiSearch = "https://api.evogb.org/search/spotify"
+            let endpointSearch = `${apiSearch}?query=${encodeURIComponent(busqueda)}&key=${tokenB64}`
+            
+            let conexionSearch = await fetch(endpointSearch)
+            let jsonSearch = await conexionSearch.json()
+
+            if (jsonSearch && jsonSearch.status === true && jsonSearch.result && jsonSearch.result.length > 0) {
+                enlaceSpotify = jsonSearch.result[0].link
+            } else {
                 await m.react('❌')
-                return m.reply('*🏮 [ ERROR ]* No encontrado.')
+                return conn.reply(m.chat, `❌ No se encontraron resultados en Spotify para la búsqueda especificada.`, m)
             }
-            trackUrl = sData.result[0].link
         }
 
-        const dlRes = await fetch(`${a}/dl/spotify?url=${encodeURIComponent(trackUrl)}&key=${k}`)
-        const dlData = await dlRes.json()
+        const apiDl = "https://api.evogb.org/dl/spotify"
+        const endpointDl = `${apiDl}?url=${encodeURIComponent(enlaceSpotify)}&key=${tokenB64}`
 
-        if (!dlData.status) {
+        let conexionDl = await fetch(endpointDl)
+        let jsonDl = await conexionDl.json()
+
+        if (jsonDl && jsonDl.status === true && jsonDl.data && jsonDl.data.url) {
+            const streamUrl = jsonDl.data.url
+            const caratula = jsonDl.data.imageHD || jsonDl.data.image
+            const nombreCancion = jsonDl.data.name || 'Desconocido'
+            const artista = jsonDl.data.artist || 'Desconocido'
+            const album = jsonDl.data.album || 'Desconocido'
+            const duracion = jsonDl.data.duration || 'Desconocido'
+            const anio = jsonDl.data.year || 'Desconocido'
+
+            let infoExtensa = `🔮 ━━━ 【 𝖲𝖨𝖲𝖳𝖤𝖬𝖠 𝖣𝖤 𝖠𝖴𝖣𝖨𝖮 𝖲𝖯𝖮𝖳𝖨𝖥𝖸 】 ━━━ 🔮\n\n`
+            infoExtensa += `⬡ *𝖳𝖨𝖳𝖴𝖫𝖮:* ${nombreCancion}\n`
+            infoExtensa += `⬡ *𝖠𝖱𝖳𝖨𝖲𝖳𝖠:* ${artista}\n`
+            infoExtensa += `⬡ *𝖠𝖫𝖡𝖴𝖬:* ${album}\n`
+            infoExtensa += `⬡ *𝖣𝖴𝖱A𝖢𝖨𝖮𝖭:* ${duracion}\n`
+            infoExtensa += `⬡ *𝖠𝖭𝖮:* ${anio}\n\n`
+            infoExtensa += `📊 ─── 【 𝖤𝖲𝖳A𝖣𝖨𝖲𝖳𝖨𝖢A𝖲 𝖣𝖤𝖫 𝖲𝖤𝖱𝖵𝖨𝖣𝖮𝖱 】 ───\n`
+            infoExtensa += `⬡ *𝖭𝖮𝖣𝖮:* Enlace directo de inyección Spotify generado\n\n`
+            infoExtensa += `🤝 ─── 【 𝖢𝖱𝖤𝖣𝖨𝖳𝖮𝖲 】 ───\n`
+            infoExtensa += `⬡ *𝖢𝖱𝖤A𝖣𝖮𝖱:* ${dev}\n`
+            infoExtensa += `⬡ *𝖲𝖮𝖯𝖮𝖱𝖳𝖤:* ${net}\n`
+            infoExtensa += `👁️‍🗨️━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━👁️‍🗨️`
+
+            await conn.sendMessage(m.chat, { 
+                image: { url: caratula }, 
+                caption: infoExtensa 
+            }, { quoted: m })
+
+            await conn.sendMessage(m.chat, { 
+                audio: { url: streamUrl }, 
+                mimetype: 'audio/mpeg',
+                fileName: `${nombreCancion}.mp3`
+            }, { quoted: m })
+
+            await m.react('🔥')
+        } else {
             await m.react('❌')
-            return m.reply('*🏮 [ FALLO ]* Error al extraer audio.')
+            return conn.reply(m.chat, `❌ El servidor central de Spotify no procesó la solicitud correctamente.`, m)
         }
-
-        const info = dlData.data
-
-        let txt = `┏━━━━━━━━━━━━━━━━━━┓\n`
-        txt += `┃   🏮  *UCHIHA SPOTIFY* 🏮\n`
-        txt += `┣━━━━━━━━━━━━━━━━━━┛\n`
-        txt += `┃\n`
-        txt += `┃ 🎵 *Tɪ́ᴛᴜʟᴏ:* ${info.name}\n`
-        txt += `┃ 👤 *Aʀᴛɪsᴛᴀ:* ${info.artist}\n`
-        txt += `┃ 💿 *Áʟʙᴜᴍ:* ${info.album}\n`
-        txt += `┃ ⏱️ *Tɪᴇᴍᴘᴏ:* ${info.duration}\n`
-        txt += `┃\n`
-        txt += `┃ ⚙️ *Esᴛᴀᴅᴏ:* 🟢 Inyectado\n`
-        txt += `┃\n`
-        txt += `┣━━━━━━━━━━━━━━━━━━┓\n`
-        txt += `┃ ⚡ *${dev}*\n`
-        txt += `┃ 📡 *${chn}*\n`
-        txt += `┗━━━━━━━━━━━━━━━━━━┛`
-
-        await conn.sendMessage(m.chat, { 
-            image: { url: info.imageHD || info.image }, 
-            caption: txt 
-        }, { quoted: m })
-
-        await conn.sendMessage(m.chat, { 
-            audio: { url: info.url }, 
-            mimetype: 'audio/mpeg', 
-            fileName: `${info.name}.mp3` 
-        }, { quoted: m })
-
-        await m.react('🔥') 
 
     } catch (e) {
+        console.error(e)
         await m.react('❌')
     }
 }
 
 handler.help = ['spotify']
-handler.tags = ['descargas']
-handler.command = ['spotify', 'sp', 'music', 'spt']
+handler.tags = ['downloader']
+handler.command = /^(spotify|song|sp)$/i
 
 export default handler
