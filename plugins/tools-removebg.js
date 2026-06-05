@@ -1,6 +1,6 @@
 /**
- * 📂 COMANDO: Uchiha RemoveBG File
- * 📝 DESCRIPCIÓN: Remueve el fondo de una imagen respondiendo al archivo multimedia directamente en el chat.
+ * 📂 COMANDO: Uchiha RemoveBG Unified
+ * 📝 DESCRIPCIÓN: Quita el fondo de una imagen de forma automática (soporta enlaces URL y respuestas a fotos).
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  * 🔌 API: https://api.evogb.org
@@ -9,56 +9,81 @@
 import FormData from "form-data"
 import fetch from "node-fetch"
 
-const handler = async (m, { conn, usedPrefix, command }) => {
+const handler = async (m, { conn, text, usedPrefix, command }) => {
     let q = m.quoted ? m.quoted : m
     let mime = (q.msg || q).mimetype || ''
+    let urlImagen = text || (m.quoted && m.quoted.text ? m.quoted.text : '')
 
-    if (!/image/.test(mime)) {
-        let panelArchivo = `🎨 ═══ 〖 𝖱𝖤𝖬𝖮𝖵𝖤𝖡𝖦 𝖥𝖨𝖫𝖤 𝖯𝖱𝖮𝖢𝖤𝖲𝖲 〗 ═══ 🎨\n\n`
-        panelArchivo += `⚠️ *ESTADO:* No se ha detectado ningún archivo de imagen.\n`
-        panelArchivo += `⚠️ *REQUISITO:* Responda o envíe una imagen con el comando *${usedPrefix + command}* para limpiar su fondo.\n`
-        panelArchivo += `■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■`
-        return conn.reply(m.chat, panelArchivo, m)
+    // Verificar si no hay texto/enlace Y tampoco hay una imagen respondida
+    if (!/^https?:\/\//i.test(urlImagen) && !/image/.test(mime)) {
+        let panelUnificado = `🔮 ━━━ 【 𝖲𝖨𝖲𝖳𝖤𝖬𝖠 𝖱𝖤𝖬𝖮𝖵𝖤𝖡𝖦 𝖴𝖭𝖨𝖥𝖨𝖢𝖠𝖣𝖮 】 ━━━ 🔮\n\n`
+        panelUnificado += `⬡ *ESTADO:* Esperando entrada de datos...\n`
+        panelUnificado += `⬡ *MODOS SOPORTADOS:* \n`
+        panelUnificado += `   1️⃣ Enviar un enlace directo de imagen.\n`
+        panelUnificado += `   2️⃣ Responder a una fotografía con el comando.\n\n`
+        panelUnificado += `📌 *EJEMPLO POR LINK:* \n`
+        panelUnificado += `> ${usedPrefix + command} https://files.evogb.win/n3Yk4J.jpgnn`
+        panelUnificado += `📌 *EJEMPLO POR FOTO:* \n`
+        panelUnificado += `> Responde a una foto con: *${usedPrefix + command}*\n`
+        panelUnificado += `🔮━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━🔮`
+        return conn.reply(m.chat, panelUnificado, m)
     }
 
-    await m.react('⏳')
+    const endpoint = "https://api.evogb.org/tools/removebg"
+    const claveOculta = Buffer.from("c2FzdWtl", 'base64').toString('utf-8')
 
-    try {
-        let mediaImg = await q.download()
-        const endpointFile = "https://api.evogb.org/tools/removebg"
-        const tokenOculto = Buffer.from("c2FzdWtl", 'base64').toString('utf-8')
+    // MODO 1: PROCESAMIENTO POR LINK (URL)
+    if (/^https?:\/\//i.test(urlImagen)) {
+        await m.react('🔮')
+        try {
+            const rutaUrl = `${endpoint}?method=url&url=${encodeURIComponent(urlImagen)}&key=${claveOculta}`
+            let respuesta = await fetch(rutaUrl)
+            
+            if (!respuesta.ok) {
+                await m.react('❌')
+                return conn.reply(m.chat, `❌ El servidor denegó la conversión del enlace proporcionado.`, m)
+            }
 
-        let formulario = new FormData()
-        formulario.append('image', mediaImg, { filename: 'image.jpg' })
-
-        let respuestaServidor = await fetch(`${endpointFile}?key=${tokenOculto}`, {
-            method: 'POST',
-            body: formulario,
-            headers: formulario.getHeaders()
-        })
-
-        if (!respuestaServidor.ok) {
+            let bufferImg = await respuesta.buffer()
+            await conn.sendMessage(m.chat, { image: bufferImg, caption: `✨ *Fondo removido exitosamente vía URL* ✨` }, { quoted: m })
+            await m.react('🔥')
+        } catch (e) {
+            console.error(e)
             await m.react('❌')
-            return conn.reply(m.chat, `❌ Ocurrió un fallo en el procesamiento del archivo binario.`, m)
         }
+    } 
+    // MODO 2: PROCESAMIENTO POR ARCHIVO LOCAL (FOTO RESPONDIDA)
+    else if (/image/.test(mime)) {
+        await m.react('⏳')
+        try {
+            let imgBuffer = await q.download()
+            let bodyForm = new FormData()
+            bodyForm.append('image', imgBuffer, { filename: 'file_input.jpg', mimetype: 'image/jpeg' })
 
-        let bufferResultado = await respuestaServidor.buffer()
+            const rutaLocal = `${endpoint}?method=local&key=${claveOculta}`
+            let postRequest = await fetch(rutaLocal, {
+                method: 'POST',
+                body: bodyForm,
+                headers: bodyForm.getHeaders()
+            })
 
-        await conn.sendMessage(m.chat, { 
-            image: bufferResultado, 
-            caption: `💥 *Fondo eliminado correctamente del archivo enviado* 💥` 
-        }, { quoted: m })
+            if (!postRequest.ok) {
+                await m.react('❌')
+                return conn.reply(m.chat, `❌ El servidor rechazó el procesamiento del archivo local enviado.`, m)
+            }
 
-        await m.react('🔥')
-
-    } catch (err) {
-        console.error(err)
-        await m.react('❌')
+            let outputBuffer = await postRequest.buffer()
+            await conn.sendMessage(m.chat, { image: outputBuffer, caption: `💥 *Fondo eliminado del archivo local correctamente* 💥` }, { quoted: m })
+            await m.react('🔥')
+        } catch (err) {
+            console.error(err)
+            await m.react('❌')
+        }
     }
 }
 
-handler.help = ['removebg']
+handler.help = ['removebg', 'rbg']
 handler.tags = ['tools']
-handler.command = /^(removebg|rbg)$/i
+handler.command = /^(removebg|rbg|rbglink|removebglink)$/i
 
 export default handler
