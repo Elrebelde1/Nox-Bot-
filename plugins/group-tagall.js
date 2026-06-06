@@ -32,8 +32,7 @@ const handler = async (m, { isOwner, isAdmin, conn, text, participants, args, us
     const groupMetadata = await conn.groupMetadata(m.chat).catch(() => ({ subject: 'Grupo', participants: [] }));
     const groupName = groupMetadata.subject;
 
-    // Diccionario estructurado en un array ordenado por longitud de prefijo (de mayor a menor)
-    // Esto garantiza que los prefijos de 3 dígitos se evalúen antes que los de 2 o 1 dígito.
+    // Diccionario estricto para mapeo limpio
     const countryFlags = [
       { prefijo: '502', bandera: '🇬🇹' }, { prefijo: '503', bandera: '🇸🇻' },
       { prefijo: '504', bandera: '🇭🇳' }, { prefijo: '505', bandera: '🇳🇮' },
@@ -52,13 +51,20 @@ const handler = async (m, { isOwner, isAdmin, conn, text, participants, args, us
       { prefijo: '1',   bandera: '🇺🇸' }, { prefijo: '7',   bandera: '🇷🇺' }
     ];
 
-    // Sistema de coincidencia exacta por descarte de prefijo inicial
+    // Sistema de detección inteligente anti-errores de Baileys
     const getCountryFlag = (id) => {
       const phoneNumber = id.split('@')[0];
+
+      // CORRECCIÓN PARA VENEZUELA: 
+      // Si el número empieza por 58, o si WhatsApp recortó el prefijo y empieza directamente 
+      // por las operadoras locales (414, 412, 424, 416, 212, etc.) con longitud típica de celular.
+      if (phoneNumber.startsWith('58') || 
+          ((phoneNumber.startsWith('414') || phoneNumber.startsWith('412') || phoneNumber.startsWith('424') || phoneNumber.startsWith('416')) && phoneNumber.length <= 11)) {
+        return '🇻🇪';
+      }
       
-      // Busca el primer prefijo de la lista que coincida exactamente con el inicio del número
+      // Filtro estándar para el resto de países de la lista
       const match = countryFlags.find(c => phoneNumber.startsWith(c.prefijo));
-      
       return match ? match.bandera : '🚩';
     };
 
