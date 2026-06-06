@@ -24,12 +24,12 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     const key = "sasuke"
 
     // ---------------------------------------------------------
-    // METODO 1: URL (Enlace remoto via GET)
+    // METODO 1: URL / ENLACE (GET) - Basado en tu primer ejemplo
     // ---------------------------------------------------------
     if (/^https?:\/\//i.test(urlImagen)) {
         await m.react('☁️')
         try {
-            const queryUrl = `${endpoint}?method=url&url=${encodeURIComponent(urlImagen)}&key=${key}`
+            const queryUrl = `${endpoint}?key=${key}&method=url&url=${encodeURIComponent(urlImagen)}`
             let response = await fetch(queryUrl)
             
             const contentType = response.headers.get('content-type')
@@ -54,7 +54,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         }
     } 
     // ---------------------------------------------------------
-    // METODO 2: LOCAL (Subir archivo via POST)
+    // METODO 2: LOCAL / BUFFER (POST) - Basado en tu segundo ejemplo
     // ---------------------------------------------------------
     else if (mime) {
         if (!/image/.test(mime)) return conn.reply(m.chat, `❌ El archivo proporcionado debe ser estrictamente una imagen.`, m)
@@ -65,10 +65,10 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             const fileInfo = await fileTypeFromBuffer(bufferMedia) || { ext: 'jpg', mime: 'image/jpeg' }
             const filename = 'upscale-' + crypto.randomBytes(8).toString('hex') + '.' + fileInfo.ext
 
+            // Estructura idéntica a tu plantilla de Axios (añadiendo las variables al Form)
             let formulario = new FormData()
-            // Ajuste de parámetros requeridos por la interfaz de la API
-            formulario.append('method', 'local')
-            formulario.append('image', bufferMedia, { filename, contentType: fileInfo.mime })
+            formulario.append('image', bufferMedia, { filename, contentType: fileInfo.mime }) // Archivo binario de la imagen
+            formulario.append('method', 'local') // Parámetro obligatorio arreglado
 
             const queryLocal = `${endpoint}?key=${key}`
             let respuestaServidor = await fetch(queryLocal, {
