@@ -8,13 +8,15 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     let mime = (q.msg || q).mimetype || ''
     let urlImagen = text ? text.split(' ')[0] : (m.quoted && m.quoted.text ? m.quoted.text.split(' ')[0] : '')
     
+    let tieneServidor = text && text.includes('-server:')
     let servidorSeleccionado = 'auto'
-    if (text && text.includes('-server:')) {
+    
+    if (tieneServidor) {
         servidorSeleccionado = text.split('-server:')[1].trim()
     }
 
-    if (!/^https?:\/\//i.test(urlImagen) && !mime) {
-        const msgBoton = {
+    if (!tieneServidor && (/^https?:\/\//i.test(urlImagen) || mime)) {
+        return conn.sendMessage(m.chat, {
             text: `☁️ *UCHIHA CLOUD UPLOAD*\n\nSeleccione en el botón de abajo el servidor donde desea alojar su archivo o enlace de imagen.`,
             footer: "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕\n👤 𝖢𝗋𝖾𝖺𝖽𝗈𝗋: 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓",
             title: "SISTEMA DE ALOJAMIENTO",
@@ -33,8 +35,11 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                     { title: "Adoolab", description: "Almacenamiento Permanente", rowId: `${usedPrefix + command} ${urlImagen} -server:adoolab`.trim() }
                 ]
             }]
-        }
-        return conn.sendMessage(m.chat, msgBoton, { quoted: m })
+        }, { quoted: m })
+    }
+
+    if (!/^https?:\/\//i.test(urlImagen) && !mime) {
+        return conn.reply(m.chat, `💡 *Uso correcto:*\nResponde a una imagen o ingresa un enlace usando:\n> *${usedPrefix + command} [enlace]*`, m)
     }
 
     const endpoint = "https://api.evogb.org/tools/upload"
