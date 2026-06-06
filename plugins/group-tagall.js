@@ -60,10 +60,25 @@ const handler = async (m, { isOwner, isAdmin, conn, participants, args }) => {
 
     messageText += `└───────⭓\n\n𝘚𝘶𝘱𝘦𝘳 𝘉𝘰𝘵 𝘞𝘩𝘢𝘵𝘴𝘈𝘱𝘱 🚩`;
 
-    await conn.sendMessage(m.chat, {
-      text: messageText,
-      mentions: participants.map(a => a.jid || a.id)
-    }, { quoted: m });
+    // Ruta e intento de lectura de la imagen local
+    const imgPath = join(process.cwd(), 'storage', 'img', 'miniurl.jpg');
+    const mentions = participants.map(a => a.jid || a.id);
+
+    if (existsSync(imgPath)) {
+      const imgLocal = readFileSync(imgPath);
+      // Envía el tagall con la imagen de fondo y el texto como descripción (caption)
+      await conn.sendMessage(m.chat, {
+        image: imgLocal,
+        caption: messageText,
+        mentions: mentions
+      }, { quoted: m });
+    } else {
+      // Respaldo en texto plano si no se encuentra el archivo físico
+      await conn.sendMessage(m.chat, {
+        text: messageText,
+        mentions: mentions
+      }, { quoted: m });
+    }
 
   } catch (error) {
     console.error("[ERROR CRÍTICO EN TAGALL]:", error);
