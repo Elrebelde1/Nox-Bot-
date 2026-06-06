@@ -1,90 +1,110 @@
-import axios from 'axios'
+/**
+ * 📂 COMANDO: Uchiha AI Image Upscaler
+ * 📝 DESCRIPCIÓN: Incrementa la resolución, restaura detalles y mejora la calidad visual de las imágenes a HD mediante IA.
+ * 👤 CREADOR: Barboza Developer
+ * ⚡ CANAL: Barboza Developer x Zona Developers
+ * 🔌 API: https://api.evogb.org
+ */
 
-const handler = async (m, { conn, text, args }) => {
+import FormData from "form-data"
+import fetch from "node-fetch"
+import { fileTypeFromBuffer } from "file-type"
+import crypto from "crypto"
+
+const handler = async (m, { conn, text, usedPrefix, command }) => {
     let q = m.quoted ? m.quoted : m
     let mime = (q.msg || q).mimetype || ''
+    let urlImagen = text ? text.split(' ')[0] : (m.quoted && m.quoted.text ? m.quoted.text.split(' ')[0] : '')
 
-    await m.react('🕒')
+    if (!/^https?:\/\//i.test(urlImagen) && !mime) {
+        return conn.reply(m.chat, `💡 *Uso correcto:*\nResponde a una imagen o ingresa un enlace directo para mejorar su resolución:\n> *${usedPrefix + command} [enlace]*`, m)
+    }
 
-    try {
-        const uploadEndpoint = "https://api.evogb.org/tools/upload"
-        const upscaleEndpoint = "https://api.evogb.org/tools/upscale"
-        const access = "sasuke"
+    const endpoint = "https://api.evogb.org/tools/upscale"
+    const key = "sasuke"
 
-        let tempUrl = ""
-
-        if (/image/.test(mime)) {
-            let media = await q.download()
+    // ---------------------------------------------------------
+    // METODO 1: URL (Enlace remoto via GET)
+    // ---------------------------------------------------------
+    if (/^https?:\/\//i.test(urlImagen)) {
+        await m.react('☁️')
+        try {
+            const queryUrl = `${endpoint}?method=url&url=${encodeURIComponent(urlImagen)}&key=${key}`
+            let response = await fetch(queryUrl)
             
-            // Reemplazo completo de FormData usando un constructor nativo en la petición de Axios
-            const blobData = new Blob([media], { type: mime })
-            const form = new FormData()
-            form.append('file', blobData, `image.${mime.split('/')[1]}`)
+            // Verificación si el servidor responde con una imagen directa o un archivo binario
+            const contentType = response.headers.get('content-type')
+            if (contentType && contentType.includes('image')) {
+                let imageBuffer = await response.buffer()
+                await m.react('🔥')
+                return conn.sendMessage(m.chat, { image: imageBuffer, caption: `⚡ *IMAGE UPSCALE REMOTE SUCCESS*\n\n✨ Calidad mejorada con éxito mediante Inteligencia Artificial.\n\n⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓\n⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕` }, { quoted: m })
+            }
 
-            let res = await axios.post(`${uploadEndpoint}?key=${access}`, form, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+            // Si responde un JSON en su lugar
+            let datosJson = await response.json()
+            if (datosJson && datosJson.status === true && datosJson.url) {
+                await m.react('🔥')
+                return conn.sendMessage(m.chat, { image: { url: datosJson.url }, caption: `⚡ *IMAGE UPSCALE REMOTE SUCCESS*\n\n⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓\n⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕` }, { quoted: m })
+            } else {
+                await m.react('❌')
+                return conn.reply(m.chat, `❌ Error en el procesamiento del enlace remoto.\n🔴 ${datosJson?.message || 'Sin respuesta válida'}`, m)
+            }
+        } catch (e) {
+            console.error(e)
+            await m.react('❌')
+            return conn.reply(m.chat, `❌ Ocurrió un fallo en la conexión con el servicio remoto de escalado.`, m)
+        }
+    } 
+    // ---------------------------------------------------------
+    // METODO 2: LOCAL (Subir archivo via POST)
+    // ---------------------------------------------------------
+    else if (mime) {
+        if (!/image/.test(mime)) return conn.reply(m.chat, `❌ El archivo proporcionado debe ser estrictamente una imagen.`, m)
+        
+        await m.react('⏳')
+        try {
+            let bufferMedia = await q.download()
+            const fileInfo = await fileTypeFromBuffer(bufferMedia) || { ext: 'jpg', mime: 'image/jpeg' }
+            const filename = 'upscale-' + crypto.randomBytes(8).toString('hex') + '.' + fileInfo.ext
+
+            let formulario = new FormData()
+            formulario.append('image', bufferMedia, { filename, contentType: fileInfo.mime })
+
+            const queryLocal = `${endpoint}?key=${key}`
+            let respuestaServidor = await fetch(queryLocal, {
+                method: 'POST',
+                body: formulario,
+                headers: {
+                    ...formulario.getHeaders(),
+                    'User-Agent': 'Mozilla/5.0'
+                }
             })
-            
-            if (res.data && res.data.status === true && res.data.url) {
-                tempUrl = res.data.url
+
+            const contentType = respuestaServidor.headers.get('content-type')
+            if (contentType && contentType.includes('image')) {
+                let upscaleBuffer = await respuestaServidor.buffer()
+                await m.react('🔥')
+                return conn.sendMessage(m.chat, { image: upscaleBuffer, caption: `⚡ *IMAGE UPSCALE LOCAL SUCCESS*\n\n✨ Resolución y detalles optimizados con éxito (5-15 seg).\n\n⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓\n⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕` }, { quoted: m })
             }
-        } else if (args[0] && args[0].startsWith('http')) {
-            tempUrl = args[0]
-        }
 
-        if (!tempUrl) {
-            await m.react('❌')
-            return conn.reply(m.chat, `⚠️ *SISTEMA UCHIHA*\n\n> 🖼️ *Responde a una imagen o ingresa una URL para mejorar su calidad.*`, m)
-        }
-
-        let cleanUrl = tempUrl.split(';')[0].trim()
-
-        // Petición GET limpia usando Axios pasándole los parámetros exactos del JSON
-        let hdResponse = await axios.get(`${upscaleEndpoint}`, {
-            params: {
-                method: 'url',
-                url: cleanUrl,
-                key: access
+            let datosJsonLocal = await respuestaServidor.json()
+            if (datosJsonLocal && datosJsonLocal.status === true && datosJsonLocal.url) {
+                await m.react('🔥')
+                return conn.sendMessage(m.chat, { image: { url: datosJsonLocal.url }, caption: `⚡ *IMAGE UPSCALE LOCAL SUCCESS*\n\n⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓\n⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕` }, { quoted: m })
+            } else {
+                await m.react('❌')
+                return conn.reply(m.chat, `❌ El servidor no procesó la imagen local.\n🔴 ${datosJsonLocal?.message || 'Error desconocido'}`, m)
             }
-        })
-
-        if (hdResponse.data && hdResponse.data.status === true && hdResponse.data.url) {
-            let finalHdUrl = hdResponse.data.url.split(';')[0].trim()
-
-            // Descarga directa del búfer final mediante Axios (arraybuffer) para evitar bloqueos de renderizado
-            let imageStream = await axios.get(finalHdUrl, { responseType: 'arraybuffer' })
-            let imageBuffer = Buffer.from(imageStream.data, 'binary')
-
-            const dev = "⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓"
-            const net = "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕"
-
-            let report = `| 🖼️ *𝖴𝖢𝖧𝖨𝖧𝖠 𝖨𝖬𝖠𝖦𝖤  𝖴𝖯𝖲𝖢𝖠𝖫𝖤𝖱* 🖼️\n`
-            report += `|═══════════════════\n`
-            report += `| 🟢 *𝚂𝚃𝙰𝚃𝚄𝚂:* Calidad Optimizada HD\n`
-            report += `| 🔗 *𝚄𝚁𝙻:* ${finalHdUrl}\n`
-            report += `|═══════════════════\n`
-            report += `| 🛠️ *${dev}*\n`
-            report += `| ⛩️ *${net}*`
-
-            await conn.sendMessage(m.chat, { 
-                image: imageBuffer, 
-                caption: report 
-            }, { quoted: m })
-
-            await m.react('🔥')
-        } else {
+        } catch (err) {
+            console.error(err)
             await m.react('❌')
-            return conn.reply(m.chat, `❌ El servidor no devolvió una respuesta válida de escalado.`, m)
+            return conn.reply(m.chat, `❌ Falló la subida binaria o el tiempo de espera del Upscaler expiró.`, m)
         }
-
-    } catch (e) {
-        console.error(e)
-        await m.react('❌')
     }
 }
 
-handler.help = ['remini', 'hd', 'mejorar', 'upscale']
-handler.tags = ['tools']
-handler.command = /^(remini|hd|mejorar|upscale)$/i
+handler.help = ['hd', 'upscale', 'remini']
+handler.tags = ['tools', 'ai']
+handler.command = /^(hd|upscale|remini|mejorar)$/i
 
 export default handler
