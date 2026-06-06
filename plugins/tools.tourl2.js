@@ -4,6 +4,8 @@ import { fileTypeFromBuffer } from "file-type"
 import crypto from "crypto"
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
+    conn.uchihaUploads = conn.uchihaUploads || {}
+    
     let q = m.quoted ? m.quoted : m
     let mime = (q.msg || q).mimetype || ''
     let urlImagen = text ? text.split(' ')[0] : (m.quoted && m.quoted.text ? m.quoted.text.split(' ')[0] : '')
@@ -16,6 +18,18 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 
     if (!tieneServidor && (/^https?:\/\//i.test(urlImagen) || mime)) {
+        if (mime) {
+            try {
+                let bufferMedia = await q.download()
+                conn.uchihaUploads[m.sender] = {
+                    buffer: bufferMedia,
+                    mime: mime
+                }
+            } catch (err) {
+                console.error(err)
+            }
+        }
+
         return conn.sendMessage(m.chat, {
             text: `☁️ *UCHIHA CLOUD UPLOAD*\n\nSeleccione en el botón de abajo el servidor donde desea alojar su archivo o enlace de imagen.`,
             footer: "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕\n👤 𝖢𝗋𝖾𝖺𝖽𝗈𝗋: 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓",
@@ -38,7 +52,9 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         }, { quoted: m })
     }
 
-    if (!/^https?:\/\//i.test(urlImagen) && !mime) {
+    let cacheMedia = conn.uchihaUploads[m.sender]
+
+    if (!/^https?:\/\//i.test(urlImagen) && !mime && !cacheMedia) {
         return conn.reply(m.chat, `💡 *Uso correcto:*\nResponde a una imagen o ingresa un enlace usando:\n> *${usedPrefix + command} [enlace]*`, m)
     }
 
@@ -64,11 +80,13 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             await m.react('❌')
         }
     } 
-    else if (mime) {
+    else if (mime || cacheMedia) {
         await m.react('⏳')
         try {
-            let bufferMedia = await q.download()
-            const fileInfo = await fileTypeFromBuffer(bufferMedia) || { ext: 'bin', mime: mime || 'application/octet-stream' }
+            let bufferMedia = mime ? await q.download() : cacheMedia.buffer
+            let currentMime = mime ? mime : cacheMedia.mime
+            
+            const fileInfo = await fileTypeFromBuffer(bufferMedia) || { ext: 'bin', mime: currentMime || 'application/octet-stream' }
 
             const extOverrides = {
                 'application/vnd.android.package-archive': 'apk',
@@ -97,13 +115,16 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             if (datosJsonLocal && datosJsonLocal.status === true && datosJsonLocal.url) {
                 await conn.reply(m.chat, `⚡ *UPLOAD LOCAL SUCCESS*\n\n🔗 *ENLACE:* ${datosJsonLocal.url}\n📡 *SERVIDOR:* ${datosJsonLocal.server || servidorSeleccionado}\n\n⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓\n⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕`, m)
                 await m.react('🔥')
+                delete conn.uchihaUploads[m.sender]
             } else {
                 await m.react('❌')
+                delete conn.uchihaUploads[m.sender]
                 return conn.reply(m.chat, `❌ No se pudo procesar la subida binaria del archivo.\n🔴 ${datosJsonLocal?.message || 'Sin respuesta válida'}`, m)
             }
         } catch (err) {
             console.error(err)
             await m.react('❌')
+            delete conn.uchihaUploads[m.sender]
         }
     }
 }
