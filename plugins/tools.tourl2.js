@@ -86,6 +86,14 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             let bufferMedia = mime ? await q.download() : cacheMedia.buffer
             let currentMime = mime ? mime : cacheMedia.mime
             
+            // Si entra una nueva imagen en el flujo, actualizamos el caché para futuras interacciones
+            if (mime) {
+                conn.uchihaUploads[m.sender] = {
+                    buffer: bufferMedia,
+                    mime: mime
+                }
+            }
+
             const fileInfo = await fileTypeFromBuffer(bufferMedia) || { ext: 'bin', mime: currentMime || 'application/octet-stream' }
 
             const extOverrides = {
@@ -115,16 +123,13 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             if (datosJsonLocal && datosJsonLocal.status === true && datosJsonLocal.url) {
                 await conn.reply(m.chat, `⚡ *UPLOAD LOCAL SUCCESS*\n\n🔗 *ENLACE:* ${datosJsonLocal.url}\n📡 *SERVIDOR:* ${datosJsonLocal.server || servidorSeleccionado}\n\n⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓\n⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕`, m)
                 await m.react('🔥')
-                delete conn.uchihaUploads[m.sender]
             } else {
                 await m.react('❌')
-                delete conn.uchihaUploads[m.sender]
                 return conn.reply(m.chat, `❌ No se pudo procesar la subida binaria del archivo.\n🔴 ${datosJsonLocal?.message || 'Sin respuesta válida'}`, m)
             }
         } catch (err) {
             console.error(err)
             await m.react('❌')
-            delete conn.uchihaUploads[m.sender]
         }
     }
 }
