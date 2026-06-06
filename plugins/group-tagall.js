@@ -10,7 +10,6 @@ try {
   if (existsSync(imgPath)) {
     imgLocal = readFileSync(imgPath);
   } else {
-    // Si no existe, usamos una imagen por defecto o un buffer vacío para que no explote
     imgLocal = Buffer.alloc(0); 
     console.error(`[ERROR] La imagen en ${imgPath} no existe.`);
   }
@@ -26,34 +25,47 @@ const handler = async (m, { isOwner, isAdmin, conn, text, participants, args, us
 
     if (!(isAdmin || isOwner)) {
       global.dfail('admin', m, conn);
-      return; // Usar return en lugar de throw evita que el proceso se detenga bruscamente
+      return; 
     }
 
     const customMessage = args.join(' ');
     const groupMetadata = await conn.groupMetadata(m.chat).catch(() => ({ subject: 'Grupo', participants: [] }));
     const groupName = groupMetadata.subject;
 
+    // Listado de banderas ordenado y corregido
     const countryFlags = {
-      '1': '🇺🇸', '44': '🇬🇧', '33': '🇫🇷', '49': '🇩🇪', '39': '🇮🇹', '81': '🇯🇵',
-      '82': '🇰🇷', '86': '🇨🇳', '7': '🇷🇺', '91': '🇮🇳', '61': '🇦🇺', '64': '🇳🇿',
-      '34': '🇪🇸', '55': '🇧🇷', '52': '🇲🇽', '54': '𝘼𝙍', '57': '🇨🇴', '51': '🇵🇪',
-      '56': '🇨🇱', '58': '🇻🇪', '502': '🇬🇹', '503': '🇸🇻', '504': '🇭🇳', '505': '🇳🇮',
-      '506': '🇨🇷', '507': '🇵🇦', '591': '🇧🇴', '592': '🇬🇾', '593': '🇪𝙘', '595': '🇵🇾','58': '🇻🇪'
+      '58': '🇻🇪', '52': '🇲🇽', '54': '🇦🇷', '57': '🇨🇴', '51': '🇵🇪',
+      '56': '🇨🇱', '55': '🇧🇷', '34': '🇪🇸', '1': '🇺🇸', '44': '🇬🇧', 
+      '33': '🇫🇷', '49': '🇩🇪', '39': '🇮🇹', '81': '🇯🇵', '82': '🇰🇷', 
+      '86': '🇨🇳', '7': '🇷🇺', '91': '🇮🇳', '61': '🇦🇺', '64': '🇳🇿',
+      '502': '🇬🇹', '503': '🇸🇻', '504': '🇭🇳', '505': '🇳🇮', '506': '🇨🇷', 
+      '507': '🇵🇦', '591': '🇧🇴', '592': '🇬🇾', '593': '🇪🇨', '595': '🇵🇾'
     };
 
+    // Función de detección de banderas corregida por orden de longitud de prefijo
     const getCountryFlag = (id) => {
       const phoneNumber = id.split('@')[0];
-      if (phoneNumber.startsWith('1')) return '🇺🇸';
-      let prefix = phoneNumber.substring(0, 3);
-      if (!countryFlags[prefix]) prefix = phoneNumber.substring(0, 2);
-      return countryFlags[prefix] || '🚩';
+      
+      // 1. Probar con prefijos de 3 dígitos (ej: 502, 504...)
+      let prefix3 = phoneNumber.substring(0, 3);
+      if (countryFlags[prefix3]) return countryFlags[prefix3];
+
+      // 2. Probar con prefijos de 2 dígitos (ej: 58, 52, 54...)
+      let prefix2 = phoneNumber.substring(0, 2);
+      if (countryFlags[prefix2]) return countryFlags[prefix2];
+
+      // 3. Probar con prefijos de 1 dígito (ej: 1 para USA o 7 para Rusia)
+      let prefix1 = phoneNumber.substring(0, 1);
+      if (countryFlags[prefix1]) return countryFlags[prefix1];
+
+      return '🚩'; // Bandera por defecto si no se reconoce
     };
 
     let messageText = `*${groupName}*\n\n*Integrantes: ${participants.length}*\n${customMessage}\n┌──⭓ *Despierten*\n`;
     for (const mem of participants) {
       messageText += `${emoji} ${getCountryFlag(mem.id)} @${mem.id.split('@')[0]}\n`;
     }
-    messageText += `└───────⭓\n\n𝘚𝘶𝘱𝘦𝘳 𝘉𝘰𝘵 𝘞𝘩𝘢𝘵𝘴𝘈𝘱𝘱 🚩`;
+    messageText += `└───────⭓\n\n𝘚𝘶𝘱𝘦𝘳 𝘉𝘰𝒕 𝘞𝘩𝘢𝘵𝘴𝘈𝘱pf 🚩`;
 
     const fkontak = {
       key: { participants: "0@s.whatsapp.net", remoteJid: "status@broadcast", fromMe: false, id: "AlienMenu" },
@@ -61,7 +73,7 @@ const handler = async (m, { isOwner, isAdmin, conn, text, participants, args, us
         locationMessage: {
           name: "*Sasuke Bot MD 🌀*",
           jpegThumbnail: imgLocal,
-          vcard: "BEGIN:VCARD\nVERSION:3.0\nN:;Sasuke;;;\nFN:Sasuke Bot\nORG:Barboza Developers\nEND:VCARD"
+          vcard: "BEGIN:VCARD\nVERSION:3.0\nN:;Sasuke;;;\nFN:Sasuke Bot\nORG:Barboza Developer\nEND:VCARD"
         }
       },
       participant: "0@s.whatsapp.net"
@@ -84,7 +96,6 @@ const handler = async (m, { isOwner, isAdmin, conn, text, participants, args, us
 
   } catch (error) {
     console.error("[ERROR CRÍTICO EN TAGALL]:", error);
-    // Enviar un mensaje simple si el de botones falla por alguna razón técnica del servidor
     conn.reply(m.chat, `❌ Ocurrió un error al ejecutar el comando.`, m);
   }
 };
