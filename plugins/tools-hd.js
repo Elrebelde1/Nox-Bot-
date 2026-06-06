@@ -32,7 +32,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             const queryUrl = `${endpoint}?method=url&url=${encodeURIComponent(urlImagen)}&key=${key}`
             let response = await fetch(queryUrl)
             
-            // Verificación si el servidor responde con una imagen directa o un archivo binario
             const contentType = response.headers.get('content-type')
             if (contentType && contentType.includes('image')) {
                 let imageBuffer = await response.buffer()
@@ -40,7 +39,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                 return conn.sendMessage(m.chat, { image: imageBuffer, caption: `⚡ *IMAGE UPSCALE REMOTE SUCCESS*\n\n✨ Calidad mejorada con éxito mediante Inteligencia Artificial.\n\n⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓\n⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕` }, { quoted: m })
             }
 
-            // Si responde un JSON en su lugar
             let datosJson = await response.json()
             if (datosJson && datosJson.status === true && datosJson.url) {
                 await m.react('🔥')
@@ -68,6 +66,8 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             const filename = 'upscale-' + crypto.randomBytes(8).toString('hex') + '.' + fileInfo.ext
 
             let formulario = new FormData()
+            // Ajuste de parámetros requeridos por la interfaz de la API
+            formulario.append('method', 'local')
             formulario.append('image', bufferMedia, { filename, contentType: fileInfo.mime })
 
             const queryLocal = `${endpoint}?key=${key}`
