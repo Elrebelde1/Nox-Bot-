@@ -1,6 +1,6 @@
 /**
- * 📂 COMANDO: Uchiha Cloud Upload Unified (Botones Corregidos)
- * 📝 DESCRIPCIÓN: Aloja imágenes y archivos multimedia en múltiples servidores usando botones nativos estables.
+ * 📂 COMANDO: Uchiha Cloud Upload Unified
+ * 📝 DESCRIPCIÓN: Aloja imágenes y archivos multimedia en múltiples servidores de la nube de forma dinámica.
  * 👤 CREADOR: Barboza Developer
  * ⚡ CANAL: Barboza Developer x Zona Developers
  * 🔌 API: https://api.evogb.org
@@ -26,7 +26,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 
     // ---------------------------------------------------------
-    // FLUJO INICIAL: Guardar multimedia y mostrar botones estables
+    // FLUJO INICIAL: Guardar multimedia y mostrar todos los servidores en botones nativos
     // ---------------------------------------------------------
     if (!tieneServidor && (/^https?:\/\//i.test(urlImagen) || mime)) {
         if (mime) {
@@ -41,36 +41,32 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             }
         }
 
-        // Texto descriptivo estructurado
-        let txt = `╭─〔 ☁️ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚄𝙿𝙻𝙾𝙰𝙳* 〕─╮\n`
-        txt += `│\n`
-        txt += `│ 💠 *sᴇʟᴇᴄᴄɪᴏɴᴀ ᴜɴ sᴇʀᴠɪᴅᴏʀ:* \n`
-        txt += `│ Tocando los botones directos de abajo\n`
-        txt += `│\n`
-        txt += `│ ⚙️ *ᴏᴛʀᴏs sᴇʀᴠɪᴅᴏʀᴇs (ᴄᴏᴘɪᴀ ʏ ᴇɴᴠɪᴀ):*\n`
-        txt += `│ » \`${usedPrefix + command} ${urlImagen} -server:uguu\`\n`
-        txt += `│ » \`${usedPrefix + command} ${urlImagen} -server:quax\`\n`
-        txt += `│ » \`${usedPrefix + command} ${urlImagen} -server:zenzxz\`\n`
-        txt += `│ » \`${usedPrefix + command} ${urlImagen} -server:top4top\`\n`
-        txt += `│ » \`${usedPrefix + command} ${urlImagen} -server:puticu\`\n`
-        txt += `│ » \`${usedPrefix + command} ${urlImagen} -server:adoolab\`\n`
-        txt += `│\n`
-        txt += `│ 👁️ *ᴇɴᴠɪᴀ ᴏ ʀᴇᴘᴏɴᴅᴇ ᴀ ᴜɴᴀ ɪᴍᴀɢᴇɴ*\n`
-        txt += `╰────────────────────────────╯`
-
-        // Configuración de botones interactivos limpios tipo 1 (IGUAL AL DE STICKERS)
-        const botones = [
+        // BLOQUE 1: Servidores Permanentes Principales
+        let txt1 = `╭─〔 ☁️ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚄𝙿𝙻𝙾𝙰𝙳 (𝟷/𝟹)* 〕─╮\n│\n│ 💠 *sᴇʟᴇᴄᴄɪᴏɴᴀ ᴜɴ sᴇʀᴠɪᴅᴏʀ ᴘᴇʀᴍᴀɴᴇɴᴛᴇ:* \n╰────────────────────────────╯`
+        const botones1 = [
             { buttonId: `${usedPrefix + command} ${urlImagen} -server:auto`.trim(), buttonText: { displayText: "🤖 Automático" }, type: 1 },
             { buttonId: `${usedPrefix + command} ${urlImagen} -server:evogb`.trim(), buttonText: { displayText: "🌐 Evogb.win" }, type: 1 },
             { buttonId: `${usedPrefix + command} ${urlImagen} -server:catbox`.trim(), buttonText: { displayText: "📦 Catbox.moe" }, type: 1 }
         ]
+        await conn.sendMessage(m.chat, { text: txt1, footer: "By Barboza-Team ⚡", buttons: botones1, headerType: 4 }, { quoted: m })
 
-        return conn.sendMessage(m.chat, {
-            text: txt,
-            footer: "By Barboza-Team ⚡",
-            buttons: botones,
-            headerType: 4
-        }, { quoted: m })
+        // BLOQUE 2: Servidores Temporales Rápidos
+        let txt2 = `╭─〔 ☁️ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚄𝙿𝙻𝙾𝙰𝙳 (𝟸/𝟹)* 〕─╮\n│\n│ ⚙️ *sᴇʟᴇᴄᴄɪᴏɴᴀ ᴜɴ sᴇʀᴠɪᴅᴏʀ ᴛᴇᴍᴘᴏʀᴀʟ:* \n╰────────────────────────────╯`
+        const botones2 = [
+            { buttonId: `${usedPrefix + command} ${urlImagen} -server:uguu`.trim(), buttonText: { displayText: "💧 Uguu.se" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${urlImagen} -server:quax`.trim(), buttonText: { displayText: "🦅 Qu.ax" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${urlImagen} -server:top4top`.trim(), buttonText: { displayText: "🔝 Top4top.io" }, type: 1 }
+        ]
+        await conn.sendMessage(m.chat, { text: txt2, footer: "By Barboza-Team ⚡", buttons: botones2, headerType: 4 })
+
+        // BLOQUE 3: Servidores Alternativos de Respaldo
+        let txt3 = `╭─〔 ☁️ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚄𝙿𝙻𝙾𝙰𝙳 (𝟹/𝟹)* 〕─╮\n│\n│ 🛠️ *ᴏᴘᴄɪᴏɴᴇs ᴀᴅɪᴄɪᴏɴᴀʟᴇs ᴅᴇ sᴜʙɪᴅᴀ:* \n╰────────────────────────────╯`
+        const botones3 = [
+            { buttonId: `${usedPrefix + command} ${urlImagen} -server:zenzxz`.trim(), buttonText: { displayText: "🌌 Zenzxz" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${urlImagen} -server:puticu`.trim(), buttonText: { displayText: "⏱️ Put.icu (24H)" }, type: 1 },
+            { buttonId: `${usedPrefix + command} ${urlImagen} -server:adoolab`.trim(), buttonText: { displayText: "🧪 Adoolab" }, type: 1 }
+        ]
+        return conn.sendMessage(m.chat, { text: txt3, footer: "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕\n👤 𝖢𝗋𝖾𝖺𝖽𝗈𝗋: 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓", buttons: botones3, headerType: 4 })
     }
 
     let cacheMedia = conn.uchihaUploads[m.sender]
@@ -149,6 +145,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             let datosJsonLocal = await respuestaServidor.json()
 
             if (datosJsonLocal && datosJsonLocal.status === true && datosJsonLocal.url) {
+                // Limpieza del almacenamiento temporal tras una subida exitosa
                 delete conn.uchihaUploads[m.sender]
                 await m.react('🔥')
                 return conn.reply(m.chat, `⚡ *UPLOAD LOCAL SUCCESS*\n\n🔗 *ENLACE:* ${datosJsonLocal.url}\n📡 *SERVIDOR:* ${datosJsonLocal.server || servidorSeleccionado}\n\n⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓\n⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕`, m)
