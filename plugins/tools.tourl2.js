@@ -26,7 +26,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     }
 
     // ---------------------------------------------------------
-    // FLUJO INICIAL: Mostrar el menú con los botones de servidores
+    // FLUJO INICIAL: Guardar multimedia y mostrar menú de texto compatible
     // ---------------------------------------------------------
     if (!tieneServidor && (/^https?:\/\//i.test(urlImagen) || mime)) {
         if (mime) {
@@ -41,26 +41,23 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             }
         }
 
-        return conn.sendMessage(m.chat, {
-            text: `☁️ *UCHIHA CLOUD UPLOAD*\n\nSeleccione en el botón de abajo el servidor donde desea alojar su archivo o enlace de imagen.`,
-            footer: "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕\n👤 𝖢𝗋𝖾𝖺𝖽𝗈𝗋: 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓",
-            title: "SISTEMA DE ALOJAMIENTO",
-            buttonText: "Ver Servidores",
-            sections: [{
-                title: "Opciones Disponibles",
-                rows: [
-                    { title: "Automático", description: "Selección óptima del sistema", rowId: `${usedPrefix + command} ${urlImagen} -server:auto`.trim() },
-                    { title: "Evogb.win", description: "Almacenamiento Permanente", rowId: `${usedPrefix + command} ${urlImagen} -server:evogb`.trim() },
-                    { title: "Catbox.moe", description: "Almacenamiento Permanente", rowId: `${usedPrefix + command} ${urlImagen} -server:catbox`.trim() },
-                    { title: "Uguu.se", description: "Almacenamiento Temporal", rowId: `${usedPrefix + command} ${urlImagen} -server:uguu`.trim() },
-                    { title: "Qu.ax", description: "Almacenamiento Temporal", rowId: `${usedPrefix + command} ${urlImagen} -server:quax`.trim() },
-                    { title: "zenzxz", description: "Almacenamiento Permanente", rowId: `${usedPrefix + command} ${urlImagen} -server:zenzxz`.trim() },
-                    { title: "top4top.io", description: "Almacenamiento Temporal", rowId: `${usedPrefix + command} ${urlImagen} -server:top4top`.trim() },
-                    { title: "put.icu", description: "Almacenamiento Temporal 24H", rowId: `${usedPrefix + command} ${urlImagen} -server:puticu`.trim() },
-                    { title: "Adoolab", description: "Almacenamiento Permanente", rowId: `${usedPrefix + command} ${urlImagen} -server:adoolab`.trim() }
-                ]
-            }]
-        }, { quoted: m })
+        // Menú en formato de texto limpio para evitar el bloqueo de botones de Baileys
+        let menuTexto = `☁️ *UCHIHA CLOUD UPLOAD*\n\n`
+        menuTexto += `Responda a este mensaje o use el comando copiando uno de los siguientes servidores para alojar su archivo:\n\n`
+        menuTexto += `⚙️ *Opciones Disponibles:*\n`
+        menuTexto += `🔹 *Automático:* \`${usedPrefix + command} ${urlImagen} -server:auto\`\n`
+        menuTexto += `🔹 *Evogb.win:* \`${usedPrefix + command} ${urlImagen} -server:evogb\`\n`
+        menuTexto += `🔹 *Catbox.moe:* \`${usedPrefix + command} ${urlImagen} -server:catbox\`\n`
+        menuTexto += `🔹 *Uguu.se:* \`${usedPrefix + command} ${urlImagen} -server:uguu\`\n`
+        menuTexto += `🔹 *Qu.ax:* \`${usedPrefix + command} ${urlImagen} -server:quax\`\n`
+        menuTexto += `🔹 *Zenzxz:* \`${usedPrefix + command} ${urlImagen} -server:zenzxz\`\n`
+        menuTexto += `🔹 *Top4top.io:* \`${usedPrefix + command} ${urlImagen} -server:top4top\`\n`
+        menuTexto += `🔹 *Put.icu:* \`${usedPrefix + command} ${urlImagen} -server:puticu\`\n`
+        menuTexto += `🔹 *Adoolab:* \`${usedPrefix + command} ${urlImagen} -server:adoolab\`\n\n`
+        menuTexto += `💡 _Si no elige ningún servidor y solo envía ${usedPrefix + command}, se subirá en modo Automático automáticamente._\n\n`
+        menuTexto += `⛩️ *𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕*\n👤 *𝖢𝗋𝖾𝖺𝖽𝗈𝗋: 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓*`
+
+        return conn.reply(m.chat, menuTexto, m)
     }
 
     let cacheMedia = conn.uchihaUploads[m.sender]
@@ -95,7 +92,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         }
     } 
     // ---------------------------------------------------------
-    // METODO 2: VIA RESPUESTA A IMAGEN / CACHÉ DEL BOTÓN (POST)
+    // METODO 2: VIA RESPUESTA A IMAGEN / PROCESAMIENTO (POST)
     // ---------------------------------------------------------
     else if (mime || cacheMedia) {
         await m.react('⏳')
@@ -122,11 +119,10 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             const ext = extOverrides[fileInfo.mime] || fileInfo.ext
             const filename = 'media-' + crypto.randomBytes(8).toString('hex') + '.' + ext
 
-            // Configuración del Formulario POST (Ajustado exactamente a la estructura funcional de la API)
             let formulario = new FormData()
             formulario.append('file', bufferMedia, { filename, contentType: fileInfo.mime })
-            formulario.append('method', 'local') // Parámetro obligatorio inyectado
-            formulario.append('server', servidorSeleccionado) // Parámetro del servidor elegido vía botón
+            formulario.append('method', 'local')
+            formulario.append('server', servidorSeleccionado)
 
             const queryLocal = `${endpoint}?key=${claveOculta}`
             let respuestaServidor = await fetch(queryLocal, {
@@ -140,6 +136,8 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             let datosJsonLocal = await respuestaServidor.json()
 
             if (datosJsonLocal && datosJsonLocal.status === true && datosJsonLocal.url) {
+                // Limpieza del almacenamiento temporal tras una subida exitosa
+                delete conn.uchihaUploads[m.sender]
                 await m.react('🔥')
                 return conn.reply(m.chat, `⚡ *UPLOAD LOCAL SUCCESS*\n\n🔗 *ENLACE:* ${datosJsonLocal.url}\n📡 *SERVIDOR:* ${datosJsonLocal.server || servidorSeleccionado}\n\n⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓\n⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕`, m)
             } else {
