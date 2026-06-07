@@ -1,11 +1,3 @@
-/**
- * 📂 COMANDO: Uchiha Cloud Upload Unified
- * 📝 DESCRIPCIÓN: Aloja imágenes y archivos multimedia en múltiples servidores de la nube de forma dinámica.
- * 👤 CREADOR: Barboza Developer
- * ⚡ CANAL: Barboza Developer x Zona Developers
- * 🔌 API: https://api.evogb.org
- */
-
 import FormData from "form-data"
 import fetch from "node-fetch"
 import { fileTypeFromBuffer } from "file-type"
@@ -25,23 +17,22 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         servidorSeleccionado = text.split('-server:')[1].trim()
     }
 
-    // ---------------------------------------------------------
-    // FLUJO INICIAL: Guardar multimedia y mostrar todos los servidores en botones nativos
-    // ---------------------------------------------------------
-    if (!tieneServidor && (/^https?:\/\//i.test(urlImagen) || mime)) {
-        if (mime) {
-            try {
-                let bufferMedia = await q.download()
-                conn.uchihaUploads[m.sender] = {
-                    buffer: bufferMedia,
-                    mime: mime
-                }
-            } catch (err) {
-                console.error(err)
+    if (mime) {
+        try {
+            let bufferMedia = await q.download()
+            conn.uchihaUploads[m.sender] = {
+                buffer: bufferMedia,
+                mime: mime
             }
+        } catch (err) {
+            console.error(err)
         }
+    }
 
-        // BLOQUE 1: Servidores Permanentes Principales
+    let cacheMedia = conn.uchihaUploads[m.sender]
+
+    if (!tieneServidor && (/^https?:\/\//i.test(urlImagen) || mime || cacheMedia)) {
+        
         let txt1 = `╭─〔 ☁️ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚄𝙿𝙻𝙾𝙰𝙳 (𝟷/𝟹)* 〕─╮\n│\n│ 💠 *sᴇʟᴇᴄᴄɪᴏɴᴀ ᴜɴ sᴇʀᴠɪᴅᴏʀ ᴘᴇʀᴍᴀɴᴇɴᴛᴇ:* \n╰────────────────────────────╯`
         const botones1 = [
             { buttonId: `${usedPrefix + command} ${urlImagen} -server:auto`.trim(), buttonText: { displayText: "🤖 Automático" }, type: 1 },
@@ -50,16 +41,14 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         ]
         await conn.sendMessage(m.chat, { text: txt1, footer: "By Barboza-Team ⚡", buttons: botones1, headerType: 4 }, { quoted: m })
 
-        // BLOQUE 2: Servidores Temporales Rápidos
         let txt2 = `╭─〔 ☁️ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚄𝙿𝙻𝙾𝙰𝙳 (𝟸/𝟹)* 〕─╮\n│\n│ ⚙️ *sᴇʟᴇᴄᴄɪᴏɴᴀ ᴜɴ sᴇʀᴠɪᴅᴏʀ ᴛᴇᴍᴘᴏʀᴀʟ:* \n╰────────────────────────────╯`
         const botones2 = [
             { buttonId: `${usedPrefix + command} ${urlImagen} -server:uguu`.trim(), buttonText: { displayText: "💧 Uguu.se" }, type: 1 },
             { buttonId: `${usedPrefix + command} ${urlImagen} -server:quax`.trim(), buttonText: { displayText: "🦅 Qu.ax" }, type: 1 },
-            { buttonId: `${usedPrefix + command} ${urlImagen} -server:top4top`.trim(), buttonText: { displayText: "🔝 Top4top.io" }, type: 1 }
+            { buttonId: `${usedPrefix + command} ${urlImagen} -server:top4top.io`.trim(), buttonText: { displayText: "🔝 Top4top.io" }, type: 1 }
         ]
         await conn.sendMessage(m.chat, { text: txt2, footer: "By Barboza-Team ⚡", buttons: botones2, headerType: 4 })
 
-        // BLOQUE 3: Servidores Alternativos de Respaldo
         let txt3 = `╭─〔 ☁️ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚄𝙿𝙻𝙾𝙰𝙳 (𝟹/𝟹)* 〕─╮\n│\n│ 🛠️ *ᴏᴘᴄɪᴏɴᴇs ᴀᴅɪᴄɪᴏɴᴀʟᴇs ᴅᴇ sᴜʙɪᴅᴀ:* \n╰────────────────────────────╯`
         const botones3 = [
             { buttonId: `${usedPrefix + command} ${urlImagen} -server:zenzxz`.trim(), buttonText: { displayText: "🌌 Zenzxz" }, type: 1 },
@@ -69,8 +58,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         return conn.sendMessage(m.chat, { text: txt3, footer: "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕\n👤 𝖢𝗋𝖾𝖺𝖽𝗈𝗋: 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓", buttons: botones3, headerType: 4 })
     }
 
-    let cacheMedia = conn.uchihaUploads[m.sender]
-
     if (!/^https?:\/\//i.test(urlImagen) && !mime && !cacheMedia) {
         return conn.reply(m.chat, `💡 *Uso correcto:*\nResponde a una imagen o ingresa un enlace usando:\n> *${usedPrefix + command} [enlace]*`, m)
     }
@@ -78,9 +65,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
     const endpoint = "https://api.evogb.org/tools/upload"
     const claveOculta = Buffer.from("c2FzdWtl", 'base64').toString('utf-8')
 
-    // ---------------------------------------------------------
-    // METODO 1: VIA LINK / ENLACE (GET)
-    // ---------------------------------------------------------
     if (/^https?:\/\//i.test(urlImagen) && !mime) {
         await m.react('☁️')
         try {
@@ -100,21 +84,11 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             await m.react('❌')
         }
     } 
-    // ---------------------------------------------------------
-    // METODO 2: VIA RESPUESTA A IMAGEN / PROCESAMIENTO (POST)
-    // ---------------------------------------------------------
     else if (mime || cacheMedia) {
         await m.react('⏳')
         try {
             let bufferMedia = mime ? await q.download() : cacheMedia.buffer
             let currentMime = mime ? mime : cacheMedia.mime
-
-            if (mime) {
-                conn.uchihaUploads[m.sender] = {
-                    buffer: bufferMedia,
-                    mime: mime
-                }
-            }
 
             const fileInfo = await fileTypeFromBuffer(bufferMedia) || { ext: 'bin', mime: currentMime || 'application/octet-stream' }
 
@@ -145,8 +119,6 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             let datosJsonLocal = await respuestaServidor.json()
 
             if (datosJsonLocal && datosJsonLocal.status === true && datosJsonLocal.url) {
-                // Limpieza del almacenamiento temporal tras una subida exitosa
-                delete conn.uchihaUploads[m.sender]
                 await m.react('🔥')
                 return conn.reply(m.chat, `⚡ *UPLOAD LOCAL SUCCESS*\n\n🔗 *ENLACE:* ${datosJsonLocal.url}\n📡 *SERVIDOR:* ${datosJsonLocal.server || servidorSeleccionado}\n\n⚡ 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓\n⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕`, m)
             } else {
