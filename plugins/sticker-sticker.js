@@ -64,29 +64,25 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
       let botNumber = conn.user.jid.split('@')[0]
       let vcard = 'BEGIN:VCARD\n'
                 + 'VERSION:3.0\n'
-                + 'FN:Jota Bot\n'
+                + 'FN:s\n'
                 + 'ORG:WhatsApp Business ✓ • Est...;\n'
                 + 'NOTE:✅ sticker creado con exito\n'
-                + `TEL;type=CELL;type=VOICE;waid=${botNumber}:+${botNumber}\n'
+                + `TEL;type=CELL;type=VOICE;waid=${botNumber}:+${botNumber}\n`
                 + 'END:VCARD'
 
       await conn.sendMessage(m.chat, { 
-        sticker: stiker 
-      }, { 
-        quoted: {
-          key: { 
-            fromMe: false, 
-            participant: `0@s.whatsapp.net`, 
-            ...(m.chat ? { remoteJid: m.chat } : {}) 
-          },
-          message: { 
-            contactMessage: { 
-              displayName: 'Jota Bot', 
-              vcard: vcard 
-            } 
+        sticker: stiker,
+        contextInfo: {
+          participant: `0@s.whatsapp.net`,
+          remoteJid: m.chat,
+          quotedMessage: {
+            contactMessage: {
+              displayName: 'Jota Bot',
+              vcard: vcard
+            }
           }
         }
-      })
+      }, { quoted: m })
     } else {
       const botones = [
         { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
