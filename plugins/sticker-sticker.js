@@ -61,20 +61,20 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     console.error(e)
   } finally {
     if (stiker) {
-      await conn.sendMessage(m.chat, { 
-        sticker: stiker 
-      }, { 
-        quoted: m,
-        contextInfo: {
-          externalAdReply: {
-            title: "Uchiha Bot",
-            body: "✅ sticker creado con exito",
-            previewType: "PHOTO",
-            thumbnailUrl: "https://files.catbox.moe/t7uytz.png",
-            sourceUrl: "https://whatsapp.com"
-          }
-        }
-      })
+      let botNumber = conn.user.jid.split('@')[0]
+      let vcard = 'BEGIN:VCARD\n'
+                + 'VERSION:3.0\n'
+                + 'FN:Uchiha Bot\n'
+                + 'ORG:WhatsApp Business ✓ • Est...;\n'
+                + 'NOTE:✅ sticker creado con exito\n'
+                + `TEL;type=CELL;type=VOICE;waid=${botNumber}:+${botNumber}\n`
+                + 'END:VCARD'
+
+      await conn.sendMessage(m.chat, {
+        contacts: { displayName: 'Uchiha Bot', contacts: [{ vcard }] }
+      }, { quoted: m })
+
+      await conn.sendMessage(m.chat, { sticker: stiker }, { quoted: m })
     } else {
       const botones = [
         { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
