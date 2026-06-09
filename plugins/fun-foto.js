@@ -1,72 +1,168 @@
-import fetch from 'node-fetch'
-import { Sticker } from 'wa-sticker-formatter'
+import fetch from "node-fetch"
 
-let handler = async (m, { conn, text, command }) => {
-  // Diseño y decoración de fuentes
-  const d_title = (t) => `『 ⚡ *${t.toUpperCase()}* ⚡ 』`
-  const d_body = (t) => ` ✨ _${t}_`
+const handler = async (m, { conn, text, usedPrefix, command }) => {
+    conn.uchihaStickerly = conn.uchihaStickerly || {}
 
-  if (!text) return m.reply(`✨ ${d_title('Buscador de Packs')}\n\n📌 *Ejemplo:* .${command} My Melody`)
+    let query = text ? text.trim() : ''
+    let esBoton = text && text.includes('-pack:')
 
-  try {
-    // Buscar packs en la API
-    const searchRes = await fetch(`https://api.delirius.store/search/stickerly?query=${encodeURIComponent(text)}`)
-    const searchJson = await searchRes.json()
+    if (esBoton) {
+        let packUrl = text.split('-pack:')[1].trim()
+        await m.react('⏳')
+        try {
+            let resDl, jsonDl
+            let exito = false
+            let stickersList = []
+            let packName = 'Sticker Pack'
 
-    if (!searchJson.status || !Array.isArray(searchJson.data) || searchJson.data.length === 0) {
-      return m.reply('🌀 *No se encontraron stickers para tu búsqueda.*')
+            try {
+                resDl = await fetch(`https://api.delirius.store/download/stickerly?url=${encodeURIComponent(packUrl)}`)
+                jsonDl = await resDl.json()
+                if (jsonDl && jsonDl.status === true && jsonDl.data) {
+                    packName = jsonDl.data.name || packName
+                    stickersList = jsonDl.data.stickers || []
+                    exito = true
+                }
+            } catch (e) {
+                console.error("Error en API Delirius:", e)
+            }
+
+            if (!exito) {
+                try {
+                    resDl = await fetch(`https://sylphyy.xyz/download/stickerly?url=${encodeURIComponent(packUrl)}&api_key=sylphy-6f150d`)
+                    jsonDl = await resDl.json()
+                    if (jsonDl && jsonDl.status === true && jsonDl.result) {
+                        packName = jsonDl.result.name || packName
+                        stickersList = jsonDl.result.stickers || []
+                        exito = true
+                    }
+                } catch (e) {
+                    console.error("Error en API Sylphyy:", e)
+                }
+            }
+
+            if (!exito || stickersList.length === 0) {
+                await m.react('❌')
+                return conn.reply(m.chat, `❌ No se pudieron descargar los stickers de este pack. Intenta con otro.`, m)
+            }
+
+            await m.react('📦')
+            conn.reply(m.chat, `📥 *Descargando pack:* _${packName}_\n✨ Enviando los primeros *10 stickers* para evitar saturación...`, m)
+
+            let limite = Math.min(10, stickersList.length)
+            for (let i = 0; i < limite; i++) {
+                let st = stickersList[i]
+                let sUrl = typeof st === 'string' ? st : (st.imageUrl || st.thumbnailUrl)
+
+                if (sUrl) {
+                    await conn.sendMessage(m.chat, { 
+                        sticker: { url: sUrl } 
+                    }, { 
+                        quoted: m 
+                    }).catch(err => console.error(`Error al enviar sticker ${i}:`, err))
+                }
+            }
+            await m.react('✅')
+            return
+        } catch (err) {
+            console.error(err)
+            await m.react('❌')
+            return
+        }
     }
 
-    // Elegir un pack aleatorio
-    const pick = searchJson.data[Math.floor(Math.random() * searchJson.data.length)]
-    const packName = pick.name || 'Premium Pack'
-    const authorName = pick.author || 'AI Bot'
-
-    // Mensaje decorado de aviso
-    let info = `${d_title('Cargamento Localizado')}\n\n`
-    info += `📦 *Pack:* ${packName}\n`
-    info += `🎨 *Autor:* ${authorName}\n`
-    info += `💎 *Cantidad:* 8 Stickers\n\n`
-    info += `> ${d_body('Enviando paquete completo...')}`
-
-    await m.reply(info)
-
-    // Descargar stickers del pack
-    const downloadRes = await fetch(`https://api.delirius.store/download/stickerly?url=${encodeURIComponent(pick.url)}`)
-    const downloadJson = await downloadRes.json()
-
-    if (!downloadJson.status || !downloadJson.data || !Array.isArray(downloadJson.data.stickers)) {
-      return m.reply('⚠️ *No se pudo extraer el paquete.*')
+    if (!query) {
+        return conn.reply(m.chat, `💡 *Uso correcto:*\nIngresa el término que deseas buscar usando:\n> *${usedPrefix + command} [búsqueda]*`, m)
     }
 
-    // Seleccionamos 8 stickers
-    const stickersToSend = downloadJson.data.stickers.slice(0, 8)
+    await m.react('🔍')
+    try {
+        let resSearch, jsonSearch
+        let lista = []
+        let exitoSearch = false
 
-    // Envío del pack (uno tras otro rápidamente)
-    for (let i = 0; i < stickersToSend.length; i++) {
-      const sticker = new Sticker(stickersToSend[i], {
-        pack: packName,
-        author: authorName,
-        type: 'full',
-        categories: ['🔥', '✨'],
-        id: `pack-${i}`
-      })
-      
-      const buffer = await sticker.toBuffer()
-      await conn.sendMessage(m.chat, { sticker: buffer }, { quoted: m })
-      
-      // Delay mínimo para que se sientan como un pack unido
-      await new Promise(resolve => setTimeout(resolve, 300))
+        try {
+            resSearch = await fetch(`https://api.delirius.store/search/stickerly?query=${encodeURIComponent(query)}`)
+            jsonSearch = await resSearch.json()
+            if (jsonSearch && jsonSearch.status === true && jsonSearch.data && jsonSearch.data.length > 0) {
+                lista = jsonSearch.data
+                exitoSearch = true
+            }
+        } catch (e) {
+            console.error("Error buscando en Delirius:", e)
+        }
+
+        if (!exitoSearch) {
+            try {
+                resSearch = await fetch(`https://sylphyy.xyz/search/stickerly?q=${encodeURIComponent(query)}&api_key=sylphy-6f150d`)
+                jsonSearch = await resSearch.json()
+                if (jsonSearch && jsonSearch.status === true && jsonSearch.result && jsonSearch.result.length > 0) {
+                    lista = jsonSearch.result
+                    exitoSearch = true
+                }
+            } catch (e) {
+                console.error("Error buscando en Sylphyy:", e)
+            }
+        }
+
+        if (!exitoSearch || lista.length === 0) {
+            await m.react('❌')
+            return conn.reply(m.chat, `❌ No se encontraron packs de stickers para: *${query}*`, m)
+        }
+
+        conn.uchihaStickerly[m.sender] = lista
+
+        let txt1 = `╭─〔 🏮 *𝚂𝚃𝙸𝙲𝙺𝙴𝚁.𝙻𝚈 (𝟷/𝟹)* 〕─╮\n│\n│ 🌷 *sᴇbᴀsᴛɪᴀɴ, sᴇʟᴇᴄᴄɪᴏɴᴀ ᴜɴ ᴘᴀᴄᴋ:* \n╰─────────────────────────╯`
+        const botones1 = []
+        for (let i = 0; i < Math.min(3, lista.length); i++) {
+            let targetUrl = lista[i].url || ''
+            let pName = lista[i].name || 'Pack'
+            botones1.push({
+                buttonId: `${usedPrefix + command} -pack:${targetUrl}`.trim(),
+                buttonText: { displayText: `✨ ${pName.substring(0, 20)}...` },
+                type: 1
+            })
+        }
+        await conn.sendMessage(m.chat, { text: txt1, footer: "By Barboza-Team ⚡", buttons: botones1, headerType: 4 }, { quoted: m })
+
+        if (lista.length > 3) {
+            let txt2 = `╭─〔 🏮 *𝚂𝚃𝙸𝙲𝙺𝙴𝚁.𝙻𝚈 (𝟸/𝟹)* 〕─╮\n│\n│ ⚙️ *ᴍᴀs ᴘᴀᴄᴋs ᴇɴᴄᴏɴᴛʀᴀᴅᴏs:* \n╰─────────────────────────╯`
+            const botones2 = []
+            for (let i = 3; i < Math.min(6, lista.length); i++) {
+                let targetUrl = lista[i].url || ''
+                let pName = lista[i].name || 'Pack'
+                botones2.push({
+                    buttonId: `${usedPrefix + command} -pack:${targetUrl}`.trim(),
+                    buttonText: { displayText: `✨ ${pName.substring(0, 20)}...` },
+                    type: 1
+                })
+            }
+            await conn.sendMessage(m.chat, { text: txt2, footer: "By Barboza-Team ⚡", buttons: botones2, headerType: 4 })
+        }
+
+        if (lista.length > 6) {
+            let txt3 = `╭─〔 🏮 *𝚂𝚃𝙸𝙲𝙺𝙴𝚁.𝙻𝚈 (𝟹/𝟹)* 〕─╮\n│\n│ ⛩️ *ᴏᴘᴄɪᴏɴᴇs ᴀᴅɪᴄɪᴏɴᴀʟᴇs:* \n╰─────────────────────────╯`
+            const botones3 = []
+            for (let i = 6; i < Math.min(9, lista.length); i++) {
+                let targetUrl = lista[i].url || ''
+                let pName = lista[i].name || 'Pack'
+                botones3.push({
+                    buttonId: `${usedPrefix + command} -pack:${targetUrl}`.trim(),
+                    buttonText: { displayText: `✨ ${pName.substring(0, 20)}...` },
+                    type: 1
+                })
+            }
+            return conn.sendMessage(m.chat, { text: txt3, footer: "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕\n👤 𝖢𝗋𝖾𝖺𝖽𝗈𝗋: 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓", buttons: botones3, headerType: 4 })
+        }
+
+    } catch (e) {
+        console.error(e)
+        await m.react('❌')
     }
-
-  } catch (e) {
-    console.error(e)
-    m.reply('⚠️ *Hubo un error al procesar el pack de stickers.*')
-  }
 }
 
-handler.help = ['stikerly <consulta>']
-handler.tags = ['sticker']
-handler.command = /^(stikerly|sp|pack)$/i
+handler.help = ['stickerly', 'stikerly']
+handler.tags = ['tools']
+handler.command = /^(stickerly|stikerly|ly|stickly)$/i
 
 export default handler
