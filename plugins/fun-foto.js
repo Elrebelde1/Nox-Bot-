@@ -1,13 +1,17 @@
 import fetch from "node-fetch"
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
-    conn.uchihaStickerly = conn.uchihaStickerly || {}
+    let txt = text ? text.trim() : ''
 
-    let query = text ? text.trim() : ''
-    let esBoton = text && text.includes('-pack:')
+    // 1. Validar que el usuario ingrese un enlace o un texto a buscar
+    if (!txt) {
+        return conn.reply(m.chat, `💡 *Uso correcto:*\n\n*Para descargar un pack directo:* \n> *${usedPrefix + command} https://sticker.ly/s/XXXXXX*\n\n*Para buscar packs:*\n> *${usedPrefix + command} [término de búsqueda]*`, m)
+    }
 
-    if (esBoton) {
-        let packUrl = text.split('-pack:')[1].trim()
+    // Detectar si el texto ingresado es un enlace directo de Sticker.ly
+    let esEnlace = txt.match(/sticker\.ly\/s\/|sticker\.ly\/p\//i)
+
+    if (esEnlace) {
         await m.react('⏳')
         try {
             let resDl, jsonDl
@@ -15,40 +19,44 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             let stickersList = []
             let packName = 'Sticker Pack'
 
+            // --- 1ra Opción: API Sylphyy (Preferencia) ---
             try {
-                resDl = await fetch(`https://api.delirius.store/download/stickerly?url=${encodeURIComponent(packUrl)}`)
+                resDl = await fetch(`https://sylphyy.xyz/download/stickerly?url=${encodeURIComponent(txt)}&api_key=sylphy-6f150d`)
                 jsonDl = await resDl.json()
-                if (jsonDl && jsonDl.status === true && jsonDl.data) {
-                    packName = jsonDl.data.name || packName
-                    stickersList = jsonDl.data.stickers || []
+                if (jsonDl && jsonDl.status === true && jsonDl.result) {
+                    packName = jsonDl.result.name || packName
+                    stickersList = jsonDl.result.stickers || []
                     exito = true
                 }
             } catch (e) {
-                console.error("Error en API Delirius:", e)
+                console.error("Error en API Sylphyy (Download):", e)
             }
 
+            // --- 2da Opción: API Delirius (Respaldo) ---
             if (!exito) {
                 try {
-                    resDl = await fetch(`https://sylphyy.xyz/download/stickerly?url=${encodeURIComponent(packUrl)}&api_key=sylphy-6f150d`)
+                    resDl = await fetch(`https://api.delirius.store/download/stickerly?url=${encodeURIComponent(txt)}`)
                     jsonDl = await resDl.json()
-                    if (jsonDl && jsonDl.status === true && jsonDl.result) {
-                        packName = jsonDl.result.name || packName
-                        stickersList = jsonDl.result.stickers || []
+                    if (jsonDl && jsonDl.status === true && jsonDl.data) {
+                        packName = jsonDl.data.name || packName
+                        stickersList = jsonDl.data.stickers || []
                         exito = true
                     }
                 } catch (e) {
-                    console.error("Error en API Sylphyy:", e)
+                    console.error("Error en API Delirius (Download):", e)
                 }
             }
 
+            // Si ninguna API respondió con éxito
             if (!exito || stickersList.length === 0) {
                 await m.react('❌')
-                return conn.reply(m.chat, `❌ No se pudieron descargar los stickers de este pack. Intenta con otro.`, m)
+                return conn.reply(m.chat, `❌ No se pudieron recuperar los stickers de este enlace con ninguna de las APIs activas.`, m)
             }
 
             await m.react('📦')
-            conn.reply(m.chat, `📥 *Descargando pack:* _${packName}_\n✨ Enviando los primeros *10 stickers* para evitar saturación...`, m)
-
+            
+            // Enviar los stickers uno por uno respondiendo al mensaje (tal como se ve en tu captura)
+            // Limitado a los primeros 10 para evitar baneos o saturación del flujo
             let limite = Math.min(10, stickersList.length)
             for (let i = 0; i < limite; i++) {
                 let st = stickersList[i]
@@ -58,10 +66,11 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                     await conn.sendMessage(m.chat, { 
                         sticker: { url: sUrl } 
                     }, { 
-                        quoted: m 
-                    }).catch(err => console.error(`Error al enviar sticker ${i}:`, err))
+                        quoted: m // Responde directamente al mensaje para mantener el formato de la captura
+                    }).catch(err => console.error(`Error enviando sticker ${i}:`, err))
                 }
             }
+            
             await m.react('✅')
             return
         } catch (err) {
@@ -71,89 +80,65 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
         }
     }
 
-    if (!query) {
-        return conn.reply(m.chat, `💡 *Uso correcto:*\nIngresa el término que deseas buscar usando:\n> *${usedPrefix + command} [búsqueda]*`, m)
-    }
-
+    // 2. Si el texto NO es un enlace, realiza una búsqueda normal en formato texto plano
     await m.react('🔍')
     try {
         let resSearch, jsonSearch
         let lista = []
         let exitoSearch = false
 
+        // --- 1ra Opción Búsqueda: Sylphyy (Preferencia) ---
         try {
-            resSearch = await fetch(`https://api.delirius.store/search/stickerly?query=${encodeURIComponent(query)}`)
+            resSearch = await fetch(`https://sylphyy.xyz/search/stickerly?q=${encodeURIComponent(txt)}&api_key=sylphy-6f150d`)
             jsonSearch = await resSearch.json()
-            if (jsonSearch && jsonSearch.status === true && jsonSearch.data && jsonSearch.data.length > 0) {
-                lista = jsonSearch.data
+            if (jsonSearch && jsonSearch.status === true && jsonSearch.result && jsonSearch.result.length > 0) {
+                lista = jsonSearch.result
                 exitoSearch = true
             }
         } catch (e) {
-            console.error("Error buscando en Delirius:", e)
+            console.error("Error buscando en Sylphyy:", e)
         }
 
+        // --- 2da Opción Búsqueda: Delirius (Respaldo) ---
         if (!exitoSearch) {
             try {
-                resSearch = await fetch(`https://sylphyy.xyz/search/stickerly?q=${encodeURIComponent(query)}&api_key=sylphy-6f150d`)
+                resSearch = await fetch(`https://api.delirius.store/search/stickerly?query=${encodeURIComponent(txt)}`)
                 jsonSearch = await resSearch.json()
-                if (jsonSearch && jsonSearch.status === true && jsonSearch.result && jsonSearch.result.length > 0) {
-                    lista = jsonSearch.result
+                if (jsonSearch && jsonSearch.status === true && jsonSearch.data && jsonSearch.data.length > 0) {
+                    lista = jsonSearch.data
                     exitoSearch = true
                 }
             } catch (e) {
-                console.error("Error buscando en Sylphyy:", e)
+                console.error("Error buscando en Delirius:", e)
             }
         }
 
         if (!exitoSearch || lista.length === 0) {
             await m.react('❌')
-            return conn.reply(m.chat, `❌ No se encontraron packs de stickers para: *${query}*`, m)
+            return conn.reply(m.chat, `❌ No se encontraron resultados para: *${txt}*`, m)
         }
 
-        conn.uchihaStickerly[m.sender] = lista
+        // Menú de resultados en texto plano (sin botones interactivos rotos)
+        let menuTxt = `╭─〔 🏮 *𝚂𝚃𝙸𝙲𝙺𝙴𝚁.𝙻𝚈 𝚁𝙴𝚂𝚄𝙻𝚃𝚂* 〕─╮\n`
+        menuTxt += `│\n`
+        menuTxt += `│ ⚙️ *Packs encontrados para:* _${txt}_\n`
+        menuTxt += `│ 💡 _Copia el enlace del pack que desees y envíalo con ${usedPrefix + command}_\n`
+        menuTxt += `│\n`
+        menuTxt += `╰─────────────────────────╯\n\n`
 
-        let txt1 = `╭─〔 🏮 *𝚂𝚃𝙸𝙲𝙺𝙴𝚁.𝙻𝚈 (𝟷/𝟹)* 〕─╮\n│\n│ 🌷 *sᴇbᴀsᴛɪᴀɴ, sᴇʟᴇᴄᴄɪᴏɴᴀ ᴜɴ ᴘᴀᴄᴋ:* \n╰─────────────────────────╯`
-        const botones1 = []
-        for (let i = 0; i < Math.min(3, lista.length); i++) {
-            let targetUrl = lista[i].url || ''
-            let pName = lista[i].name || 'Pack'
-            botones1.push({
-                buttonId: `${usedPrefix + command} -pack:${targetUrl}`.trim(),
-                buttonText: { displayText: `✨ ${pName.substring(0, 20)}...` },
-                type: 1
-            })
-        }
-        await conn.sendMessage(m.chat, { text: txt1, footer: "By Barboza-Team ⚡", buttons: botones1, headerType: 4 }, { quoted: m })
-
-        if (lista.length > 3) {
-            let txt2 = `╭─〔 🏮 *𝚂𝚃𝙸𝙲𝙺𝙴𝚁.𝙻𝚈 (𝟸/𝟹)* 〕─╮\n│\n│ ⚙️ *ᴍᴀs ᴘᴀᴄᴋs ᴇɴᴄᴏɴᴛʀᴀᴅᴏs:* \n╰─────────────────────────╯`
-            const botones2 = []
-            for (let i = 3; i < Math.min(6, lista.length); i++) {
-                let targetUrl = lista[i].url || ''
-                let pName = lista[i].name || 'Pack'
-                botones2.push({
-                    buttonId: `${usedPrefix + command} -pack:${targetUrl}`.trim(),
-                    buttonText: { displayText: `✨ ${pName.substring(0, 20)}...` },
-                    type: 1
-                })
-            }
-            await conn.sendMessage(m.chat, { text: txt2, footer: "By Barboza-Team ⚡", buttons: botones2, headerType: 4 })
+        let cont = 1
+        for (let pack of lista.slice(0, 8)) { // Muestra un top 8 de resultados limpios
+            let pName = pack.name || 'Pack Sin Nombre'
+            let pUrl = pack.url || 'Sin enlace'
+            menuTxt += `*${cont}.* 📦 *${pName}*\n`
+            menuTxt += `🔗 _${pUrl}_\n\n`
+            cont++
         }
 
-        if (lista.length > 6) {
-            let txt3 = `╭─〔 🏮 *𝚂𝚃𝙸𝙲𝙺𝙴𝚁.𝙻𝚈 (𝟹/𝟹)* 〕─╮\n│\n│ ⛩️ *ᴏᴘᴄɪᴏɴᴇs ᴀᴅɪᴄɪᴏɴᴀʟᴇs:* \n╰─────────────────────────╯`
-            const botones3 = []
-            for (let i = 6; i < Math.min(9, lista.length); i++) {
-                let targetUrl = lista[i].url || ''
-                let pName = lista[i].name || 'Pack'
-                botones3.push({
-                    buttonId: `${usedPrefix + command} -pack:${targetUrl}`.trim(),
-                    buttonText: { displayText: `✨ ${pName.substring(0, 20)}...` },
-                    type: 1
-                })
-            }
-            return conn.sendMessage(m.chat, { text: txt3, footer: "⛩️ 𝑼𝒄𝒉𝒊𝒉𝒂 𝑩𝒐𝒕 𝑵𝒆𝒕\n👤 𝖢𝗋𝖾𝖺𝖽𝗈𝗋: 𝑩𝒂𝒓𝒃𝒐𝒛𝒂 𝑫𝒆𝒗𝒆𝒍𝒐𝒑𝒆𝒓", buttons: botones3, headerType: 4 })
-        }
+        menuTxt += `⚡ *Barboza Developer* | ⛩️ _Uchiha Bot Net_`
+        
+        await m.react('✅')
+        return conn.reply(m.chat, menuTxt, m)
 
     } catch (e) {
         console.error(e)
