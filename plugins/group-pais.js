@@ -1,122 +1,77 @@
-import fetch from "node-fetch";
-
-const handler = async (m, { isOwner, isAdmin, conn, text, participants, args}) => {
-  const chat = global.db.data.chats[m.chat] || {};
-  // const emoji = chat.emojiTag || '🤖'; // Ya no se usa
-
-  // Asegurar que solo administradores u dueños puedan usar el comando
-  if (!(isAdmin || isOwner)) {
-    global.dfail('admin', m, conn);
-    throw new Error('No tienes permisos para usar este comando.');
-}
-
-  const customMessage = args.join(' ');
-  const groupMetadata = await conn.groupMetadata(m.chat);
-  const groupName = groupMetadata.subject;
-
-  // Lista de prefijos de países y sus banderas (más completa y enfocada en países latinos)
-  const countryFlags = {
-    '1': '🇺🇸', '44': '🇬🇧', '33': '🇫🇷', '49': '🇩🇪', '39': '🇮🇹', '81': '🇯🇵',
-    '86': '🇨🇳', '7': '🇷🇺', '91': '🇮🇳', '61': '🇦🇺', '34': '🇪🇸', '55': '🇧🇷',
-    '52': '🇲🇽', '54': '🇦🇷', '57': '🇨🇴', '51': '🇵🇪', '56': '🇨🇱', '58': '🇻🇪',
-    '591': '🇧🇴', '593': '🇪🇨', '595': '🇵🇾', '598': '🇺🇾', '502': '🇬🇹', '503': '🇸🇻',
-    '504': '🇭🇳', '505': '🇳🇮', '506': '🇨🇷', '507': '🇵🇦', '53': '🇨🇺', '1809': '🇩🇴',
-    '1829': '🇩🇴', '1849': '🇩🇴', '1787': '🇵🇷', '1939': '🇵🇷', '509': '🇭🇹', '1876': '🇯🇲',
-    '244': '🇦🇴', '225': '🇨🇮', '234': '🇳🇬', '27': '🇿🇦', '212': '🇲🇦', '237': '🇨🇲',
-    '63': '🇵🇭', '62': '🇮🇩', '60': '🇲🇾', '65': '🇸🇬', '66': '🇹🇭', '90': '🇹🇷'
-    // Añadir más prefijos si es necesario
-};
-
-  const getCountryInfo = (id) => {
-    const phoneNumber = id.split('@')[0];
-    let prefix = '';
-    let countryName = 'Desconocido';
-    let flag = '🌎'; // Bandera neutra por defecto
-
-    // Buscar prefijo de 3 dígitos
-    if (phoneNumber.length >= 3 && countryFlags[phoneNumber.substring(0, 3)]) {
-      prefix = phoneNumber.substring(0, 3);
-    } 
-    // Buscar prefijo de 2 dígitos
-    else if (phoneNumber.length >= 2 && countryFlags[phoneNumber.substring(0, 2)]) {
-      prefix = phoneNumber.substring(0, 2);
-    }
-    // Buscar prefijo de 1 dígito (principalmente para el +1)
-    else if (phoneNumber.length >= 1 && countryFlags[phoneNumber.substring(0, 1)]) {
-      prefix = phoneNumber.substring(0, 1);
+const handler = async (m, { isOwner, isAdmin, conn, participants, args }) => {
+  try {
+    if (!(isAdmin || isOwner)) {
+      global.dfail('admin', m, conn);
+      return;
     }
 
-    if (prefix) {
-      flag = countryFlags[prefix];
-      // Nota: Para obtener el nombre del país se necesitaría un mapa más grande, 
-      // pero por ahora solo retornamos el prefijo y la bandera
-      countryName = `+${prefix}`; 
+    const prefijo = args[0];
+    if (!prefijo) {
+      return conn.reply(m.chat, '⚠️ Debes indicar un prefijo. Ejemplo: .tagnum 57', m);
     }
 
-    return { flag, countryName };
-  };
+    const customMessage = args.slice(1).join(' ') || 'Etiqueta por prefijo';
+    const groupMetadata = await conn.groupMetadata(m.chat).catch(() => ({ subject: 'Grupo', participants: [] }));
+    const groupName = groupMetadata.subject;
 
-  let messageText = `*${groupName}*\n\n*Integrantes: ${participants.length}*\n${customMessage}\n┌──⭓ *Lista de Paises*\n`;
-  for (const mem of participants) {
-    const info = getCountryInfo(mem.id);
-    // Cambiado 'emoji' por 'info.countryName' para mostrar el prefijo del país
-    messageText += `${info.flag} ${info.countryName} @${mem.id.split('@')[0]}\n`; 
-}
-  messageText += `└───────⭓\n\n𝘚𝘶𝘱𝘦𝘳 𝘉𝘰𝘵 𝘞𝘩𝘢𝘵𝘴𝘈𝘱𝘱 🚩`;
+    const countryFlags = [
+      { prefijo: '502', bandera: '🇬🇹' }, { prefijo: '503', bandera: '🇸🇻' },
+      { prefijo: '504', bandera: '🇭🇳' }, { prefijo: '505', bandera: '🇳🇮' },
+      { prefijo: '506', bandera: '🇨🇷' }, { prefijo: '507', bandera: '🇵🇦' },
+      { prefijo: '591', bandera: '🇧🇴' }, { prefijo: '592', bandera: '🇬🇾' },
+      { prefijo: '593', bandera: '🇪🇨' }, { prefijo: '595', bandera: '🇵🇾' },
+      { prefijo: '598', bandera: '🇺🇾' }, { prefijo: '58',  bandera: '🇻🇪' },
+      { prefijo: '52',  bandera: '🇲🇽' }, { prefijo: '54',  bandera: '🇦🇷' },
+      { prefijo: '57',  bandera: '🇨🇴' }, { prefijo: '51',  bandera: '🇵🇪' },
+      { prefijo: '56',  bandera: '🇨🇱' }, { prefijo: '55',  bandera: '🇧🇷' },
+      { prefijo: '34',  bandera: '🇪🇸' }, { prefijo: '44',  bandera: '🇬🇧' },
+      { prefijo: '33',  bandera: '🇫🇷' }, { prefijo: '49',  bandera: '🇩🇪' },
+      { prefijo: '39',  bandera: '🇮🇹' }, { prefijo: '81',  bandera: '🇯🇵' },
+      { prefijo: '82',  bandera: '🇰🇷' }, { prefijo: '86',  bandera: '🇨🇳' },
+      { prefijo: '91',  bandera: '🇮🇳' }, { prefijo: '61',  bandera: '🇦🇺' },
+      { prefijo: '64',  bandera: '🇳🇿' }, { prefijo: '1',   bandera: '🇺🇸' },
+      { prefijo: '7',   bandera: '🇷🇺' }
+    ];
 
-  const imageUrl = 'https://cdn-sunflareteam.vercel.app/images/fa68a035ca.jpg';
-  // const audioUrl = 'https://cdn.russellxz.click/a8f5df5a.mp3'; // Audio eliminado
+    const getCountryFlag = (numero) => {
+      const match = countryFlags.find(c => numero.startsWith(c.prefijo));
+      return match ? match.bandera : '🚩';
+    };
 
-  const fkontak = {
-    key: {
-      participants: "0@s.whatsapp.net",
-      remoteJid: "status@broadcast",
-      fromMe: false,
-      id: "AlienMenu"
-},
-    message: {
-      locationMessage: {
-        name: "*Sasuke Bot MD 🌀*",
-        jpegThumbnail: await (await fetch('https://cdn-sunflareteam.vercel.app/images/fa68a035ca.jpg')).buffer(),
-        vcard:
-          "BEGIN:VCARD\n" +
-          "VERSION:3.0\n" +
-          "N:;Sasuke;;;\n" +
-          "FN:Sasuke Bot\n" +
-          "ORG:Barboza Developers\n" +
-          "TITLE:\n" +
-          "item1.TEL;waid=19709001746:+1 (970) 900-1746\n" +
-          "item1.X-ABLabel:Alien\n" +
-          "X-WA-BIZ-DESCRIPTION:🛸 Llamado grupal universal con estilo.\n" +
-          "X-WA-BIZ-NAME:Sasuke\n" +
-          "END:VCARD"
-}
-},
-    participant: "0@s.whatsapp.net"
+
+    const filtrados = participants.filter(mem => {
+      const numero = (mem.jid || mem.id || '').split('@')[0];
+      return numero.startsWith(prefijo);
+    });
+
+    if (filtrados.length === 0) {
+      return conn.reply(m.chat, `❌ No encontré miembros con prefijo +${prefijo}`, m);
+    }
+
+    let messageText = `❗ *${groupName}* ❗\n\n*ᘏ Integrantes con +${prefijo}: ${filtrados.length}*\nᘏ Mensaje: ${customMessage}\n\n╭──╼ Mención filtrada ╾──╮\n`;
+
+    for (const mem of filtrados) {
+      const numero = (mem.jid || mem.id || '').split('@')[0];
+      messageText += `│⌗${getCountryFlag(numero)} @${numero}\n`;
+    }
+
+    messageText += `╰────────╼╾────────╯\n> ${dev}`;
+
+    await conn.sendMessage(m.chat, {
+      text: messageText,
+      mentions: filtrados.map(a => a.jid || a.id)
+    }, { quoted: m });
+
+  } catch (error) {
+    console.error("[ERROR EN TAGNUM]:", error);
+    conn.reply(m.chat, `❌ Ocurrió un error al ejecutar el comando.`, m);
+  }
 };
 
-  // Envío del mensaje con la imagen y el caption (taggeando a todos)
-  await conn.sendMessage(m.chat, {
-    image: { url: imageUrl},
-    caption: messageText,
-    mentions: participants.map(a => a.id)
-}, { quoted: fkontak});
-
-  // El envío del audio ha sido eliminado
-  /*
-  await conn.sendMessage(m.chat, {
-    audio: { url: audioUrl},
-    mimetype: 'audio/mp4',
-    ptt: true
-}, { quoted: fkontak});
-  */
-};
-
-// Comando y etiquetas actualizadas
-handler.help = ['pais'];
-handler.tags = ['group'];
-handler.command = /^(ahh|bandera|paises)$/i; // Ahora el comando es /pais o /bandera o /paises
-handler.admin = true; // Se mantiene como admin
+handler.help = ['tagnum'];
+handler.tags = ['gc'];
+handler.command = /^tagnum$/i;
+handler.admin = true;
 handler.group = true;
 
 export default handler;
