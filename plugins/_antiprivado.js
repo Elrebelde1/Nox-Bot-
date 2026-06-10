@@ -19,19 +19,22 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
         let results = json.result.sort(() => 0.5 - Math.random()).slice(0, 5)
 
+        // Estructura correcta para la función sendAlbum de la base
         let album = []
-        results.forEach((data, i) => {
+        for (let data of results) {
             album.push({
                 image: { url: data.image },
-                caption: i === 0 ? `「 🖼️ 𝚄𝙲𝙷𝙸𝙷𝙰 𝙸𝙼𝙰𝙶𝙴𝚂 」\n` +
-                                   `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n` +
-                                   `│ 🔍 *𝙱𝚄𝚂𝚀𝚄𝙴𝙳𝙰:* ${text.toUpperCase()}\n` +
-                                   `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n` +
-                                   `⚡ *Code creado por ${dev}*\n` +
-                                   `📡 *Disfruta el código de ${dev} x ${chn}*` : ""
+                caption: `「 🖼️ 𝚄𝙲𝙷𝙸𝙷𝙰 𝙸𝙼𝙰𝙶𝙴𝚂 」\n` +
+                         `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n` +
+                         `│ 📌 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${data.title}\n` +
+                         `│ 🔍 *𝙱𝚄𝚂𝚀𝚄𝙴𝙳𝙰:* ${text.toUpperCase()}\n` +
+                         `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n` +
+                         `⚡ *Code creado por ${dev}*\n` +
+                         `📡 *Disfruta el código de ${dev} x ${chn}*`
             })
-        })
+        }
 
+        // Ejecución de la función nativa del Bot
         await conn.sendAlbum(m.chat, album, { quoted: m })
 
         if (m.react) await m.react('✅')
