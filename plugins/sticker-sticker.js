@@ -2,109 +2,78 @@ import { sticker } from '../lib/sticker.js'
 import uploadFile from '../lib/uploadFile.js'
 import uploadImage from '../lib/uploadImage.js'
 import { webp2png } from '../lib/webp2mp4.js'
-import { readFileSync, existsSync } from 'fs'
-import { join } from 'path'
 
-let handler = async (m, { conn, args, usedPrefix, command }) => {
-  let stiker = false
-  let q = m.quoted ? m.quoted : m
-  let mime = (q.msg || q).mimetype || q.mediaType || ''
-
-  let ratio = args[0] || ''
-  let filter = ''
-
-  if (ratio === '1:1') {
-    filter = `crop=w='min(iw,ih)':h='min(iw,ih)'`
-  } else if (ratio === '16:9') {
-    filter = `crop=w='min(iw,ih*16/9)':h='min(ih,iw*9/16)'`
-  } else if (ratio === '4:3') {
-    filter = `crop=w='min(iw,ih*4/3)':h='min(ih,iw*3/4)'`
-  } else if (ratio === '3:2') {
-    filter = `crop=w='min(iw,ih*3/2)':h='min(ih,iw*2/3)'`
-  } else if (ratio === '2:3') {
-    filter = `crop=w='min(iw,ih*2/3)':h='min(ih,iw*3/2)'`
-  } else if (ratio === 'circle') {
-    filter = `format=yuva444p,geq=lum='p(x,y)':a='if(gt(hypot(x-w/2,y-h/2),min(w,h)/2),0,255)'`
-  }
-
-  const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
-  let catalogoImg = existsSync(pathImg) ? readFileSync(pathImg) : { url: 'https://files.catbox.moe/t7uytz.png' }
-
-  try {
-    if (/webp|image|video/g.test(mime)) {
-      if (/video/g.test(mime) && (q.msg || q).seconds > 15) {
-        return m.reply(`⚡ *ʟɪᴍɪᴛᴇ ᴇxᴄᴇᴅɪᴅᴏ...*\n\nᴍᴀxɪᴍᴏ 15 sᴇɢᴜɴᴅᴏs.`)
-      }
-
-      let img = await q.download?.()
-      if (!img) throw 'ᴇʀʀᴏʀ ᴀʟ ᴅᴇsᴄᴀʀɢᴀʀ ᴍᴇᴅɪᴀ'
-
-      let userId = m.sender
-      let packstickers = global.db.data.users[userId] || {}
-      let texto1 = packstickers.text1 || global.packsticker
-      let texto2 = packstickers.text2 || global.packsticker2
-
-      stiker = await sticker(img, false, texto1, texto2, filter)
-
-      if (!stiker) {
-        let out
-        if (/webp/g.test(mime)) out = await webp2png(img)
-        else if (/image/g.test(mime)) out = await uploadImage(img)
-        else if (/video/g.test(mime)) out = await uploadFile(img)
-        if (typeof out !== 'string') out = await uploadImage(img)
-        stiker = await sticker(false, out, texto1, texto2, filter)
-      }
-    } else if (args[0] && isUrl(args[0])) {
-      stiker = await sticker(false, args[0], global.packsticker, global.packsticker2)
-    }
-  } catch (e) {
-    console.error(e)
-  } finally {
-    if (stiker) {
-      let botNumber = conn.user.jid.split('@')[0]
-      let vcard = 'BEGIN:VCARD\n'
-                + 'VERSION:3.0\n'
-                + 'FN:s\n'
-                + 'ORG:WhatsApp Business ✓ • Est...;\n'
-                + 'NOTE:✅ sticker creado con exito\n'
-                + `TEL;type=CELL;type=VOICE;waid=${botNumber}:+${botNumber}\n`
-                + 'END:VCARD'
-
-      await conn.sendMessage(m.chat, { 
-        sticker: stiker,
-        contextInfo: {
-          participant: `0@s.whatsapp.net`,
-          remoteJid: m.chat,
-          quotedMessage: {
-            contactMessage: {
-              displayName: 'Jota Bot',
-              vcard: vcard
-            }
-          }
-        }
-      }, { quoted: m })
-    } else {
-      const botones = [
-        { buttonId: `${usedPrefix}scanal`, buttonText: { displayText: "📢 Ver Canales" }, type: 1 }
-      ]
-
-      await conn.sendMessage(m.chat, {
-        image: catalogoImg.byteLength ? catalogoImg : { url: catalogoImg.url },
-        caption: `╭─〔 ♆ *𝚄𝙲𝙷𝙸𝙷𝙰 𝚂𝚃𝙸𝙲𝙺𝙴𝚁* ♆ 〕─╮\n│\n│ 💠 *ғᴏʀᴍᴀᴛᴏs ᴅɪsᴘᴏɴɪʙʟᴇs:* \n│ » ${usedPrefix + command} 1:1 (Cuadrado)\n│ » ${usedPrefix + command} 16:9 (Panorámico)\n│ » ${usedPrefix + command} 4:3 (Estándar TV)\n│ » ${usedPrefix + command} 3:2 (Foto Horizontal)\n│ » ${usedPrefix + command} 2:3 (Foto Vertical)\n│ » ${usedPrefix + command} circle (Círculo)\n│\n│ 👁️ *ᴇɴᴠɪᴀ ᴏ ʀᴇᴘᴏɴᴅᴇ ᴀ ᴜɴᴀ ɪᴍᴀɢᴇɴ*\n│ 🌑 "ʟᴀ ᴏsᴄᴜʀɪᴅᴀᴅ ᴇs ᴍɪ ɢᴜɪᴀ"\n╰────────────────────────────╯`,
-        footer: "By Barboza-Team ⚡",
-        buttons: botones,
-        headerType: 4
-      }, { quoted: m })
+const fkontak = {
+  key: {
+    participant: '0@s.whatsapp.net',
+    remoteJid: 'status@broadcast',
+    fromMe: false,
+    id: 'SasukeUchihaJutsu'
+  },
+  message: {
+    contactMessage: {
+      displayName: '💥 𝘚𝘢𝘴𝘶𝘬𝘦 𝘜𝘤𝘩𝘪𝘩𝘢 𝘉𝘰𝘵 💥\n👁️‍🗨️ ¡𝘑𝘶𝘵𝘴𝘶: 𝘚𝘵𝘪𝘤𝘬𝘦𝘳 𝘊𝘳𝘦𝘢𝘥𝘰!',
+      vcard: `BEGIN:VCARD\nVERSION:3.0\nN:Sasuke;Uchiha;;;\nFN:👁️‍🗨️ Sasuke Bot Uchiha\nORG:Clan Uchiha\nTEL;type=CELL;type=VOICE;waid=1234567890:+1 234 567 890\nEND:VCARD`
     }
   }
 }
 
-handler.help = ['s <formato>']
+let handler = async (m, { conn, args }) => {
+  let stiker = false
+  let q = m.quoted || m
+  let mime = (q.msg || q).mimetype || q.mediaType || ''
+  
+  const mensajeError = `🏮 *𝘚𝘢𝘴𝘶𝘬𝘦 𝘜𝘤𝘩𝘪𝘩𝘢 𝘉𝘰𝘵* 🏮\n⚠️ _Conversión fallida. Responde a una imagen, video o gif para crear el sticker._`
+
+  try {
+    if (mime.startsWith('image/') || mime.startsWith('video/') || mime === 'image/webp') {
+      let media = await q.download?.()
+      if (!media) return conn.reply(m.chat, mensajeError, m)
+
+      try {
+        stiker = await sticker(media, false, global.packN, global.authN)
+      } catch (e) {
+        let url
+        if (mime === 'image/webp') url = await webp2png(media)
+        else if (mime.startsWith('image/')) url = await uploadImage(media)
+        else if (mime.startsWith('video/')) url = await uploadFile(media)
+
+        if (!url || typeof url !== 'string' || !isValidUrl(url)) {
+          return conn.reply(m.chat, '⚡ _Ocurrió un error al procesar el pergamino multimedia (URL inválida)._', m)
+        }
+
+        stiker = await sticker(false, url, global.packN, global.authN)
+      }
+
+    } else if (args[0]) {
+      if (!isValidUrl(args[0])) return conn.reply(m.chat, '❌ _La URL proporcionada no es un enlace válido de imagen o video._', m)
+      stiker = await sticker(false, args[0], global.packN, global.authN)
+    } else {
+      return conn.reply(m.chat, mensajeError, m)
+    }
+
+  } catch (error) {
+    console.error(error)
+    stiker = false
+  }
+
+  if (stiker && Buffer.isBuffer(stiker)) {
+    await conn.sendMessage(
+      m.chat,
+      { sticker: stiker },
+      { quoted: fkontak }
+    )
+  } else {
+    conn.reply(m.chat, '⚡ _El Jutsu falló. No se pudo empaquetar el sticker, asegúrate de que el archivo no esté corrupto._', m)
+  }
+}
+
+handler.help = ['sticker']
 handler.tags = ['sticker']
-handler.command = /^(s|sticker|stiker)$/i
+handler.command = ['s', 'sticker', 'stiker']
 
 export default handler
 
-const isUrl = (text) => {
-  return text.match(new RegExp(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=]*)(jpe?g|gif|png)/, 'gi'))
+function isValidUrl(text) {
+  return /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp|mp4)$/i.test(text)
 }
