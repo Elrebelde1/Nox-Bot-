@@ -1,79 +1,56 @@
-
-
-import fetch from "node-fetch"
-import fs from "fs"
-
-const handler = async (m, { conn, text, usedPrefix, command }) => {
-    const _0x4f21 = 'ZWt1c2Fz'
-    const apiKey = Buffer.from(_0x4f21, 'base64').toString('utf-8').split('').reverse().join('')
-    
-    const dev = "Barboza Developer"
-    const chn = "Zona Developers"
-
-    try {
-        const self = fs.readFileSync('./plugins/Textplay.js', 'utf-8')
-        if (!self.includes(dev) || !self.includes(chn)) {
-            return console.log('Créditos removidos detectados.')
-        }
-    } catch { 
-        /* Error silencioso si no encuentra el archivo */ 
+const fkontakClose = {
+  key: {
+    participant: '0@s.whatsapp.net',
+    remoteJid: 'status@broadcast',
+    fromMe: false,
+    id: 'AdminGroupClose'
+  },
+  message: {
+    contactMessage: {
+      displayName: '⚙️ 𝘚𝘺𝘴𝘵𝘦𝘮 𝘈𝘥𝘮𝘪𝘯𝘪𝘴𝘵𝘳𝘢𝘵𝘰𝘳 ⚙️\n🔒 *𝘎𝘳𝘶𝘱𝘰 𝘙𝘦𝘴𝘵𝘳𝘪𝘯𝘨𝘪𝘥𝘰 / 𝘊𝘪𝘦𝘳𝘳𝘦*',
+      vcard: `BEGIN:VCARD\nVERSION:3.0\nN:System;Close;;;\nFN:⚙️ System Admin\nORG:Control Panel\nTEL;type=CELL;waid=1234567890:+1 234 567 890\nEND:VCARD`
     }
-
-    if (!text.trim()) {
-        return conn.reply(m.chat, `╭─〔 ♆ *𝚄𝙲𝙷𝙸𝙷𝙰 𝙰𝙿𝙺* ♆ 〕─╮\n│\n│ 📥 *𝚄𝚂𝙾 𝙲𝙾𝚁𝚁𝙴𝙲𝚃𝙾:* \n│ ${usedPrefix + command} [app]\n│\n│ 🌑 "ᴛᴏᴅᴏ ᴇʟ ᴘᴏᴅᴇʀ ᴅᴇʟ sᴏғᴛᴡᴀʀᴇ"\n╰────────────────────────────╯`, m)
-    }
-
-    if (m.react) await m.react('⏳')
-
-    try {
-        let resGata = await fetch(`https://api.evogb.org/search/apk?query=${encodeURIComponent(text)}&key=${apiKey}`)
-        let jsonGata = await resGata.json()
-
-        if (!jsonGata.status || !jsonGata.data) {
-            if (m.react) await m.react('❌')
-            return conn.reply(m.chat, '❌ No se encontró la aplicación.', m)
-        }
-
-        const appData = jsonGata.data
-        let resDeli = await fetch(`https://api.delirius.store/download/apk?query=${encodeURIComponent(appData.name)}`)
-        let jsonDeli = await resDeli.json()
-
-        const dlUrl = jsonDeli?.data?.download
-        
-        let info = `「 🎬 𝚄𝙲𝙷𝙸𝙷𝙰 𝙰𝙿𝙺 」\n─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n`
-        info += `│ 📦 *𝙽𝙾𝙼𝙱𝚁𝙴:* ${appData.name}\n`
-        info += `│ ⚖️ *𝚃𝙰𝙼𝙰𝙽𝙾:* ${appData.size}\n`
-        info += `│ 📅 *𝙰𝙲𝚃𝚄𝙰𝙻𝙸𝚉𝙰𝙳𝙾:* ${appData.lastUpdated}\n`
-        info += `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n`
-        info += `🚀 *Descargando archivo desde Api Gata...*\n\n`
-        info += `⚡ *By: ${dev}*\n`
-        info += `📡 *Canal:* ${chn}\n`
-        info += `👑 *API: GataDios*`
-
-        if (!info.includes(dev)) return
-
-        await conn.sendMessage(m.chat, { 
-            image: { url: appData.banner }, 
-            caption: info,
-            footer: "Barboza-Team ⚡"
-        }, { quoted: m })
-
-        await conn.sendMessage(m.chat, { 
-            document: { url: dlUrl }, 
-            mimetype: 'application/vnd.android.package-archive', 
-            fileName: `${appData.name}.apk` 
-        }, { quoted: m })
-
-        if (m.react) await m.react('✅')
-
-    } catch (e) {
-        if (m.react) await m.react('❌')
-        conn.reply(m.chat, '🛑 Error en el sistema de descarga.', m)
-    }
+  }
 }
 
-handler.help = ['apk']
-handler.tags = ['downloader']
-handler.command = /^(apk1|dapk|modapk)$/i
+let handler = async (m, { conn, args, usedPrefix, command }) => {
+  let tiempo = args[0]
+  let tipo = args[1]?.toLowerCase()
+
+  if (!tiempo || isNaN(tiempo) || !['segundo', 'minuto', 'hora', 'segundos', 'minutos', 'horas'].includes(tipo)) {
+    return conn.reply(
+      m.chat, 
+      `⚙️ *𝘗𝘢𝘯𝘦𝘭 𝘥𝘦 𝘊𝘰𝘯𝘵𝘳𝘰𝘭* ⚙️\n⚠️ _Sintaxis incorrecta. Use:_\n*${usedPrefix + command} <cantidad> <segundo/minuto/hora>*\n\nEjemplo: *${usedPrefix + command} 5 minutos*`, 
+      m
+    )
+  }
+
+  let milisegundos = parseInt(tiempo)
+  if (tipo.startsWith('segundo')) milisegundos *= 1000
+  if (tipo.startsWith('minuto')) milisegundos *= 60000
+  if (tipo.startsWith('hora')) milisegundos *= 3600000
+
+  await conn.sendMessage(
+    m.chat, 
+    { text: `⏳ *𝘊𝘳𝘰𝘯𝘰𝘮𝘦𝘵𝘳𝘢𝘫𝘦 𝘈𝘤𝘵𝘪𝘷𝘰* ⏳\n\n⚙️ _El cierre total del chat se ejecutará en_ *${tiempo} ${tipo}*._` }, 
+    { quoted: fkontakClose }
+  )
+
+  setTimeout(async () => {
+    await conn.groupSettingUpdate(m.chat, 'announcement')
+    conn.sendMessage(
+      m.chat, 
+      { text: `🔒 *𝘎𝘳𝘶𝘱𝘰 𝘊𝘦𝘳𝘳𝘢𝘥𝘰* 🔒\n\n⚙️ _El chat ha sido configurado en modo de moderación. Solo los administradores pueden enviar mensajes._` }, 
+      { quoted: fkontakClose }
+    )
+  }, milisegundos)
+}
+
+handler.help = ['groupclose <tiempo> <tipo>']
+handler.tags = ['group']
+handler.command = ['groupclose', 'grouptimeclose', 'cerrartiempo']
+handler.group = true
+handler.admin = true
+handler.botAdmin = true
 
 export default handler
