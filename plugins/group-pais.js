@@ -7,12 +7,13 @@ const handler = async (m, { isOwner, isAdmin, conn, participants, args }) => {
 
     const prefijo = args[0];
     if (!prefijo) {
-      return conn.reply(m.chat, '⚠️ Debes indicar un prefijo. Ejemplo: .tagnum 57', m);
+      return conn.reply(m.chat, '🏮 *𝘚𝘢𝘴𝘶𝘬𝘦 𝘜𝘤𝘩𝘪𝘩𝘢 𝘉𝘰𝘵* 🏮\n⚠️ _Debes indicar un prefijo._\nEjemplo: `.tagnum 57`', m);
     }
 
-    const customMessage = args.slice(1).join(' ') || 'Convocatoria por prefijo';
+    const customMessage = args.slice(1).join(' ') || 'Convocatoria ninja por prefijo';
     const groupName = m.isGroup ? await conn.getName(m.chat) : 'Grupo';
 
+    // Lista de banderas optimizada
     const countryFlags = [
       { prefijo: '502', bandera: '🇬🇹' }, { prefijo: '503', bandera: '🇸🇻' },
       { prefijo: '504', bandera: '🇭🇳' }, { prefijo: '505', bandera: '🇳🇮' },
@@ -38,10 +39,10 @@ const handler = async (m, { isOwner, isAdmin, conn, participants, args }) => {
         numLimpio = '58' + numero.substring(3);
       }
       const match = countryFlags.find(c => numLimpio.startsWith(c.prefijo));
-      return match ? match.bandera : '🏴‍☠️';
+      return match ? match.bandera : '⛩️';
     };
 
-    // FILTRO CORREGIDO: Prioriza 'jid' para evitar el LID interno de Meta
+    // FILTRO PRO: Usando 'jid' para tumbar el LID de Meta
     const filtrados = participants.filter(mem => {
       const jidReal = mem.jid || mem.id || '';
       const numero = jidReal.split('@')[0];
@@ -53,26 +54,34 @@ const handler = async (m, { isOwner, isAdmin, conn, participants, args }) => {
     });
 
     if (filtrados.length === 0) {
-      return conn.reply(m.chat, `⚠️ No encontré miembros con el prefijo +${prefijo}`, m);
+      return conn.reply(m.chat, `👁️‍🗨️ _No encontré ninjas con el prefijo_ *+${prefijo}* _en este clan._`, m);
     }
 
-    let messageText = `*${groupName}*\n\nIntegrantes con +${prefijo}: ${filtrados.length}\nMensaje: ${customMessage}\n\n`;
+    // DISEÑO UCHIHA REFINADO
+    let messageText = `⚡ ───  *${groupName.toUpperCase()}*  ─── ⚡\n\n`;
+    messageText += `👁️‍🗨️ *𝘚𝘩𝘢𝘳𝘪𝘯𝘨𝘢𝘯 𝘍𝘪𝘭𝘵𝘦𝘳:* \`+${prefijo}\`\n`;
+    messageText += `👥 *𝘐𝘯𝘵𝘦𝘨𝘳𝘢𝘯𝘵𝘦𝘴:* ${filtrados.length}\n`;
+    messageText += `💬 *𝘔𝘦𝘯𝘴𝘢𝘫𝘦:* _${customMessage}_\n\n`;
+    messageText += `┏━━━━━━━━━━━━━━━━━━━━━━━━┓\n`;
 
     for (const mem of filtrados) {
       const jidReal = mem.jid || mem.id || '';
       const numero = jidReal.split('@')[0];
-      messageText += `${getCountryFlag(numero)} @${numero}\n`;
+      messageText += `┃ ➔ ${getCountryFlag(numero)} @${numero}\n`;
     }
 
-    // Mapeo de menciones usando también el JID real corregido
+    messageText += `┗━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
+    messageText += `> 𝘚𝘢𝘴𝘶𝘬𝘦 𝘜𝘤𝘩𝘪𝘩𝘢 𝘉𝘰𝘵 🏮`;
+
+    // Envío con menciones limpias basadas en JID real
     await conn.sendMessage(m.chat, {
       text: messageText,
       mentions: filtrados.map(a => a.jid || a.id)
     }, { quoted: m });
 
   } catch (error) {
-    console.error("[ERROR EN TAGNUM]:", error);
-    conn.reply(m.chat, `❌ Ocurrió un error al ejecutar el comando.`, m);
+    console.error("[ERROR EN TAGNUM UCHIHA]:", error);
+    conn.reply(m.chat, `❌ El Jutsu falló en las sombras.`, m);
   }
 };
 
