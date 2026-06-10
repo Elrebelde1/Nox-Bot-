@@ -1,24 +1,10 @@
-const handler = async (m, { text }) => {
-    const user = global.db.data.users[m.sender];
-    user.afk = + new Date();
-    user.afkReason = text || 'Comiendo / Ocupado'; // Motivo por defecto si no pones uno
+// 1. EL DETECTOR (Se ejecuta con cada mensaje en el chat)
+export async function before(m, { conn }) {
+    if (!global.db || !global.db.data || !global.db.data.users) return true;
 
-    conn.fakeReply(
-        m.chat, 
-        `『 ＡＦＫ 』\n\n> ᴇʟ ᴜsᴜᴀʀɪᴏ *${conn.getName(m.sender)}* ᴇsᴛᴀ ɪɴᴀᴄᴛɪᴠᴏ.\n\n\`💤 ＮＯ ＬＯＳ ＥＴＩＱＵＥＴＥ 💤\`\n*☣️ ᴍᴏᴛɪᴠᴏ :* ${user.afkReason}`, 
-        '0@s.whatsapp.net', 
-        `💤 NO MOLESTAR 💤`, 
-        'status@broadcast', 
-        null, 
-        fake
-    );
-};
-
-// --- DETECTOR DE ETIQUETAS Y REGRESO (BEFORE) ---
-handler.before = async function (m, { conn }) {
     const user = global.db.data.users[m.sender];
 
-    // 1. SI EL USUARIO AFK HABLA, SE QUITA EL AFK AUTOMÁTICAMENTE
+    // SI TÚ ESTÁS AFK Y ESCRIBES ALGO, SE TE QUITA EL AFK
     if (user && user.afk > -1) {
         const timestamp = new Date() - user.afk;
         const tiempoAfk = formatTime(timestamp);
@@ -32,7 +18,7 @@ handler.before = async function (m, { conn }) {
         user.afkReason = '';
     }
 
-    // 2. SI ALGUIEN ETIQUETA A UN USUARIO QUE ESTÁ AFK
+    // SI ALGUIEN TE ETIQUETA O TE RESPONDE UN MENSAJE MIENTRAS ESTÁS AFK
     const jids = [...new Set([...(m.mentionedJid || []), ...(m.quoted ? [m.quoted.sender] : [])])];
     for (const jid of jids) {
         const afkUser = global.db.data.users[jid];
@@ -49,9 +35,26 @@ handler.before = async function (m, { conn }) {
         }
     }
     return true;
+}
+
+// 2. EL COMANDO (Solo se ejecuta cuando pones .afk)
+const handler = async (m, { text }) => {
+    const user = global.db.data.users[m.sender];
+    user.afk = + new Date();
+    user.afkReason = text || 'Comiendo / Ocupado';
+
+    conn.fakeReply(
+        m.chat, 
+        `『 ＡＦＫ 』\n\n> ᴇʟ ᴜsᴜᴀʀɪᴏ *${conn.getName(m.sender)}* ᴇsᴛᴀ ɪɴᴀᴄᴛɪᴠᴏ.\n\n\`💤 ＮＯ ＬＯＳ ＥＴＩＱＵＥＴＥ 💤\`\n*☣️ ᴍᴏᴛɪᴠᴏ :* ${user.afkReason}`, 
+        '0@s.whatsapp.net', 
+        `💤 NO MOLESTAR 💤`, 
+        'status@broadcast', 
+        null, 
+        fake
+    );
 };
 
-// Función para formatear el tiempo transcurrido
+// Función para el tiempo
 function formatTime(ms) {
     let h = Math.floor(ms / 3600000);
     let m = Math.floor((ms % 3600000) / 60000);
