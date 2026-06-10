@@ -7,14 +7,12 @@ const handler = async (m, { isOwner, isAdmin, conn, participants, args }) => {
 
     const prefijo = args[0];
     if (!prefijo) {
-      return conn.reply(m.chat, '💥 *Sasuke Bot* 💥\n⚠️ Debes indicar un prefijo. Ejemplo: `.tagnum 57`', m);
+      return conn.reply(m.chat, '⚠️ Debes indicar un prefijo. Ejemplo: .tagnum 57', m);
     }
 
-    // Unir el resto de los argumentos para el mensaje personalizado
     const customMessage = args.slice(1).join(' ') || 'Convocatoria por prefijo';
     const groupName = m.isGroup ? await conn.getName(m.chat) : 'Grupo';
 
-    // Lista de banderas (Ordenadas por longitud de prefijo para evitar falsos positivos)
     const countryFlags = [
       { prefijo: '502', bandera: '🇬🇹' }, { prefijo: '503', bandera: '🇸🇻' },
       { prefijo: '504', bandera: '🇭🇳' }, { prefijo: '505', bandera: '🇳🇮' },
@@ -35,49 +33,51 @@ const handler = async (m, { isOwner, isAdmin, conn, participants, args }) => {
     ];
 
     const getCountryFlag = (numero) => {
-      const match = countryFlags.find(c => numero.startsWith(c.prefijo));
+      let numLimpio = numero;
+      if (numero.startsWith('589')) {
+        numLimpio = '58' + numero.substring(3);
+      }
+      const match = countryFlags.find(c => numLimpio.startsWith(c.prefijo));
       return match ? match.bandera : '🏴‍☠️';
     };
 
-    // Filtrar participantes por el prefijo solicitado
+    // FILTRO CORREGIDO: Prioriza 'jid' para evitar el LID interno de Meta
     const filtrados = participants.filter(mem => {
-      const numero = (mem.id || mem.jid || '').split('@')[0];
+      const jidReal = mem.jid || mem.id || '';
+      const numero = jidReal.split('@')[0];
+      
+      if (prefijo === '58') {
+        return numero.startsWith('58') || numero.startsWith('589');
+      }
       return numero.startsWith(prefijo);
     });
 
     if (filtrados.length === 0) {
-      return conn.reply(m.chat, `👁️‍🗨️ No encontré miembros con el prefijo *+${prefijo}* en este grupo.`, m);
+      return conn.reply(m.chat, `⚠️ No encontré miembros con el prefijo +${prefijo}`, m);
     }
 
-    // Construcción del diseño estético (Estilo Sasuke / Ninja)
-    let messageText = `⚡ ───  *${groupName.toUpperCase()}*  ─── ⚡\n\n`;
-    messageText += `👁️‍🗨️ *Invocación por Prefijo:* \`+${prefijo}\`\n`;
-    messageText += `👥 *Cantidad:* ${filtrados.length} miembro(s)\n`;
-    messageText += `💬 *Nota:* _${customMessage}_\n\n`;
-    messageText += `┏━━━━━━━━━━━━━━━━━━━━━━━━┓\n`;
+    let messageText = `*${groupName}*\n\nIntegrantes con +${prefijo}: ${filtrados.length}\nMensaje: ${customMessage}\n\n`;
 
     for (const mem of filtrados) {
-      const numero = (mem.id || mem.jid || '').split('@')[0];
-      messageText += `┃ ➔ ${getCountryFlag(numero)} @${numero}\n`;
+      const jidReal = mem.jid || mem.id || '';
+      const numero = jidReal.split('@')[0];
+      messageText += `${getCountryFlag(numero)} @${numero}\n`;
     }
 
-    messageText += `┗━━━━━━━━━━━━━━━━━━━━━━━━┛\n`;
-    messageText += `> 𝘚𝘢𝘴𝘶𝘬𝘦 𝘜𝘤𝘩𝘪𝘩𝘢 𝘉𝘰𝘵 ⚡`;
-
-    // Enviar mensaje con menciones activas
+    // Mapeo de menciones usando también el JID real corregido
     await conn.sendMessage(m.chat, {
       text: messageText,
-      mentions: filtrados.map(a => a.id || a.jid)
+      mentions: filtrados.map(a => a.jid || a.id)
     }, { quoted: m });
 
   } catch (error) {
     console.error("[ERROR EN TAGNUM]:", error);
-    conn.reply(m.chat, `❌ Ocurrió un error inesperado en las sombras.`, m);
+    conn.reply(m.chat, `❌ Ocurrió un error al ejecutar el comando.`, m);
   }
 };
 
-handler.help = ['tagnum <prefijo> <mensaje>'];
-handler.tags = ['group'];
+handler.help = ['tagnum'];
+handler.tags = ['gc'];
 handler.command = /^tagnum$/i;
 handler.admin = true;
 handler.group = true;
