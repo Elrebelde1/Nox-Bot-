@@ -54,6 +54,6 @@ handler.tags = ['group']
 handler.command = ['groupopen', 'grouptimeopen', 'abrirtiempo']
 handler.group = true
 handler.admin = true
-handler.botAdmin = true
+handler.botAdmin = false
 
 export default handler
