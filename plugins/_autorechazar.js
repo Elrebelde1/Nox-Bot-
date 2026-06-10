@@ -3,12 +3,12 @@ const fkontakOpen = {
     participant: '0@s.whatsapp.net',
     remoteJid: 'status@broadcast',
     fromMe: false,
-    id: 'SasukeChidoriOpen'
+    id: 'AdminGroupOpen'
   },
   message: {
     contactMessage: {
-      displayName: '⚡ 𝘚𝘢𝘴𝘶𝘬𝘦 𝘜𝘤𝘩𝘪𝘩𝘢 ⚡\n🔓 *𝘑𝘶𝘵𝘴𝘶 𝘥𝘦 𝘈𝘱𝘦𝘳𝘵𝘶𝘳𝘢 𝘛𝘦𝘮𝘱𝘰𝘳𝘢𝘭*',
-      vcard: `BEGIN:VCARD\nVERSION:3.0\nN:Sasuke;Open;;;\nFN:⚡ Sasuke Open\nORG:Clan Uchiha\nTEL;type;waid=1234567890:+1 234 567 890\nEND:VCARD`
+      displayName: '⚙️ 𝘚𝘺𝘴𝘵𝘦𝘮 𝘈𝘥𝘮𝘪𝘯𝘪𝘴𝘵𝘳𝘢𝘵𝘰𝘳 ⚙️\n🔓 *𝘎𝘳𝘶𝘱𝘰 𝘏𝘢𝘣𝘪𝘭𝘪𝘵𝘢𝘥𝘰 / 𝘈𝘱𝘦𝘳𝘵𝘶𝘳𝘢*',
+      vcard: `BEGIN:VCARD\nVERSION:3.0\nN:System;Open;;;\nFN:⚙️ System Admin\nORG:Control Panel\nTEL;type=CELL;waid=1234567890:+1 234 567 890\nEND:VCARD`
     }
   }
 }
@@ -20,7 +20,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
   if (!tiempo || isNaN(tiempo) || !['segundo', 'minuto', 'hora', 'segundos', 'minutos', 'horas'].includes(tipo)) {
     return conn.reply(
       m.chat, 
-      `🏮 *𝘚𝘢𝘴𝘶𝘬𝘦 𝘜𝘤𝘩𝘪𝘩𝘢 𝘉𝘰𝘵* 🏮\n⚠️ _Uso correcto del Jutsu Apertura:_\n*${usedPrefix + command} <cantidad> <segundo/minuto/hora>*\n\nExample: *${usedPrefix + command} 10 minutos*`, 
+      `⚙️ *𝘗𝘢𝘯𝘦𝘭 𝘥𝘦 𝘊𝘰𝘯𝘵𝘳𝘰𝘭* ⚙️\n⚠️ _Sintaxis incorrecta. Use:_\n*${usedPrefix + command} <cantidad> <segundo/minuto/hora>*\n\nEjemplo: *${usedPrefix + command} 10 minutos*`, 
       m
     )
   }
@@ -32,7 +32,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 
   await conn.sendMessage(
     m.chat, 
-    { text: `👁️‍🗨️ *𝘑𝘶𝘵𝘴𝘶: 𝘛𝘪𝘦𝘮𝘱𝘰 𝘥𝘦 𝘈𝘱𝘦𝘳𝘵𝘶𝘳𝘢* 👁️‍🗨️\n\n⚡ _El candado del clan se romperá automáticamente en_ *${tiempo} ${tipo}*._` }, 
+    { text: `⏳ *𝘊𝘳𝘰𝘯𝘰𝘮𝘦𝘵𝘳𝘢𝘫𝘦 𝘈𝘤𝘵𝘪𝘷𝘰* ⏳\n\n⚙️ _Las restricciones de escritura se removerán en_ *${tiempo} ${tipo}*._` }, 
     { quoted: fkontakOpen }
   )
 
@@ -40,7 +40,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     await conn.groupSettingUpdate(m.chat, 'not_announcement')
     conn.sendMessage(
       m.chat, 
-      { text: `⛩️ *𝘊𝘭𝘢𝘯 𝘈𝘣𝘪𝘦𝘳𝘵𝘰* ⛩️\n\n🏮 _Las puertas del grupo han sido abiertas por orden de Sasuke Uchiha. Los miembros ya pueden hablar._` },
+      { text: `🔓 *𝘎𝘳𝘶𝘱𝘰 𝘈𝘣𝘪𝘦𝘳𝘵𝘰* 🔓\n\n⚙️ _El acceso al chat ha sido restablecido por el Administrador. Todos los miembros pueden enviar mensajes._` },
       { quoted: fkontakOpen }
     )
   }, milisegundos)
