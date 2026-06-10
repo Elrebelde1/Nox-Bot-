@@ -1,44 +1,14 @@
-const handler = async (m, { conn, text }) => {
-    // 1. Obtener el mensaje citado
-    let q = m.quoted ? m.quoted : m
-    if (!m.quoted) return m.reply('✨ *Uchiha Reenvío Universal* ✨\n\nResponde a un mensaje para reenviarlo.')
-
-    try {
-        if (m.react) await m.react('🌀')
-
-        // 2. Definir destino
-        let dest = text ? text.replace(/[^0-9]/g, '') + '@s.whatsapp.net' : m.chat
-
-        // 3. Método de reenvío ultra-compatible
-        // Usamos generateForwardMessageContent para reconstruir el mensaje
-        let message = await conn.copyNForward(dest, q, true, { readViewOnce: true })
-        
-        // Si por alguna razón devuelve null, forzamos con relayMessage
-        if (!message) {
-            await conn.relayMessage(dest, q.message, { 
-                messageId: q.id, 
-                participant: q.sender 
-            })
-        }
-
-        if (text) m.reply(`✅ *Reenviado a:* ${text}`)
-
-    } catch (e) {
-        console.error('Error en reenvío:', e)
-        
-        // ÚLTIMO RECURSO: Reenvío manual por tipo
-        try {
-            const type = Object.keys(q.message)[0]
-            await conn.sendMessage(text ? text.replace(/[^0-9]/g, '') + '@s.whatsapp.net' : m.chat, { forward: q }, { quoted: m })
-        } catch (e2) {
-            m.reply('❌ *Error:* El mensaje es incompatible o ya no está disponible en el servidor.')
-        }
-    }
-}
-
-handler.help = ['reenviar']
-handler.tags = ['tools']
-handler.command = /^(reenviar|forward|fwd)$/i
-handler.admin = true 
-
-export default handler
+const handler = async (m, {conn, text, usedPrefix, command}) => {
+  global.db.data.sticker = global.db.data.sticker || {};
+  if (!m.quoted) throw '*[❗𝐈𝐍𝐅𝐎❗] 𝚁𝙴𝚂𝙿𝙾𝙽𝙳𝙴 𝙰𝙻 𝚂𝚃𝙸𝙲𝙺𝙴𝚁 𝙾 𝙸𝙼𝙰𝙶𝙴𝙽 𝙰𝙻 𝙲𝚄𝙰𝙻 𝙳𝙴𝚂𝙴𝙰 𝙰𝙶𝚁𝙴𝙶𝙰𝚁 𝚄𝙽 𝙲𝙾𝙼𝙰𝙽𝙳𝙾 𝙾 𝚃𝙴𝚇𝚃𝙾*';
+  if (!m.quoted.fileSha256) throw '*[❗𝐈𝐍𝐅𝐎❗] 𝚂𝙾𝙻𝙾 𝙿𝚄𝙴𝙳𝙴𝚂 𝙰𝚂𝙸𝙶𝙰𝙽𝙰𝚁 𝙲𝙾𝙼𝙰𝙽𝙳𝙾𝚂 𝙾 𝚃𝙴𝚇𝚃𝙾𝚂 𝙰 𝚂𝚃𝙸𝙲𝙺𝙴𝚁𝚂 𝙴 𝙸𝙼𝙰𝙶𝙴𝙽𝙴𝚂*';
+  if (!text) throw `*[❗𝐈𝐍𝐅𝐎❗] 𝙴𝚁𝚁𝙾𝚁 𝙳𝙴 𝚄𝚂𝙾, 𝚃𝙴𝚇𝚃𝙾 𝙵𝙰𝙻𝚃𝙰𝙽𝚃𝙴*\n\n*𝚄𝚂𝙾 𝙲𝙾𝚁𝚁𝙴𝙲𝚃𝙾 𝙳𝙴𝙻 𝙲𝙾𝙼𝙰𝙽𝙳𝙾:*\n*—◉ ${usedPrefix + command} <texto> <responder a sticker o imagen>*\n\n*𝙴𝙹𝙴𝙼𝙿𝙻𝙾 𝙳𝙴 𝚄𝚂𝙾 𝙲𝙾𝚁𝚁𝙴𝙲𝚃𝙾 𝙳𝙴𝙻 𝙲𝙾𝙼𝙰𝙽𝙳𝙾:*\n*—◉ ${usedPrefix + command} <#menu> <responder a sticker o imagen>*`;
+  const sticker = global.db.data.sticker;
+  const hash = m.quoted.fileSha256.toString('base64');
+  if (sticker[hash] && sticker[hash].locked) throw '*[❗𝐈𝐍𝐅𝐎❗] 𝚂𝙾𝙻𝙾 𝙴𝙻 𝙾𝚆𝙽𝙴𝚁 𝙿𝚄𝙴𝙳𝙴 𝚁𝙴𝙰𝙻𝙸𝚉𝙰𝚁 𝙻𝙰 𝙼𝙾𝙳𝙸𝙵𝙸𝙲𝙰𝙲𝙸𝙾𝙽*';
+  sticker[hash] = {text, mentionedJid: m.mentionedJid, creator: m.sender, at: + new Date, locked: false};
+  m.reply(`*[ ✔ ] 𝙴𝙻 𝚃𝙴𝚇𝚃𝙾/𝙲𝙾𝙼𝙰𝙽𝙳𝙾 𝙰𝚂𝙸𝙶𝙽𝙰𝙳𝙾 𝙰𝙻 𝚂𝚃𝙸𝙲𝙺𝙴𝚁/𝙸𝙼𝙰𝙶𝙴𝙽 𝙵𝚄𝙴 𝙰𝙶𝚁𝙴𝙶𝙰𝙳𝙾 𝙰 𝙻𝙰 𝙱𝙰𝚂𝙴 𝙳𝙴 𝙳𝙰𝚃𝙾𝚂 𝙲𝙾𝚁𝚁𝙴𝙲𝚃𝙰𝙼𝙴𝙽𝚃𝙴*`);
+};
+handler.command = ['setcmd', 'addcmd', 'cmdadd', 'cmdset'];
+handler.rowner = true;
+export default handler;
