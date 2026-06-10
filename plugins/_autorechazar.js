@@ -14,9 +14,6 @@ const fkontakOpen = {
 }
 
 let handler = async (m, { conn, args, usedPrefix, command }) => {
-  if (!m.isGroup) return
-  if (!(m.isAdmin || m.isOwner)) return global.dfail('admin', m, conn)
-
   let tiempo = args[0]
   let tipo = args[1]?.toLowerCase()
 
@@ -54,6 +51,6 @@ handler.tags = ['group']
 handler.command = ['groupopen', 'grouptimeopen', 'abrirtiempo']
 handler.group = true
 handler.admin = true
-handler.botAdmin = false
+handler.botAdmin = true
 
 export default handler
