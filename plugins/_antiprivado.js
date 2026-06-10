@@ -1,10 +1,3 @@
-/**
- * 📂 COMANDO: Uchiha Google Image
- * 📝 DESCRIPCIÓN: Buscador de imágenes de Google con visualización aleatoria.
- * 👤 CREADOR: Barboza Developer
- * ⚡ CANAL: Barboza Developer x Zona Developers
- */
-
 import fetch from "node-fetch"
 
 const handler = async (m, { conn, text, usedPrefix, command }) => {
@@ -26,9 +19,9 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
         let results = json.result.sort(() => 0.5 - Math.random()).slice(0, 5)
 
-        let album = []
+        let mediaGroup = []
         for (let data of results) {
-            album.push({
+            mediaGroup.push({
                 image: { url: data.image },
                 caption: `「 🖼️ 𝚄𝙲𝙷𝙸𝙷𝙰 𝙸𝙼𝙰𝙶𝙴𝚂 」\n` +
                          `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n` +
@@ -40,11 +33,16 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
             })
         }
 
-        await conn.sendAlbum(m.chat, album, { quoted: m })
+        if (conn.sendAlbum) {
+            await conn.sendAlbum(m.chat, mediaGroup, { quoted: m })
+        } else {
+            await conn.sendMessage(m.chat, { forward: { key: m.key, message: { imageMessage: {} } }, media: mediaGroup }, { quoted: m })
+        }
 
         if (m.react) await m.react('✅')
 
     } catch (error) {
+        console.error(error)
         if (m.react) await m.react('❌')
         conn.reply(m.chat, '⚠️ Error en el servidor.', m)
     }
