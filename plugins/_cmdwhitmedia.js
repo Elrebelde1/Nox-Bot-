@@ -1,34 +1,43 @@
-const { proto, generateWAMessage } = (await import('@whiskeysockets/baileys')).default;
+import path from 'path'
 
 export async function all(m, chatUpdate) {
-  if (m.isBaileys || !m.message || !m.msg || !m.msg.fileSha256) return;
-  if (!(Buffer.from(m.msg.fileSha256).toString('base64') in global.db.data.sticker)) return;
+  if (m.isBaileys || !m.message || !m.msg || !m.msg.fileSha256) return
 
-  const hash = global.db.data.sticker[Buffer.from(m.msg.fileSha256).toString('base64')];
-  const { text: pluginName, mentionedJid } = hash;
+  const hash = Buffer.from(m.msg.fileSha256).toString('base64')
+  if (!(hash in global.db.data.sticker)) return
 
-  // Transformamos el nombre del archivo (menu.js) en un comando ejecutable (.menu)
-  const prefijoInyectado = '.'; 
-  const comandoLimpio = pluginName.replace('.js', '').trim();
-  const textoEjecutable = `${prefijoInyectado}${comandoLimpio}`;
+  const { text: pluginName } = global.db.data.sticker[hash]
+  const comandoLimpio = pluginName.replace('.js', '').trim()
 
-  // Creamos el objeto de mensaje falso inyectando el comando real en el flujo de Baileys
-  const messages = await generateWAMessage(m.chat, { text: textoEjecutable, mentions: mentionedJid }, {
-    userJid: this.user.id,
-    quoted: m.quoted && m.quoted.fakeObj,
-  });
+  // Buscar el archivo dentro de los plugins cargados en la memoria del bot
+  const archivoPlugin = Object.keys(global.plugins || {}).find(
+    p => p.endsWith(pluginName) || path.basename(p) === pluginName
+  )
 
-  messages.key.fromMe = m.isBaileys || (m.sender === this.user?.jid);
-  messages.key.id = m.key.id;
-  messages.pushName = m.pushName;
-  if (m.isGroup) messages.participant = m.sender;
-  
-  const msg = {
-    ...chatUpdate,
-    messages: [proto.WebMessageInfo.fromObject(messages)],
-    type: 'append',
-  };
-
-  // Emitimos el evento de vuelta al handler principal del bot para que procese el comando .menu
-  this.ev.emit('messages.upsert', msg);
+  if (archivoPlugin && global.plugins[archivoPlugin]) {
+    try {
+      const plugin = global.plugins[archivoPlugin]
+      
+      // Forzar que el mensaje actual sea reconocido como el comando de texto (.menu)
+      m.text = `.${comandoLimpio}`
+      m.command = comandoLimpio
+      
+      // Ejecutar el módulo de comandos directamente usando el contexto del bot
+      if (typeof plugin.default === 'function') {
+        await plugin.default(m, {
+          conn: this,
+          text: '',
+          args: [],
+          usedPrefix: '.',
+          command: m.command,
+          isOwner: m.fromMe || global.opts['owner'],
+          isAdmin: m.isGroup ? (await this.groupMetadata(m.chat).catch(() => ({ participants: [] }))).participants.find(p => p.id === m.sender)?.admin !== null : false,
+          isROwner: m.fromMe || global.opts['owner'],
+          participants: m.isGroup ? (await this.groupMetadata(m.chat).catch(() => ({ participants: [] }))).participants : []
+        })
+      }
+    } catch (error) {
+      console.error("[ERROR AL DISPARAR JUTSU MENU]:", error)
+    }
+  }
 }
