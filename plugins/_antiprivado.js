@@ -19,25 +19,18 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
         let results = json.result.sort(() => 0.5 - Math.random()).slice(0, 5)
 
-        let mediaGroup = []
-        for (let data of results) {
-            mediaGroup.push({
-                image: { url: data.image },
-                caption: `「 🖼️ 𝚄𝙲𝙷𝙸𝙷𝙰 𝙸𝙼𝙰𝙶𝙴𝚂 」\n` +
-                         `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n` +
-                         `│ 📌 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${data.title}\n` +
-                         `│ 🔍 *𝙱𝚄𝚂𝚀𝚄𝙴𝙳𝙰:* ${text.toUpperCase()}\n` +
-                         `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n` +
-                         `⚡ *Code creado por ${dev}*\n` +
-                         `📡 *Disfruta el código de ${dev} x ${chn}*`
-            })
-        }
+        // Enviamos las imágenes en paralelo de forma masiva para que lleguen juntas como un álbum nativo de WhatsApp
+        await Promise.all(results.map(async (data) => {
+            let caption = `「 🖼️ 𝚄𝙲𝙷𝙸𝙷𝙰 𝙸𝙼𝙰𝙶𝙴𝚂 」\n` +
+                          `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n` +
+                          `│ 📌 *𝚃𝙸𝚃𝚄𝙻𝙾:* ${data.title}\n` +
+                          `│ 🔍 *𝙱𝚄𝚂𝚀𝚄𝙴𝙳𝙰:* ${text.toUpperCase()}\n` +
+                          `─── 🕒 ☆ : .☽ . : ☆ 🕒 ───\n\n` +
+                          `⚡ *Code creado por ${dev}*\n` +
+                          `📡 *Disfruta el código de ${dev} x ${chn}*`
 
-        if (conn.sendAlbum) {
-            await conn.sendAlbum(m.chat, mediaGroup, { quoted: m })
-        } else {
-            await conn.sendMessage(m.chat, { forward: { key: m.key, message: { imageMessage: {} } }, media: mediaGroup }, { quoted: m })
-        }
+            return conn.sendMessage(m.chat, { image: { url: data.image }, caption: caption }, { quoted: m })
+        }))
 
         if (m.react) await m.react('✅')
 
