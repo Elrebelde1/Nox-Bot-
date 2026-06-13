@@ -35,7 +35,7 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
             if (isAudio || isDocMp3) {
                 try {
-                    // Primera Opción: api.evogb.org (Corregida)
+                    // Primera Opción: api.evogb.org
                     let res = await fetch(`https://api.evogb.org/dl/ytmp3?url=${encodeURIComponent(text)}&key=sasuke`)
                     let json = await res.json()
                     if (json.status && json.data) {
@@ -43,17 +43,17 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                         titulo = json.data.title || 'Audio'
                     }
                 } catch {
-                    // Segunda Opción: sylphyy.xyz
-                    let res = await fetch(`https://sylphyy.xyz/download/v2/ytmp3?url=${encodeURIComponent(text)}&api_key=${apiKey}`)
+                    // Segunda Opción: api.delirius.store (Actualizada con tu JSON)
+                    let res = await fetch(`https://api.delirius.store/download/ytmp3?url=${encodeURIComponent(text)}`)
                     let json = await res.json()
-                    if (json.status && json.result) {
-                        dlUrl = json.result.dl_url
-                        titulo = json.result.title || 'Audio'
+                    if (json.status && json.data) {
+                        dlUrl = json.data.download
+                        titulo = json.data.title || 'Audio'
                     }
                 }
             } else if (isVideo || isDocMp4) {
                 try {
-                    // Primera Opción: api.evogb.org (Corregida con quality=auto)
+                    // Primera Opción: api.evogb.org
                     let res = await fetch(`https://api.evogb.org/dl/ytmp4?url=${encodeURIComponent(text)}&quality=auto&key=sasuke`)
                     let json = await res.json()
                     if (json.status && json.data) {
