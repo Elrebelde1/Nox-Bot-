@@ -35,19 +35,19 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
             if (isAudio || isDocMp3) {
                 try {
-                    // Primera Opción: api.evogb.org
-                    let res = await fetch(`https://api.evogb.org/dl/ytmp3?url=${encodeURIComponent(text)}&key=sasuke`)
-                    let json = await res.json()
-                    if (json.status && json.data) {
-                        dlUrl = json.data.dl
-                        titulo = json.data.title || 'Audio'
-                    }
-                } catch {
-                    // Segunda Opción: api.delirius.store (Actualizada con tu JSON)
+                    // Primera Opción: api.delirius.store (Ahora es la principal)
                     let res = await fetch(`https://api.delirius.store/download/ytmp3?url=${encodeURIComponent(text)}`)
                     let json = await res.json()
                     if (json.status && json.data) {
                         dlUrl = json.data.download
+                        titulo = json.data.title || 'Audio'
+                    }
+                } catch {
+                    // Segunda Opción: api.evogb.org (Respaldo)
+                    let res = await fetch(`https://api.evogb.org/dl/ytmp3?url=${encodeURIComponent(text)}&key=sasuke`)
+                    let json = await res.json()
+                    if (json.status && json.data) {
+                        dlUrl = json.data.dl
                         titulo = json.data.title || 'Audio'
                     }
                 }
