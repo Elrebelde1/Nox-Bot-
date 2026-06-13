@@ -35,15 +35,15 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
 
             if (isAudio || isDocMp3) {
                 try {
-                    // Primera Opción: api.evogb.org
-                    let res = await fetch(`https://evogb.org{encodeURIComponent(text)}&key=sasuke`)
+                    // Primera Opción: api.evogb.org (Corregida)
+                    let res = await fetch(`https://api.evogb.org/dl/ytmp3?url=${encodeURIComponent(text)}&key=sasuke`)
                     let json = await res.json()
                     if (json.status && json.data) {
                         dlUrl = json.data.dl
                         titulo = json.data.title || 'Audio'
                     }
                 } catch {
-                    // Segunda Opción: sylphyy.xyz (Código anterior)
+                    // Segunda Opción: sylphyy.xyz
                     let res = await fetch(`https://sylphyy.xyz/download/v2/ytmp3?url=${encodeURIComponent(text)}&api_key=${apiKey}`)
                     let json = await res.json()
                     if (json.status && json.result) {
@@ -53,15 +53,15 @@ const handler = async (m, { conn, text, usedPrefix, command }) => {
                 }
             } else if (isVideo || isDocMp4) {
                 try {
-                    // Primera Opción: api.evogb.org
-                    let res = await fetch(`https://evogb.org{encodeURIComponent(text)}&quality=720&key=sasuke`)
+                    // Primera Opción: api.evogb.org (Corregida con quality=auto)
+                    let res = await fetch(`https://api.evogb.org/dl/ytmp4?url=${encodeURIComponent(text)}&quality=auto&key=sasuke`)
                     let json = await res.json()
                     if (json.status && json.data) {
                         dlUrl = json.data.dl
                         titulo = json.data.title || 'Video'
                     }
                 } catch {
-                    // Segunda Opción: api.delirius.store (Código anterior)
+                    // Segunda Opción: api.delirius.store
                     let res = await fetch(`https://api.delirius.store/download/ytmp4?url=${encodeURIComponent(text)}`)
                     let json = await res.json()
                     if (json.status && json.data) {
