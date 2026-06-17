@@ -2,49 +2,61 @@ import fetch from "node-fetch"
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
     const apiKey = 'sasuke'
-    if (!text) return conn.reply(m.chat, `*🔍 BÚSQUEDA Y DESCARGA SOUNDCLOUD*\n\n*Ejemplo:* ${usedPrefix + command} Messi`, m)
+    if (!text) return conn.reply(m.chat, `*☁️ Uchiha Cloud Download*\n\n*Uso correcto:*\n> *${usedPrefix + command} Lupita*`, m)
 
-    if (text.includes('soundcloud.com/')) {
-        await m.react('⏳')
-        try {
-            let res = await fetch(`https://api.evogb.org/dl/soundcloud?url=${encodeURIComponent(text)}&key=${apiKey}`)
-            let json = await res.json()
-            if (!json.success) return m.reply('❌ Error al procesar la descarga.')
-
-            let { title, artist, banner, dl } = json.data
-            let cap = `*☁️ Uchiha Cloud Download*\n\n*Título:* ${title}\n*Artista:* ${artist}\n\n_Procesando audio..._`
-            
-            await conn.sendMessage(m.chat, { image: { url: banner }, caption: cap }, { quoted: m })
-            await conn.sendMessage(m.chat, { audio: { url: dl }, mimetype: 'audio/mpeg', fileName: `${title}.mp3` }, { quoted: m })
-            await m.react('✅')
-        } catch (e) {
-            m.reply('❌ Error en el servidor de descarga.')
+    await m.react('⏳')
+    try {
+        let resSearch = await fetch(`https://api.evogb.org/search/soundcloud?query=${encodeURIComponent(text)}&key=${apiKey}`)
+        let jsonSearch = await resSearch.json()
+        if (!jsonSearch.status || !jsonSearch.results || jsonSearch.results.length === 0) {
+            await m.react('❌')
+            return m.reply('❌ No se encontraron resultados para tu búsqueda.')
         }
-    } else {
-        await m.react('🔍')
-        try {
-            let res = await fetch(`https://api.evogb.org/search/soundcloud?query=${encodeURIComponent(text)}&key=${apiKey}`)
-            let json = await res.json()
-            if (!json.status) return m.reply('❌ No se encontraron resultados.')
 
-            let results = json.results.slice(0, 5)
-            let txt = `*☁️ Uchiha Cloud Search: ${text}*\n\n`
-            results.forEach((v, i) => {
-                txt += `*${i + 1}.* ${v.title}\n*Artista:* ${v.author.name}\n*Enlace:* ${v.url}\n\n`
-            })
-            
-            txt += `*📂 COMANDO:* Uchiha Cloud Search Unified\n*👤 CREADOR:* Barboza Developer\n*⚡ CANAL:* Barboza Developer x Zona Developers\n*🔌 API:* https://api.evogb.org`
-            
+        let primerResultado = jsonSearch.results[0]
+        let urlDescarga = primerResultado.url
+
+        let resDl = await fetch(`https://api.evogb.org/dl/soundcloud?url=${encodeURIComponent(urlDescarga)}&key=${apiKey}`)
+        let jsonDl = await resDl.json()
+        if (!jsonDl.success) {
+            await m.react('❌')
+            return m.reply('❌ Error al procesar la descarga del audio.')
+        }
+
+        let { title, artist, banner, dl } = jsonDl.data
+
+        let txt = `*☁️ Uchiha Cloud - Audio Localizado*\n\n`
+        txt += `📌 *Título:* ${title}\n`
+        txt += `👤 *Artista:* ${artist}\n`
+        txt += `⏱️ *Duración:* ${primerResultado.duration || 'Desconocida'}\n\n`
+        txt += `📂 *COMANDO:* Uchiha Cloud Download Unified\n`
+        txt += `👤 *CREADOR:* Barboza Developer\n`
+        txt += `⚡ *CANAL:* Barboza Developer x Zona Developers\n`
+        txt += `🔌 *API:* https://api.evogb.org`
+
+        if (banner) {
+            await conn.sendMessage(m.chat, { image: { url: banner }, caption: txt }, { quoted: m })
+        } else {
             await conn.reply(m.chat, txt, m)
-            await m.react('✅')
-        } catch (e) {
-            m.reply('❌ Error en el servidor de búsqueda.')
         }
+
+        await conn.sendMessage(m.chat, { 
+            audio: { url: dl }, 
+            mimetype: 'audio/mpeg', 
+            fileName: `${title}.mp3` 
+        }, { quoted: m })
+
+        await m.react('✅')
+
+    } catch (e) {
+        console.error(e)
+        await m.react('❌')
+        m.reply('❌ Ocurrió un error interno en los servidores de Uchiha Cloud.')
     }
 }
 
-handler.help = ['soundcloud']
+handler.help = ['sound']
 handler.tags = ['downloader']
-handler.command = /^(soundcloud|scdl|playsc)$/i
+handler.command = /^(sound|play-sc|scplay)$/i
 
 export default handler
