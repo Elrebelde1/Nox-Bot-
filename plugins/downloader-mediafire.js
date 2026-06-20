@@ -21,31 +21,21 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         }
 
         let { name, size, date, type, dl } = jsonDl.data
-        let info = `*☁️ Uchiha Cloud - Archivo Localizado*\n\n📌 *Nombre:* ${name}\n📦 *Peso:* ${size}\n📅 *Fecha:* ${date || 'Desconocida'}\n🗂️ *Tipo:* ${type || 'Desconocido'}\n\n_Descargando archivo e inyectando bypass..._`
+        let info = `*☁️ Uchiha Cloud - Archivo Localizado*\n\n📌 *Nombre:* ${name}\n📦 *Peso:* ${size}\n📅 *Fecha:* ${date || 'Desconocida'}\n🗂️ *Tipo:* ${type || 'Desconocido'}\n\n📂 *COMANDO:* Uchiha MediaFire Downloader\n👤 *CREADOR:* Barboza Developer\n⚡ *CANAL:* Barboza Developer x Zona Developers\n🔌 *API:* https://api.evogb.org`
 
         await conn.reply(m.chat, info, m)
         
-        // Descargamos el archivo enviando un User-Agent simulando un navegador para evitar los 36KB de bloqueo
-        let resFile = await fetch(dl, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-            }
-        })
-        
-        if (!resFile.ok) throw new Error('Error al descargar el archivo físico.')
-        let buffer = await resFile.buffer()
-        
+        // Enviamos la URL directa delegando la descarga a WhatsApp en streaming nativo
         await conn.sendMessage(m.chat, { 
-            document: buffer, 
+            document: { url: dl }, 
             mimetype: 'application/octet-stream', 
             fileName: name
         }, { quoted: m })
         
         await m.react('✅')
     } catch (e) {
-        console.error(e)
         await m.react('❌')
-        m.reply('❌ Ocurrió un error al forzar la descarga del archivo binario.')
+        m.reply('❌ Ocurrió un error interno en los servidores de Uchiha Cloud.')
     }
 }
 
