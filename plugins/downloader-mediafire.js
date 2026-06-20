@@ -25,17 +25,23 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
         await conn.reply(m.chat, info, m)
         
-        // Enviamos la URL directa delegando la descarga a WhatsApp en streaming nativo
+        // CORRECCIÓN: Descargamos el archivo real en memoria (Buffer) para evitar el archivo corrupto de 36kb
+        let fileResponse = await fetch(dl)
+        if (!fileResponse.ok) throw new Error('Error al descargar el archivo desde la URL directa')
+        let fileBuffer = await fileResponse.buffer()
+
+        // Enviamos el Buffer descargado
         await conn.sendMessage(m.chat, { 
-            document: { url: dl }, 
+            document: fileBuffer, 
             mimetype: 'application/octet-stream', 
             fileName: name
         }, { quoted: m })
         
         await m.react('✅')
     } catch (e) {
+        console.error(e) // Imprime el error real en tu consola para monitoreo
         await m.react('❌')
-        m.reply('❌ Ocurrió un error interno en los servidores de Uchiha Cloud.')
+        m.reply('❌ Ocurrió un error interno al procesar o descargar el archivo.')
     }
 }
 
