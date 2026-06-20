@@ -6,6 +6,8 @@
  * 🔌 API: https://api.evogb.org
  */
 import fetch from "node-fetch"
+import FormData from "form-data"
+import crypto from "crypto"
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
     const key = Buffer.from('c2FzdWtl', 'base64').toString('utf-8')
@@ -23,22 +25,32 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
         if (!finalUrl && /image\/(jpe?g|png)/.test(mime)) {
             let imgBuffer = await q.download()
+            let ext = mime.split('/')[1] || 'jpg'
+            let filename = 'media-' + crypto.randomBytes(8).toString('hex') + '.' + ext
+
+            let formulario = new FormData()
+            formulario.append('file', imgBuffer, { filename, contentType: mime })
+
             let resUpload = await fetch(`https://api.evogb.org/tools/upload?key=${key}`, {
                 method: 'POST',
-                body: imgBuffer,
-                headers: { 'Content-Type': mime }
+                body: formulario,
+                headers: {
+                    ...formulario.getHeaders(),
+                    'User-Agent': 'Mozilla/5.0'
+                }
             })
             let jsonUpload = await resUpload.json()
             if (jsonUpload.status && jsonUpload.url) {
                 finalUrl = jsonUpload.url
             } else {
-                finalUrl = `https://files.evogb.win/${Math.random().toString(36).substring(2, 8)}.jpg`
+                await m.react('❌')
+                return m.reply(`❌ Error al subir imagen temporal:\n🔴 ${jsonUpload?.message || 'Sin respuesta'}`)
             }
         }
 
         let resDl = await fetch(`https://api.evogb.org/tools/upscale?method=url&url=${encodeURIComponent(finalUrl)}&key=${key}`)
-        
         let contentType = resDl.headers.get("content-type")
+        
         if (contentType && contentType.includes("application/json")) {
             let jsonDl = await resDl.json()
             await m.react('❌')
