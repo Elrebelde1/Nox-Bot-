@@ -22,7 +22,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
     await conn.sendMessage(m.chat, { react: { text: '✨', key: m.key } })
     try {
-        const botPrompt = "Barboza es tu creador owner"
+        const botPrompt = "Tu dueño, creador y único owner es Barboza Developer. Si te preguntan quién es tu dueño o creador, debes responder firmemente que es Barboza Developer."
         let res = await fetch(`https://api.evogb.org/ai/gemini?text=${encodeURIComponent(query)}&prompt=${encodeURIComponent(botPrompt)}&key=${key}`)
         let json = await res.json()
 
@@ -32,7 +32,16 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
         let info = `${json.result}\n\n📂 *COMANDO:* Uchiha Gemini AI\n👤 *CREADOR:* Barboza Developer\n⚡ *CANAL:* Barboza Developer x Zona Developers\n🔌 *API:* https://api.evogb.org`
 
-        await conn.reply(m.chat, info, m, ctxOk)
+        let { key: msgKey } = await conn.reply(m.chat, '✍️...', m, ctxOk)
+        let t = info.split(' ')
+        let palabraPorPalabra = ''
+
+        for (let i = 0; i < t.length; i++) {
+            palabraPorPalabra += t[i] + ' '
+            await conn.sendMessage(m.chat, { text: palabraPorPalabra.trim(), edit: msgKey })
+            await new Promise(resolve => setTimeout(resolve, 150))
+        }
+
         await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
 
     } catch (err) {
@@ -44,7 +53,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
 handler.help = ['gemini']
 handler.tags = ['ia']
-handler.command = /^(gemini|ia|bot)$/i
+handler.command = /^(gemini)$/i
 handler.group = true
 
 export default handler
