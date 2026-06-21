@@ -22,7 +22,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
     await conn.sendMessage(m.chat, { react: { text: '✨', key: m.key } })
     try {
-        const botPrompt = "Tu dueño, creador y único owner es Barboza Developer. Si te preguntan quién es tu dueño o creador, debes responder firmemente que es Barboza Developer."
+        const botPrompt = "Barboza es tu creador owner"
         let res = await fetch(`https://api.evogb.org/ai/gemini?text=${encodeURIComponent(query)}&prompt=${encodeURIComponent(botPrompt)}&key=${key}`)
         let json = await res.json()
 
@@ -32,24 +32,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
         let info = `${json.result}\n\n📂 *COMANDO:* Uchiha Gemini AI\n👤 *CREADOR:* Barboza Developer\n⚡ *CANAL:* Barboza Developer x Zona Developers\n🔌 *API:* https://api.evogb.org`
 
-        let { key: msgKey } = await conn.reply(m.chat, '✍️...', m, ctxOk)
-        
-        // Expresión regular para separar por palabras manteniendo los saltos de línea correctos
-        let t = info.match(/\S+|\n+/g) || []
-        let palabraPorPalabra = ''
-
-        for (let i = 0; i < t.length; i++) {
-            if (t[i].values === '\n') {
-                palabraPorPalabra += t[i]
-            } else {
-                palabraPorPalabra += (i === 0 ? '' : ' ') + t[i]
-            }
-            await conn.sendMessage(m.chat, { text: palabraPorPalabra, edit: msgKey })
-            await new Promise(resolve => setTimeout(resolve, 200)) // Un pelín más de tiempo para que Baileys no sature la edición
-        }
-
-        // Forzamos el mensaje final completo para asegurar que no se quede mocho bajo ninguna circunstancia
-        await conn.sendMessage(m.chat, { text: info, edit: msgKey })
+        await conn.reply(m.chat, info, m, ctxOk)
         await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
 
     } catch (err) {
