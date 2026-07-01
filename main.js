@@ -277,8 +277,15 @@ if (opcion == '1' || methodCodeQR) {
   }
 let reason = new Boom(lastDisconnect?.error)?.output?.statusCode;
 if (reason == 405) {
-await fs.unlinkSync(Sesion + "/creds.json")
-console.log(chalk.bold.redBright(`🍁 Conexión replazada, Por favor espere un momento me voy a reiniciar...\nSi aparecen error vuelve a iniciar con : npm start`)) 
+try {
+    if (fs.existsSync(Sesion + "/creds.json")) {
+        fs.unlinkSync(Sesion + "/creds.json")
+    }
+} catch (error) {
+    // Evita que el proceso colapse si el archivo no se puede borrar o no existe
+}
+console.log(chalk.bold.redBright(`🍁 Conexión reemplazada, Por favor espere un momento me voy a reiniciar...\nSi aparecen error vuelve a iniciar con : npm start`))
+) 
 process.send('reset')}
 if (connection === 'close') {
     if (reason === DisconnectReason.badSession) {
