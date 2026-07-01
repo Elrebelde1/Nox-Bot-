@@ -1,33 +1,27 @@
-// Handler para abrir/cerrar grupo con mensaje personalizado
-const handler = async (m, { conn, command }) => {
-  if (!m.isGroup) throw 'Este comando solo funciona en grupos';
-  if (!m.isAdmin) throw 'Necesitas ser admin para usar este comando';
+let handler = async (m, { conn, args, usedPrefix, command }) => {
+    let isClose = {
+        'abrir': 'not_announcement',
+        'cerrar': 'announcement',
+    }[(args[0] || '')]
 
-  let action;
-  let estado;
-  if (command === 'grupo abrir') {
-    action = 'not_announcement'; // Todos pueden enviar mensajes
-    estado = '📢 Grupo actualmente *abierto*';
-  } else if (command === 'grupo cerrar') {
-    action = 'announcement'; // Solo admins pueden enviar mensajes
-    estado = '🔒 Grupo actualmente *cerrado*';
-  } else {
-    throw 'Comando inválido. Usa .grupo abrir o .grupo cerrar';
-  }
+    if (isClose === undefined) {
+        await conn.reply(m.chat, `⚠️ Elija una opción.\n\n*${usedPrefix + command}* abrir\n*${usedPrefix + command}* cerrar`, m)
+        return
+    }
 
-  await conn.groupSettingUpdate(m.chat, action);
+    await conn.groupSettingUpdate(m.chat, isClose)
 
-  // Mensaje con mención al usuario que ejecutó la acción
-  await conn.sendMessage(m.chat, {
-    text: `${estado}\nPor: @${m.sender.split('@')[0]}`,
-    mentions: [m.sender]
-  });
-};
+    // Aviso de la acción realizada
+    let estado = isClose === 'announcement' ? 'cerrado 🔒' : 'abierto 🔓'
+    await conn.reply(m.chat, `📢 Grupo actualmente *${estado}*\nPor: @${m.sender.split('@')[0]}`, m, {
+        mentions: [m.sender]
+    })
+}
 
-handler.command = /^grupo (abrir|cerrar)$/i;
+handler.help = ['grupo abrir', 'grupo cerrar']
 handler.tags = ['gc']
-handler.help = ['grupo abrir','grupo cerrar']
-handler.group = true;
-handler.admin = true;
+handler.command = ['group', 'grupo'] 
+handler.admin = true
+handler.botAdmin = true
 
-export default handler;
+export default handler
