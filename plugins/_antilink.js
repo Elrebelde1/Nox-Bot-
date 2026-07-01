@@ -1,18 +1,17 @@
-let handler = async (m, { conn, text, usedPrefix, command }) => {
+let handler = m => m
+handler.before = async (m, { conn, isAdmin, isBotAdmin }) => {
+  if (m.isBaileys && m.fromMe) return
+  if (!m.isGroup) return
   let chat = global.db.data.chats[m.chat]
-  let isClose = /on/i.test(text)
+  let isGroupLink = /chat.whatsapp.com\/([0-9A-Za-z]{20,24})/i.test(m.text)
   
-  if (!text) return m.reply(`🛸 *[ BOX BOT MD ]* 🌌\n\n🚩 *Uso correcto:* ${usedPrefix + command} *on/off*`)
-  
-  chat.antiLink = isClose
-  m.reply(`🛸 *[ BOX BOT MD ]* 🌌\n\n✅ *Antilink* ha sido ${isClose ? 'activado' : 'desactivado'} para este grupo.`)
+  if (chat.antiLink && isGroupLink) {
+    if (isAdmin) return m.reply('⚠️ *Enlace detectado:* Como eres admin, no borraré tu mensaje.')
+    if (!isBotAdmin) return m.reply('⚠️ *El bot necesita ser admin para borrar enlaces.*')
+    
+    await conn.sendMessage(m.chat, { delete: m.key })
+    await conn.reply(m.chat, `🚫 *Enlace detectado y eliminado.*`, m)
+  }
 }
-
-handler.help = ['antilink <on/off>']
-handler.tags = ['grupos']
-handler.command = /^antilink$/i
-handler.group = true
-handler.admin = true
-handler.botAdmin = true
 
 export default handler
