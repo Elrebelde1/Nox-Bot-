@@ -56,7 +56,8 @@ global.cheerio = cheerio
 global.fs = fs
 global.fetch = fetch
 global.axios = axios
-global.Sesion = 'Principal'
+global.jadi = 'Sesiones/Subbots'
+global.Sesion = 'Sesiones/Principal'
 global.dbname = 'database.json'
 
 global.multiplier = 69 
