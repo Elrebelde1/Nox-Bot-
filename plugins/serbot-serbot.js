@@ -12,51 +12,40 @@ let handler = async (m, { conn }) => {
     
     const sock = makeWASocket({
         logger: pino({ level: 'silent' }),
+        printQRInTerminal: false,
         auth: state,
         browser: ['SubBot-YUPRADEV', 'Chrome', '1.0.0']
     });
 
-    // Escuchamos la actualización de conexión
-    sock.ev.on('connection.update', async (update) => {
-        const { connection, lastDisconnect } = update;
+    // Esta parte es vital: el socket necesita un tiempo para saludar al servidor
+    if (!sock.authState.creds.registered) {
+        // Esperamos a que la conexión esté abierta antes de pedir el código
+        await new Promise(resolve => setTimeout(resolve, 2000));
         
-        if (connection === 'connecting') {
-            // Esperando...
-        } else if (connection === 'open') {
-            conn.reply(m.chat, `✅ *SubBot vinculado correctamente.*`, m);
-        } else if (connection === 'close') {
-            let reason = lastDisconnect?.error?.output?.statusCode;
-            if (reason !== DisconnectReason.loggedOut) {
-                // Aquí podrías añadir lógica de reconexión
-            }
+        try {
+            let code = await sock.requestPairingCode(id);
+            
+            // Enviamos el código en un mensaje independiente
+            await conn.reply(m.chat, `🛸 *[ SUB-BOT YUPRADEV ]* 🌌\n\n> *Código de vinculación generado:*`, m);
+            await conn.reply(m.chat, code, m); 
+            
+            await conn.reply(m.chat, `📌 *Pasos:*\n1. Ve a "Dispositivos vinculados".\n2. "Vincular con número".\n3. Ingresa el código superior.`, m);
+            
+        } catch (e) {
+            console.error(e);
+            conn.reply(m.chat, `❌ *Error:* No se pudo generar el código. Intenta de nuevo.`, m);
         }
-    });
-
-    // CORRECCIÓN: Solicitamos el código solo cuando el socket está listo
-    try {
-        if (!sock.authState.creds.registered) {
-            // Esperamos un segundo para asegurar que el socket inicie bien
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            let code = await sock.requestPairingCode(m.sender.split('@')[0]);
-            
-            let message = `🛸 *[ SUB-BOT YUPRADEV ]* 🌌\n\n`;
-            message += `> *Tu código de vinculación:* \n\n`;
-            message += `*${code}*\n\n`;
-            message += `📌 *Instrucciones:*\n`;
-            message += `1. Ve a "Dispositivos vinculados".\n`;
-            message += `2. "Vincular un dispositivo".\n`;
-            message += `3. "Vincular con el número de teléfono".\n`;
-            message += `4. Introduce el código de arriba.`;
-            
-            await conn.reply(m.chat, message, m);
-        }
-    } catch (e) {
-        console.error(e);
-        conn.reply(m.chat, `❌ *Error al generar el código:* ${e.message}`, m);
     }
 
     sock.ev.on('creds.update', saveCreds);
+    
+    // Mensaje de éxito al vincular
+    sock.ev.on('connection.update', (update) => {
+        const { connection } = update;
+        if (connection === 'open') {
+            conn.sendMessage(m.chat, { text: `✅ *SubBot YUPRADEV vinculado exitosamente.*` }, { quoted: m });
+        }
+    });
 };
 
 handler.help = ['code'];
