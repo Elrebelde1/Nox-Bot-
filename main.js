@@ -293,8 +293,6 @@ if (connection === 'close') {
     }
 }
 
-}
-
 process.on('uncaughtException', console.error);
 
 let isInit = true;
