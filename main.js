@@ -263,22 +263,25 @@ async function connectionUpdate(update) {
     global.timestamp.connect = new Date;
   }
   if (global.db.data == null) loadDatabase();
-if (update.qr != 0 && update.qr != undefined || methodCodeQR) {
-if (opcion == '1' || methodCodeQR) {
-    console.log(chalk.yellow('🌿 Escanea el código QR.'));
- }}
+  if (update.qr != 0 && update.qr != undefined || methodCodeQR) {
+    if (opcion == '1' || methodCodeQR) {
+      console.log(chalk.yellow('🌿 Escanea el código QR.'));
+    }
+  }
+  if (connection == 'open') {
     console.log(chalk.yellow('🌱 Conectado correctamente.'));
   }
-let reason = new Boom(lastDisconnect?.error)?.output?.statusCode;
-if (reason == 405) {
-try {
-if (fs.existsSync(Sesion + "/creds.json")) {
-fs.unlinkSync(Sesion + "/creds.json")
-}
-} catch (error) {}
-console.log(chalk.bold.redBright(`🍁 Conexión replazada, Por favor espere un momento me voy a reiniciar...\nSi aparecen error vuelve a iniciar con : npm start`)) 
-process.send('reset')}
-if (connection === 'close') {
+  let reason = new Boom(lastDisconnect?.error)?.output?.statusCode;
+  if (reason == 405) {
+    try {
+      if (fs.existsSync(Sesion + "/creds.json")) {
+        fs.unlinkSync(Sesion + "/creds.json")
+      }
+    } catch (error) {}
+    console.log(chalk.bold.redBright(`🍁 Conexión replazada, Por favor espere un momento me voy a reiniciar...\nSi aparecen error vuelve a iniciar con : npm start`)) 
+    process.send('reset')
+  }
+  if (connection === 'close') {
     if (reason === DisconnectReason.badSession) {
         conn.logger.error(`🌴 Sesión incorrecta, por favor elimina la carpeta ${global.authFile} y escanea nuevamente.`);
     } else if (reason === DisconnectReason.restartRequired) {
@@ -291,11 +294,13 @@ if (connection === 'close') {
         conn.logger.warn(`🍄 Razón de desconexión desconocida. ${reason || ''}: ${connection || ''}`);
         await global.reloadHandler(true).catch(console.error);
     }
+  }
 }
 
 process.on('uncaughtException', console.error);
 
 let isInit = true;
+
 
 let handler = await import('./handler.js');
 global.reloadHandler = async function(restatConn) {
