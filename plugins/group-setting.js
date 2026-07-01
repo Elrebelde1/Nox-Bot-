@@ -13,7 +13,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 
     // Aviso de la acción realizada
     let estado = isClose === 'announcement' ? 'cerrado 🔒' : 'abierto 🔓'
-    await conn.reply(m.chat, `📢 Grupo actualmente *${estado}*\nPor: @${m.sender.split('@')[0]}`, m, {
+    await conn.reply(m.chat, `🛸 *Grupo actualmente ${estado}*\n> Por: @${m.sender.split('@')[0]}`, m, {
         mentions: [m.sender]
     })
 }
