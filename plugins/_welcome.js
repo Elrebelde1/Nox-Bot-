@@ -20,7 +20,7 @@ const handler = async (m, { conn, args, isAdmin, isOwner }) => {
 }
 
 handler.help = ['bienvenida <on/off>']
-handler.tags = ['group']
+handler.tags = ['config']
 handler.command = /^(bienvenida|welcome|bye)$/i
 
 handler.before = async function (m, { conn, groupMetadata }) {
