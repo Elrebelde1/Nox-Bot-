@@ -27,7 +27,6 @@ global.namechannel = '𝙉𝙤𝙭 𝘽ο𝙩 𝙈𝘿 🌃'
 global.channel = 'https://whatsapp.com/channel/0029Vaua0ZD3gvWjQaIpSy18'
 
 global.catalogo = fs.readFileSync('./storage/img/catalogo.png')
-global.miniurl = fs.readFileSync('./storage/img/miniurl.jpg')
 
 global.group = 'https://chat.whatsapp.com/CBuLXuVZcg9FEfCSHiY6b0'
 global.canal = 'https://whatsapp.com/channel/0029Vaua0ZD3gvWjQaIpSy18'
