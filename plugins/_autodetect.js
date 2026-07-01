@@ -30,15 +30,21 @@ handler.before = async function (m, { conn }) {
 handler.all = async (m, { conn, text, usedPrefix, command }) => {
     if (command === 'detect') {
         let chat = global.db.data.chats[m.chat]
-        if (!text) return m.reply(`🛸 *[ BOX BOT MD ]* 🌌\n\n🚩 *Uso:* ${usedPrefix + command} *on/off*`)
-        chat.detect = (text.toLowerCase() === 'on')
-        m.reply(`🛸 *[ BOX BOT MD ]* 🌌\n\n✅ *Detector de cambios* ha sido ${chat.detect ? 'activado' : 'desactivado'} para este grupo.`)
+        if (!chat) global.db.data.chats[m.chat] = {}
+        
+        if (text === 'on') {
+            chat.detect = true
+            m.reply(`🛸 *[ BOX BOT MD ]* 🌌\n\n✅ *Detector de cambios activado.*`)
+        } else if (text === 'off') {
+            chat.detect = false
+            m.reply(`🛸 *[ BOX BOT MD ]* 🌌\n\n❌ *Detector de cambios desactivado.*`)
+        } else {
+            m.reply(`🛸 *[ BOX BOT MD ]* 🌌\n\n🚩 *Uso:* ${usedPrefix + command} *on/off*`)
+        }
     }
 }
 
-handler.help = ['detect <on/off>']
-handler.tags = ['grupos']
-handler.command = /^(detect)$/i
+handler.command = ['detect']
 handler.group = true
 handler.admin = true
 handler.botAdmin = true
