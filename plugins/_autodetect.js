@@ -1,17 +1,14 @@
 let handler = m => m
 
-// 1. Lógica del Detector (se ejecuta siempre)
 handler.before = async function (m, { conn }) {
     if (!m.messageStubType || !m.isGroup) return
     let chat = global.db.data.chats[m.chat]
     if (!chat || !chat.detect) return
 
-    let fkontak = { key: { participants: "0@s.whatsapp.net", remoteJid: "status@broadcast", fromMe: false, id: "AlienMenu" }, message: { locationMessage: { name: "*Sasuke Bot MD 🌀*", jpegThumbnail: await (await fetch('https://files.catbox.moe/1j784p.jpg')).arrayBuffer().then(b => Buffer.from(b)), vcard: "BEGIN:VCARD\nVERSION:3.0\nN:;Sasuke;;;\nFN:Sasuke Bot\nORG:Barboza Developers\nitem1.TEL;waid=19709001746:+1 (970) 900-1746\nitem1.X-ABLabel:Alien\nEND:VCARD" } }, participant: "0@s.whatsapp.net" }
+    let fkontak = { key: { participants: "0@s.whatsapp.net", remoteJid: "status@broadcast", fromMe: false, id: "SasukeBot" }, message: { locationMessage: { name: "*Sasuke Bot MD 🌀*", jpegThumbnail: await (await fetch('https://files.catbox.moe/1j784p.jpg')).arrayBuffer().then(b => Buffer.from(b)), vcard: "BEGIN:VCARD\nVERSION:3.0\nN:;Sasuke;;;\nFN:Sasuke Bot\nORG:Barboza Developers\nitem1.TEL;waid=19709001746:+1 (970) 900-1746\nEND:VCARD" } }, participant: "0@s.whatsapp.net" }
     
     let usuario = `@${m.sender.split`@`[0]}`
-    let pp = await conn.profilePictureUrl(m.chat, 'image').catch(_ => null) || 'https://files.catbox.moe/xr2m6u.jpg'
-
-    // Definición de mensajes
+    
     let msgs = {
         21: `✨ ${usuario} *ha cambiado el nombre del grupo* ✨\n\n> 📝 *Nuevo nombre:* _${m.messageStubParameters[0]}_`,
         22: `📸 *¡Nueva foto de grupo!* 📸\n\n> 💫 Acción realizada por: ${usuario}`,
@@ -30,7 +27,6 @@ handler.before = async function (m, { conn }) {
     }
 }
 
-// 2. Lógica del Comando (Configuración .detect on/off)
 handler.all = async (m, { conn, text, usedPrefix, command }) => {
     if (command === 'detect') {
         let chat = global.db.data.chats[m.chat]
@@ -45,5 +41,6 @@ handler.tags = ['grupos']
 handler.command = /^(detect)$/i
 handler.group = true
 handler.admin = true
+handler.botAdmin = true
 
 export default handler
