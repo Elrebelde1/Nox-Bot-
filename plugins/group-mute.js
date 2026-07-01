@@ -18,7 +18,8 @@ let handler = async (m, { conn, command, participants }) => {
 };
 
 handler.before = async (m, { conn, isAdmin }) => {
-    if (mutedUsers.has(m.sender) && !isAdmin) {
+    // Si el remitente del mensaje está en la lista de muteados, eliminamos el mensaje
+    if (mutedUsers.has(m.sender)) {
         try {
             await conn.sendMessage(m.chat, { delete: m.key });
         } catch (e) {
