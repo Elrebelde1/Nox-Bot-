@@ -78,8 +78,8 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
   }, { quoted: m })
 }
 
-handler.help = ['welcome', 'antilink', 'antibot', 'modoadmin', 'subbots', 'nsfw', 'audios', 'antiprivado'].map(v => v + ' on/off')
+handler.help = ['welcome','antibot','subbots','nsfw', 'audios', 'antiprivado'].map(v => v + ' on/off')
 handler.tags = ['config']
-handler.command = ['welcome', 'bienvenida', 'subbots', 'serbot', 'antispam', 'antilink', 'antibot', 'modoadmin', 'nsfw', 'antinopor', 'audios', 'autoleer', 'autoread', 'antiprivado']
+handler.command = ['serbot','antibot','nsfw','antinopor', 'audios', 'autoleer', 'autoread', 'antiprivado']
 
 export default handler
