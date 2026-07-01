@@ -96,7 +96,7 @@ const handler = async (m, { isOwner, isAdmin, conn, participants, args }) => {
 };
 
 handler.help = ['todos <texto>'];
-handler.tags = ['group'];
+handler.tags = ['grupos'];
 handler.command = /^(todos|invocar|tagall)$/i;
 handler.admin = true;
 handler.group = true;
