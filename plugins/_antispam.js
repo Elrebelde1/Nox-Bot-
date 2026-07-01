@@ -3,15 +3,19 @@ let handler = async (m, { conn, isOwner }) => {
   let bot = global.db.data.settings[conn.user.jid] || {}
   if (!bot.antiSpam) return
 
+  const isSticker = m.mtype === 'stickerMessage'
+  if (!isSticker) return
+
   this.spam = this.spam ? this.spam : {}
   if (m.sender in this.spam) {
     this.spam[m.sender].count++
-    if (this.spam[m.sender].count >= 5) {
+    if (this.spam[m.sender].count >= 4) {
       let txt = `🛸 *[ BOX BOT MD ]* 🌌\n\n`
-      txt += `⚠️ *Usuario Advertido.*\n`
-      txt += `⛔ @${m.sender.split('@')[0]} evita el spam de comandos.\n\n`
-      txt += `⚙️ *Box Bot MD • Control de Spam* 🌀`
+      txt += `⚠️ *Control de Contenido.*\n`
+      txt += `⛔ @${m.sender.split('@')[0]} evita la saturación enviando solo stickers.\n\n`
+      txt += `⚙️ *Box Bot MD • Filtro de Spam* 🌀`
       
+      await conn.sendMessage(m.chat, { delete: m.key })
       await conn.sendMessage(m.chat, { text: txt, mentions: [m.sender] }, { quoted: m })
     }
   } else {
