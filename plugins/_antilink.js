@@ -19,7 +19,7 @@ const handler = async (m, { conn, args, isAdmin, isOwner }) => {
 }
 
 handler.help = ['antilink <on/off>']
-handler.tags = ['group']
+handler.tags = ['config']
 handler.command = /^(antilink|antilinks)$/i
 
 handler.before = async function (m, { conn, isAdmin, isBotAdmin }) {
