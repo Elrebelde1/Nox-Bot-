@@ -1,4 +1,5 @@
-let mutedUsersByChat = new Map();
+
+const mutedUsersByChat = new Map();
 
 function normalizeJid(jid) {
     if (!jid) return null;
@@ -52,17 +53,21 @@ handler.before = async (m, { conn }) => {
     let mutedMap = mutedUsersByChat.get(m.chat);
     if (mutedMap && mutedMap.has(normalizedSender)) {
         try {
-            await conn.sendMessage(m.chat, { delete: m.key });
+            if (m.key) {
+                await conn.sendMessage(m.chat, { delete: m.key });
+            }
         } catch {
             try {
-                await conn.sendMessage(m.chat, {
-                    delete: {
-                        remoteJid: m.chat,
-                        fromMe: !!m.key?.fromMe,
-                        id: m.key?.id,
-                        participant: m.key?.participant || m.sender
-                    }
-                });
+                if (m.key) {
+                    await conn.sendMessage(m.chat, {
+                        delete: {
+                            remoteJid: m.chat,
+                            fromMe: !!m.key?.fromMe,
+                            id: m.key?.id,
+                            participant: m.key?.participant || m.sender
+                        }
+                    });
+                }
             } catch {}
         }
 
