@@ -1,7 +1,7 @@
 let handler = async (m, { conn, participants, usedPrefix, command }) => {
     let mentionedJid = m.mentionedJid && m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : null
     
-    if (!mentionedJid) return conn.reply(m.chat, `🌀 Debes mencionar a un usuario o responder a un mensaje para poder expulsarlo.`, m)
+    if (!mentionedJid) return conn.reply(m.chat, `🌃 Debes mencionar a un usuario o responder a un mensaje para poder expulsarlo.`, m)
     
     try {
         let groupMetadata = await conn.groupMetadata(m.chat)
