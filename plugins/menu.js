@@ -40,9 +40,6 @@ let handler = async (m, { conn, usedPrefix }) => {
     mentions: [taguser] 
   }, { quoted: m })
 }
-
-handler.help = ['menu']
-handler.tags = ['main']
 handler.command = /^(menu|help|menú)$/i
 
 export default handler
