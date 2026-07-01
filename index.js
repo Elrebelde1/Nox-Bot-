@@ -29,18 +29,17 @@ function verify() {
 }
 verify();
 
-// Diseño para "Sasuke Bot"
-say('sasuke bot', {
-  font: 'block', // Estilo 'block' para un diseño fuerte
+say('nox bot', {
+  font: 'block',
   align: 'center',
-  colors: ['red', 'white'], // Colores que recuerdan al Sharingan
-  background: 'black' // Fondo oscuro para resaltar el texto
+  colors: ['blue', 'white'],
+  background: 'black'
 });
 
-say(`Developed By • Sasuke bot md`, {
+say(`Developed By • Nox Bot MD`, {
   font: 'console',
   align: 'center',
-  colors: ['magenta']
+  colors: ['cyan']
 });
 
 let isRunning = false;
