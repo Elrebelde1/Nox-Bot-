@@ -6,6 +6,7 @@ import NodeCache from 'node-cache';
 let handler = async (m, { conn, args, usedPrefix, command }) => {
     let id = m.sender.split('@')[0];
     let pathJadiBot = `./tmp/subbot_${id}`;
+    let isConnected = false; // Flag para controlar el mensaje único
 
     if (fs.existsSync(pathJadiBot)) {
         fs.rmSync(pathJadiBot, { recursive: true, force: true });
@@ -43,11 +44,15 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 
     sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect } = update;
-        if (connection === 'open') {
-            await conn.reply(m.chat, `✅ *SubBot YUPRADEV conectado.*`, m);
+        
+        if (connection === 'open' && !isConnected) {
+            isConnected = true; // Bloqueamos mensajes futuros
+            await conn.reply(m.chat, `✅ *SubBot YUPRADEV conectado exitosamente.*`, m);
         } else if (connection === 'close') {
             let reason = lastDisconnect?.error?.output?.statusCode;
             if (reason !== DisconnectReason.loggedOut) {
+                // Si se cierra, reseteamos el flag por si necesita reconectar
+                isConnected = false;
                 await handler(m, { conn, args, usedPrefix, command });
             }
         }
