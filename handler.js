@@ -493,8 +493,7 @@ global.dfail = (type, m, conn, usedPrefix) => {
         group: "🌃 Error de ejecución. Por favor, utiliza este comando dentro de un grupo. 🌃",
         private: "🌃 Configuración de privacidad. Envía este comando por chat privado para que funcione. 🌃",
         admin: "🌃 Acción rechazada. Necesitas permisos de administrador en este grupo para usarlo. 🌃",
-        botAdmin: "🌃 No puedo ejecutar la orden. El bot debe ser administrador del grupo primero. 🌃",
-}   
+        botAdmin: "🌃 No puedo ejecutar la orden. El bot debe ser administrador del grupo primero. 🌃",  
 //        unreg: " | 𝐀𝐯𝐢𝐬𝐨| *`↘️𝙐𝙎𝙐𝘼𝙍𝙄𝙊 𝙉𝙊 𝙍𝙀𝙂𝙄𝙎𝙏𝙍𝘼𝘿𝙊↘️`*_\n\n`Para Registrarse:`\n\n> .reg nombre.edad\n\n`Ejemplo:`\n\n> .reg Barboza.18",
         restrict: "> _*`Comando desactivado por mi Owner`*_" 
     }[type]
