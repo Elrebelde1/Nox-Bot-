@@ -17,7 +17,7 @@ const handler = async (m, { conn, args, isAdmin, isOwner }) => {
 }
 
 handler.help = ['modoadmin <on/off>']
-handler.tags = ['group']
+handler.tags = ['config']
 handler.command = /^(modoadmin|adminmode)$/i
 
 handler.before = async function (m, { conn, isAdmin, isOwner, isROwner, isPrems }) {
