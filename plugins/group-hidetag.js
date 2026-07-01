@@ -24,7 +24,7 @@ let handler = async (m, { conn, text, participants }) => {
 
   // Watermark personalizado con nombre del grupo en estilo pequeño
   // Puedes usar subscript o small caps para simular letra pequeña
-  let watermark = `\n\n> *Ale Bot*`
+  let watermark = `\n\n> 🛸 *[ BOX BOT MD ]* 🌌`
 
   // Construir el texto final según origen
   let baseText = text || q.text || c || ''
