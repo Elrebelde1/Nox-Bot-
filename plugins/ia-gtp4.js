@@ -1,8 +1,9 @@
 import fetch from 'node-fetch'
+let key = 'sasuke'
 let handler = async (m, { conn, text }) => {
   if (!text) return m.reply('Escribe algo para hablar con GPT-4.')
   await m.react('⏳')
-  let res = await fetch(`https://api.evogb.org/ai/gpt4-session?text=${encodeURIComponent(text)}&session=12&key=sasuke`)
+  let res = await fetch(`https://api.evogb.org/ai/gpt4-session?text=${encodeURIComponent(text)}&session=12&key=${key}`)
   let json = await res.json()
   if (json.status) {
     await m.react('✅')
