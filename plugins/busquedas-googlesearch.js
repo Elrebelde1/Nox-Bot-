@@ -6,7 +6,6 @@ let handler = async (m, { conn, text }) => {
     await m.react('🔍')
     
     try {
-        // Usamos la librería yt-search para buscar
         let search = await ytSearch(text)
         let results = search.videos.slice(0, 5)
         
