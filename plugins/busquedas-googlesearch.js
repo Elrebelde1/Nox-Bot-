@@ -1,24 +1,22 @@
-import { search } from 'duck-duck-scrape'
+import ytSearch from 'yt-search'
 
 let handler = async (m, { conn, text }) => {
-    if (!text) return m.reply('✨ *Nox Bot 🌃*\nIngresa un término para buscar.')
+    if (!text) return m.reply('✨ *Nox Bot 🌃*\n¿Qué quieres buscar?')
     
     await m.react('🔍')
     
     try {
-        // Buscamos directamente sin APIs externas
-        const results = await search(text, { safeSearch: 'moderate' })
+        // Usamos la librería yt-search para buscar
+        let search = await ytSearch(text)
+        let results = search.videos.slice(0, 5)
         
-        if (!results.results || results.results.length === 0) {
-            return m.reply('❌ No se encontraron resultados.')
-        }
+        if (!results.length) return m.reply('❌ No encontré resultados.')
 
-        let txt = `*Nox Bot 🌃 - Buscador Web*\n`
-        txt += `_Resultados para: ${text}_\n\n`
+        let txt = `*Nox Bot 🌃 - Buscador*\n`
+        txt += `_Consultando: ${text}_\n\n`
         
-        // Tomamos los primeros 5 resultados
-        txt += results.results.slice(0, 5).map((v, i) => {
-            return `*${i + 1}. ${v.title}*\n${v.description}\n🔗 ${v.url}`
+        txt += results.map((v, i) => {
+            return `*${i + 1}. ${v.title}*\n🕒 Duración: ${v.timestamp}\n🔗 ${v.url}`
         }).join('\n\n')
 
         await conn.reply(m.chat, txt, m)
@@ -27,7 +25,7 @@ let handler = async (m, { conn, text }) => {
     } catch (e) {
         console.error(e)
         await m.react('❌')
-        m.reply('⚠️ *Error:* No pude realizar la búsqueda.')
+        m.reply('⚠️ *Error:* No se pudo realizar la búsqueda.')
     }
 }
 
