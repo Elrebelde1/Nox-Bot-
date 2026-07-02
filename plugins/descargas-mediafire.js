@@ -7,10 +7,11 @@ let handler = async (m, { conn, text }) => {
         let txt = `*MEDIAFIRE DOWNLOADER*\n\n` +
                   `📄 Archivo: ${info.name}\n` +
                   `⚖️ Tamaño: ${info.size}\n` +
-                  `🕒 Fecha: ${info.date}\n` +
-                  `⬇️ Descarga: ${info.dl}`
+                  `🕒 Fecha: ${info.date}`
                   
-        await conn.sendMessage(m.chat, { text: txt }, { quoted: m })
+        // Enviamos el archivo junto con la información
+        await conn.sendFile(m.chat, info.dl, info.name, txt, m)
+        
     } catch (e) {
         throw 'Error al obtener el archivo, verifica el enlace.'
     }
