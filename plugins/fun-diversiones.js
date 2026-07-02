@@ -1,11 +1,11 @@
 let handler = async (m, { conn, command, text }) => {
-  // Obtenemos el nombre del objetivo: si hay menciones, usamos el primero, si no, usamos el texto
-  let who = m.mentionedJid && m.mentionedJid[0] ? m.mentionedJid[0] : m.sender
-  let name = await conn.getName(who)
-  let userTarget = m.mentionedJid && m.mentionedJid[0] ? `@${who.split('@')[0]}` : (text || name)
-
-  let porcentaje = Math.floor(Math.random() * 500) + 1
-  let menciones = m.mentionedJid && m.mentionedJid[0] ? { mentions: [who] } : {}
+  let who = m.mentionedJid && m.mentionedJid[0] ? m.mentionedJid[0] 
+          : m.quoted ? m.quoted.sender 
+          : m.sender;
+  
+  let name = await conn.getName(who);
+  let userTarget = m.mentionedJid && m.mentionedJid[0] ? `@${who.split('@')[0]}` : name;
+  let porcentaje = Math.floor(Math.random() * 500) + 1;
 
   let respuestas = {
     'gay': `_*${userTarget}* *ES 🏳️‍🌈* *${porcentaje}%* *GAY*_`,
@@ -21,9 +21,13 @@ let handler = async (m, { conn, command, text }) => {
     'prostituta': `_*${userTarget}* *ES* *${porcentaje}%* *PROSTITUTA 🫦👅, ¿QUIÉN QUIERE DE SUS SERVICIOS? XD*_`
   }
 
-  let respuestaFinal = respuestas[command.toLowerCase()]
+  let respuestaFinal = respuestas[command.toLowerCase()];
+  
   if (respuestaFinal) {
-    await conn.sendMessage(m.chat, { text: respuestaFinal, mentions: [who] }, { quoted: m })
+    await conn.sendMessage(m.chat, { 
+      text: respuestaFinal, 
+      mentions: [who] 
+    }, { quoted: m });
   }
 }
 
