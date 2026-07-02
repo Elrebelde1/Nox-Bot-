@@ -12,6 +12,6 @@ let handler = async (m, { conn, text }) => {
     } catch { await m.react('❌') }
 }
 handler.help = ['letra <cancion>']
-handler.tags = ['tools']
+handler.tags = ['search']
 handler.command = /^(letra|lyrics)$/i
 export default handler
