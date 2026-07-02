@@ -1,26 +1,57 @@
 import { sticker } from '../lib/sticker.js'
 import axios from 'axios'
 
-const handler = async (m, { conn, args, usedPrefix, command }) => {
-    let text
-    if (args.length >= 1) {
-        text = args.slice(0).join(" ")
-    } else if (m.quoted && m.quoted.text) {
-        text = m.quoted.text
-    } else {
-        return conn.reply(m.chat, `Por favor, ingresa un texto para crear el sticker.`, m)
+const handler = async (m, { conn, args }) => {
+    let mentionedJid = m.mentionedJid && m.mentionedJid[0] ? m.mentionedJid[0] : null;
+    let authorName, text, pp;
+
+    if (!args.length && !(m.quoted && m.quoted.text)) {
+        throw "✍️ *Ingrese un texto para realizar su stiker quotly.*\n\n> Ejemplo: .qc Hola mundo\n> Ejemplo: .qc @user nombre / Hola\n> Ejemplo: .qc nombre / Hola";
     }
 
-    if (!text) return conn.reply(m.chat, `Por favor, ingresa un texto para crear el sticker.`, m)
+    // 🔹 Caso extendido: .qc @user NombreAutor / Texto
+    if (mentionedJid && args.join(" ").includes("/")) {
+        const joined = args.slice(1).join(" ");
+        const [authorNameRaw, ...textParts] = joined.split("/");
+        authorName = authorNameRaw?.trim() || "Anónimo";
+        text = textParts.join("/").trim();
+        pp = await conn.profilePictureUrl(mentionedJid, 'image').catch(_ => 'https://telegra.ph/file/320b066dc81928b782c7b.png');
+    }
+    // 🔹 Caso nuevo: .qc NombreAutor / Texto → usa foto fija
+    else if (!mentionedJid && args.join(" ").includes("/")) {
+        const joined = args.join(" ");
+        const [authorNameRaw, ...textParts] = joined.split("/");
+        authorName = authorNameRaw?.trim() || "Anónimo";
+        text = textParts.join("/").trim();
+        // 📌 Foto fija para este caso
+        pp = "https://files.catbox.moe/dpeqsr.jpg";
+    }
+    // 🔹 Caso simple: .qc <texto>
+    else if (!mentionedJid && args.length >= 1) {
+        text = args.join(" ");
+        try {
+            authorName = await conn.getName(m.sender);
+        } catch {
+            authorName = "Anónimo";
+        }
+        pp = await conn.profilePictureUrl(m.sender, 'image').catch(_ => 'https://telegra.ph/file/320b066dc81928b782c7b.png');
+    }
+    // 🔹 Caso citado
+    else if (m.quoted && m.quoted.text) {
+        text = m.quoted.text;
+        try {
+            authorName = await conn.getName(m.sender);
+        } catch {
+            authorName = "Anónimo";
+        }
+        pp = await conn.profilePictureUrl(m.sender, 'image').catch(_ => 'https://telegra.ph/file/320b066dc81928b782c7b.png');
+    }
+    else {
+        return conn.reply(m.chat, "🐼 *Formato inválido.*\n\n> Usa: .qc Hola mundo\n> Usa: .qc @user NombreAutor / Texto\n> Usa: .qc NombreAutor / Texto", m);
+    }
 
-    const mentionedUser = m.quoted ? m.quoted.sender : m.sender
-    const pp = await conn.profilePictureUrl(mentionedUser).catch((_) => 'https://telegra.ph/file/24fa902ead26340f3df2c.png')
-    const nombre = await conn.getName(mentionedUser)
-
-    const mentionRegex = new RegExp(`@${mentionedUser.split('@')[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*`, 'g')
-    const mishi = text.replace(mentionRegex, '')
-
-    if (mishi.length > 30) return conn.reply(m.chat, `✧ El texto no puede tener más de 30 caracteres.`, m)
+    if (!text) return conn.reply(m.chat, '🐼 *Ingrese un texto para el sticker.*', m)
+    if (text.length > 30) return conn.reply(m.chat, '> Máximo 30 carácteres, no es una biblia hijo.', m)
 
     const obj = {
         "type": "quote",
@@ -34,29 +65,39 @@ const handler = async (m, { conn, args, usedPrefix, command }) => {
             "avatar": true,
             "from": {
                 "id": 1,
-                "name": `${nombre}`,
-                "photo": { url: `${pp}` }
+                "name": authorName || "Anónimo",
+                "photo": { "url": pp }
             },
-            "text": mishi,
+            "text": text,
             "replyMessage": {}
         }]
+    };
+
+    await conn.sendMessage(m.chat, { react: { text: "⏳", key: m.key } })
+
+    try {
+        const json = await axios.post('https://btzqc.betabotz.eu.org/generate', obj, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        const buffer = Buffer.from(json.data.result.image, 'base64');
+        const stiker = await sticker(buffer, false, global.stickpack, global.stickauth);
+
+        if (stiker) {
+            await conn.sendFile(m.chat, stiker, 'Quotely.webp', '', m);
+            await conn.sendMessage(m.chat, { react: { text: "✅", key: m.key } })
+        } else {
+            await conn.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
+        }
+    } catch (e) {
+        console.error(e);
+        await conn.reply(m.chat, "❌ Error al generar el sticker. Intenta de nuevo más tarde.", m);
+        await conn.sendMessage(m.chat, { react: { text: "❌", key: m.key } })
     }
-
-    const json = await axios.post('https://bot.lyo.su/quote/generate', obj, { headers: { 'Content-Type': 'application/json' } })
-    const buffer = Buffer.from(json.data.result.image, 'base64')
-
-    let userId = m.sender
-    let packstickers = global.db.data.users[userId] || {}
-    let texto1 = packstickers.text1 || global.packsticker
-    let texto2 = packstickers.text2 || global.packsticker2
-
-    let stiker = await sticker(buffer, false, texto1, texto2)
-    if (stiker) return conn.sendFile(m.chat, stiker, 'sticker.webp', '', m)
 }
 
 handler.help = ['qc']
 handler.tags = ['sticker']
-handler.group = true
-handler.command = ['qc']
+handler.command = ['quotly', 'qc']
 
 export default handler
