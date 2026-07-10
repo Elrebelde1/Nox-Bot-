@@ -1,28 +1,26 @@
 let handler = async (m, { text, usedPrefix, command }) => {
     global.db.data.sticker = global.db.data.sticker || {}
+    let hash = m.msg?.fileSha256 || m.quoted?.fileSha256 || m.fileSha256
     
-    // Obtener el objeto del mensaje (si es sticker o citado)
-    let q = m.quoted ? m.quoted : m
-    let mime = (q.msg || q).mimetype || ''
-    if (!/sticker/.test(mime)) return m.reply('*⚠️ Responde a un sticker.*')
-    if (!q.fileSha256) return m.reply('*⚠️ El sticker no tiene un hash válido.*')
-    if (!text) return m.reply(`*⚠️ Escribe el nombre del comando.*\n*Ejemplo:* ${usedPrefix + command} #group-cerrar.js`)
-
-    // Convertimos a base64 de la misma forma que en el handler
-    let hash = Buffer.isBuffer(q.fileSha256) ? q.fileSha256.toString('base64') : q.fileSha256
+    if (!hash) return m.reply('*⚠️ Responde a un sticker.*')
+    if (!text) return m.reply(`*⚠️ Especifica el comando.*\n*Ejemplo:* ${usedPrefix + command} #group-cerrar.js`)
     
-    global.db.data.sticker[hash] = {
+    let hashStr = Buffer.isBuffer(hash) ? hash.toString('base64') : hash
+    
+    global.db.data.sticker[hashStr] = {
         text: text.trim(),
+        mentionedJid: m.mentionedJid,
         creator: m.sender,
         at: +new Date()
     }
-
-    m.reply(`*✅ Comando asignado al sticker:* \`${text.trim()}\``)
+    
+    console.log('[LOG SETCMD] Hash generado:', hashStr)
+    console.log('[LOG SETCMD] Comando guardado:', text.trim())
+    
+    m.reply(`*✅ Sticker asignado correctamente al comando:* \`${text.trim()}\`\n*Hash:* \`${hashStr.slice(0, 10)}...\``)
 }
-
 handler.help = ['setcmd']
 handler.tags = ['database']
 handler.command = ['setcmd']
 handler.rowner = true
-
 export default handler
