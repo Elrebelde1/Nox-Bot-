@@ -82,7 +82,7 @@ export async function handler(chatUpdate) {
                     bank: 0,
                     level: 0,
                 }
-                        let chat = global.db.data.chats[m.chat]
+            let chat = global.db.data.chats[m.chat]
             if (typeof chat !== 'object')
                 global.db.data.chats[m.chat] = {}
             if (chat) {
@@ -94,7 +94,7 @@ export async function handler(chatUpdate) {
                     chat.antiLink = false
                 if (!('antilinkxxx' in chat))
                     chat.antiLinkxxx = false
-                if (!('antiestados' in chat))
+                if (!('antiestados' in chat)) 
                     chat.antiestados = false
                 if (!('detect' in chat)) 
                     chat.detect = true
@@ -118,7 +118,7 @@ export async function handler(chatUpdate) {
                     bienvenida: false,
                     antiLink: false,
                     antilinkxxx: false,
-                    antiEstados: false,
+                    antiEstados: false, 
                     detect: true,
                     onlyLatinos: false,
                     nsfw: false,
@@ -149,6 +149,7 @@ export async function handler(chatUpdate) {
         } catch (e) {
             console.error(e)
         }
+        
        const mainBot = global?.conn?.user?.jid
        const chat = global.db.data.chats[m.chat] || {}
        const isSubbs = chat.antiLag === true
@@ -163,28 +164,18 @@ export async function handler(chatUpdate) {
         if (typeof m.text !== 'string')
             m.text = ''
 
-        global.db.data.sticker = global.db.data.sticker || {}
-        let hash = m.msg?.fileSha256 || m.quoted?.fileSha256 || m.fileSha256
-        if (hash) {
-            let hashStr = Buffer.isBuffer(hash) ? hash.toString('base64') : hash
-            let stickerCmd = global.db.data.sticker[hashStr]
-            if (stickerCmd) {
-                m.text = stickerCmd.text + (m.text ? ' ' + m.text : '')
-            }
-        }
-
         let _user = global.db.data && global.db.data.users && global.db.data.users[m.sender]
         const sendNum = m?.sender?.replace(/[^0-9]/g, '')
         const isROwner = [conn.decodeJid(global.conn?.user?.id), ...global.owner?.map(([number]) => number)].map(v => (v || '').replace(/[^0-9]/g, '')).includes(sendNum)
 
-const dbsubsprems = global.db.data.settings[this.user.jid] || {}
-const subsactivos = dbsubsprems.actives || []
+        const dbsubsprems = global.db.data.settings[this.user.jid] || {}
+        const subsactivos = dbsubsprems.actives || []
 
-const botIds = [this?.user?.id, this?.user?.lid, ...(global.owner?.map(([n]) => n) || [])
-].map(jid => jid?.replace(/[^0-9]/g, '')).filter(Boolean)
+        const botIds = [this?.user?.id, this?.user?.lid, ...(global.owner?.map(([n]) => n) || [])
+        ].map(jid => jid?.replace(/[^0-9]/g, '')).filter(Boolean)
 
-const isPremSubs = subsactivos.some(jid => jid.replace(/[^0-9]/g, '') === sendNum) || botIds.includes(sendNum) || (global.conns || []).some(conn => conn?.user?.jid?.replace(/[^0-9]/g, '') === sendNum && conn?.ws?.socket?.readyState !== 3
-  )
+        const isPremSubs = subsactivos.some(jid => jid.replace(/[^0-9]/g, '') === sendNum) || botIds.includes(sendNum) || (global.conns || []).some(conn => conn?.user?.jid?.replace(/[^0-9]/g, '') === sendNum && conn?.ws?.socket?.readyState !== 3
+        )
 
         const isOwner = isROwner || m.fromMe
         const isMods = isOwner || global.mods.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender)
@@ -206,22 +197,22 @@ const isPremSubs = subsactivos.some(jid => jid.replace(/[^0-9]/g, '') === sendNu
 
         let usedPrefix
 
-const groupMetadata = (m.isGroup ? ((conn.chats[m.chat] || {}).metadata || await this.groupMetadata(m.chat).catch(_ => null)) : {}) || {}
-const participants = (m.isGroup ? groupMetadata.participants : []) || []
-const normalizeJid = jid => jid?.replace(/[^0-9]/g, '')
-const cleanJid = jid => jid?.split(':')[0] || ''
-const senderNum = normalizeJid(m.sender)
-const botNums = [this.user?.jid, this.user?.lid].map(j => normalizeJid(cleanJid(j)))
-const user = m.isGroup 
-  ? participants.find(u => normalizeJid(u.jid) === senderNum) 
-  : {}
-const bot = m.isGroup 
-  ? participants.find(u => botNums.includes(normalizeJid(u.id && u.jid))) 
-  : {}
+        const groupMetadata = (m.isGroup ? ((conn.chats[m.chat] || {}).metadata || await this.groupMetadata(m.chat).catch(_ => null)) : {}) || {}
+        const participants = (m.isGroup ? groupMetadata.participants : []) || []     
+        const normalizeJid = jid => jid?.replace(/[^0-9]/g, '')
+        const cleanJid = jid => jid?.split(':')[0] || ''
+        const senderNum = normalizeJid(m.sender)
+        const botNums = [this.user?.jid, this.user?.lid].map(j => normalizeJid(cleanJid(j)))
+        const user = m.isGroup 
+            ? participants.find(u => normalizeJid(u.jid) === senderNum) 
+            : {}
+        const bot = m.isGroup 
+            ? participants.find(u => botNums.includes(normalizeJid(u.id && u.jid))) 
+            : {}
 
-const isRAdmin = user?.admin === 'superadmin'
-const isAdmin = isRAdmin || user?.admin === 'admin'
-const isBotAdmin = !!bot?.admin || bot?.admin === 'admin'
+        const isRAdmin = user?.admin === 'superadmin'
+        const isAdmin = isRAdmin || user?.admin === 'admin'
+        const isBotAdmin = !!bot?.admin || bot?.admin === 'admin'
 
         const ___dirname = path.join(path.dirname(fileURLToPath(import.meta.url)), './plugins')
         for (let name in global.plugins) {
@@ -264,7 +255,7 @@ const isBotAdmin = !!bot?.admin || bot?.admin === 'admin'
             if (typeof plugin.before === 'function') {
                 if (await plugin.before.call(this, m, {
                     match,
-conn: this,
+                    conn: this,
                     participants,
                     groupMetadata,
                     user,
@@ -289,18 +280,17 @@ conn: this,
                 args = args || []
                 let _args = noPrefix.trim().split` `.slice(1)
                 let text = _args.join` `  
-command = (command || '').toLowerCase()  
-const gruposPermitidos = ['120363420992965884@g.us','120363404767596170@g.us'
-];
+                command = (command || '').toLowerCase()  
+                const gruposPermitidos = ['120363420992965884@g.us','120363404767596170@g.us'];
 
-const comandosPermitidos = ['serbot', 'subbots', 'bots', 'kick', 'code', 's', 'delsession', 'on', 'off', 'tutosub', 'antilag', 'welcome', 'bienvenida', 'antilink', 'antibot', 'modoadmin', 'nsfw', 'antinopor', 'audios', 'autoleer', 'autoread', 'antiprivado', 'detect', 'antiestados','autorechazar','autoaceptar'];
+                const comandosPermitidos = ['serbot', 'subbots', 'bots', 'kick', 'code', 's', 'delsession', 'on', 'off', 'tutosub', 'antilag', 'welcome', 'bienvenida', 'antilink', 'antibot', 'modoadmin', 'nsfw', 'antinopor', 'audios', 'autoleer', 'autoread', 'antiprivado', 'detect', 'antiestados','autorechazar','autoaceptar'];
 
-if (gruposPermitidos.includes(m.chat) &&!comandosPermitidos.includes(command)) {
-  return;
-}
+                if (gruposPermitidos.includes(m.chat) && !comandosPermitidos.includes(command)) {
+                    return;
+                }
 
                 let fail = plugin.fail || global.dfail
-               let isAccept = plugin.command instanceof RegExp ? 
+                let isAccept = plugin.command instanceof RegExp ? 
                     plugin.command.test(command) :
                     Array.isArray(plugin.command) ?
                         plugin.command.some(cmd => cmd instanceof RegExp ? 
@@ -313,6 +303,9 @@ if (gruposPermitidos.includes(m.chat) &&!comandosPermitidos.includes(command)) {
 
                 if (!isAccept)
                     continue
+
+                console.log(`[LOG HANDLER COMMAND] Ejecutando comando: ${command} desde el plugin: ${name}`)
+                
                 m.plugin = name
                 if (m.chat in global.db.data.chats || m.sender in global.db.data.users) {
                     let chat = global.db.data.chats[m.chat]
@@ -377,7 +370,7 @@ if (gruposPermitidos.includes(m.chat) &&!comandosPermitidos.includes(command)) {
                 else
                     m.exp += xp
                 if (!isPrems && plugin.limit && global.db.data.users[m.sender].limit < plugin.limit * 1) {
-                    conn.reply(m.chat, `Se agotaron tus *🔑 Eris*`, m, rcanal)
+                    conn.reply(m.chat, `Se agotaron tus *✳️ Eris*`, m, rcanal)
                     continue
                 }
                 let extra = {
@@ -476,30 +469,30 @@ if (gruposPermitidos.includes(m.chat) &&!comandosPermitidos.includes(command)) {
         }
 
         try {
-      if (!opts['noprint']) await (await import(`./lib/print.js`)).default(m, this)
-    } catch (e) {
-      console.log(m, m.quoted, e)
+            if (!opts['noprint']) await (await import(`./lib/print.js`)).default(m, this)
+        } catch (e) {
+            console.log(m, m.quoted, e)
+        }
+        const settingsREAD = global.db.data.settings[this.user.jid] || {}
+        if (opts['autoread']) await this.readMessages([m.key])
+        if (settingsREAD.autoread) await this.readMessages([m.key])
     }
-    const settingsREAD = global.db.data.settings[this.user.jid] || {}
-    if (opts['autoread']) await this.readMessages([m.key])
-    if (settingsREAD.autoread) await this.readMessages([m.key])
-  }
 }
 
 global.dfail = (type, m, conn, usedPrefix) => {
-          let msg = {
-        rowner: "🌃 Lo siento, esta acción está permitida únicamente para el dueño principal del sistema. 🌃",
+    let msg = {
+        rowner: "Option 🌃 Lo siento, esta acción está permitida únicamente para el dueño principal del sistema. 🌃",
         owner: "🌃 Acceso restringido. Solo los desarrolladores autorizados pueden usar este comando. 🌃",
+        premium: " |𝐀𝐯𝐢𝐬𝐨| *`🔑 𝐍class 𝐄𝐑𝐄𝐒 𝐔𝐒𝐔𝐀𝐑class𝐎 𝐏𝐑𝐄𝐌class𝐔𝐌 𝐇𝐀𝐁𝐋𝐀 𝐂class𝐍 𝐌class 𝐂𝐑𝐄𝐀classclass𝐑⚡`*_",
+        premsubs: '《★》Esta función solo puede ser usada por subbots premiums.', 
         group: "🌃 Error de ejecución. Por favor, utiliza este comando dentro de un grupo. 🌃",
         private: "🌃 Configuración de privacidad. Envía este comando por chat privado para que funcione. 🌃",
         admin: "🌃 Acción rechazada. Necesitas permisos de administrador en este grupo para usarlo. 🌃",
-        botAdmin: "🌃 No puedo ejecutar la orden. El bot debe ser administrador del grupo primero. 🌃",  
-//        unreg: " | 𝐀𝐯𝐢𝐬𝐨| *`↘️𝙐𝙎𝙐𝘼𝙍𝙄𝙊 𝙉𝙊 𝙍𝙀𝙂𝙄𝙎𝙏𝙍𝘼𝘿𝙊↘️`*_\n\n`Para Registrarse:`\n\n> .reg nombre.edad\n\n`Ejemplo:`\n\n> .reg Barboza.18",
-        restrict: "> _*`Comando desactivado por mi Owner`*_" 
+        botAdmin: "🌃 No puedo ejecutar la orden. El bot debe ser administrador del grupo primero. 🌃",
+//       restrict: "> _*`Comando desactivado por mi Owner`*_" 
     }[type]
-    if (msg) return conn.reply(m.chat, msg, m, global.canal).then(_ => m.react('✖️'))
+    if (msg) return conn.reply(m.chat, msg, m, rcanal).then(_ => m.react('✖️'))
 }
-
 let file = global.__filename(import.meta.url, true)
 watchFile(file, async () => {
     unwatchFile(file)
