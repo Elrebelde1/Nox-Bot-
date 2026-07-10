@@ -490,7 +490,6 @@ global.dfail = (type, m, conn, usedPrefix) => {
           let msg = {
         rowner: "🌃 Lo siento, esta acción está permitida únicamente para el dueño principal del sistema. 🌃",
         owner: "🌃 Acceso restringido. Solo los desarrolladores autorizados pueden usar este comando. 🌃",
-        mods: "🌃,
         group: "🌃 Error de ejecución. Por favor, utiliza este comando dentro de un grupo. 🌃",
         private: "🌃 Configuración de privacidad. Envía este comando por chat privado para que funcione. 🌃",
         admin: "🌃 Acción rechazada. Necesitas permisos de administrador en este grupo para usarlo. 🌃",
