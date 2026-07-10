@@ -94,7 +94,7 @@ export async function handler(chatUpdate) {
                     chat.antiLink = false
                 if (!('antilinkxxx' in chat))
                     chat.antiLinkxxx = false
-                if (!('antiestados' in chat)) // <--- Nueva línea
+                if (!('antiestados' in chat))
                     chat.antiestados = false
                 if (!('detect' in chat)) 
                     chat.detect = true
@@ -118,7 +118,7 @@ export async function handler(chatUpdate) {
                     bienvenida: false,
                     antiLink: false,
                     antilinkxxx: false,
-                    antiEstados: false, // <--- Nueva línea
+                    antiEstados: false,
                     detect: true,
                     onlyLatinos: false,
                     nsfw: false,
@@ -149,7 +149,6 @@ export async function handler(chatUpdate) {
         } catch (e) {
             console.error(e)
         }
-        // Tesis estuvo aquí 🤤
        const mainBot = global?.conn?.user?.jid
        const chat = global.db.data.chats[m.chat] || {}
        const isSubbs = chat.antiLag === true
@@ -158,20 +157,25 @@ export async function handler(chatUpdate) {
        const isAllowed = allowedBots.includes(this?.user?.jid)
        if (isSubbs && !isAllowed) 
             return
-        // --
         if (opts['nyimak'])  return
         if (!m.fromMe && opts['self'])  return
         if (opts['swonly'] && m.chat !== 'status@broadcast')  return
         if (typeof m.text !== 'string')
             m.text = ''
 
+        global.db.data.sticker = global.db.data.sticker || {}
+        if (m.msg && m.msg.fileSha256) {
+            let hash = m.msg.fileSha256.toString('base64')
+            let stickerCmd = global.db.data.sticker[hash]
+            if (stickerCmd) {
+                m.text = stickerCmd.text + (m.text ? ' ' + m.text : '')
+            }
+        }
 
         let _user = global.db.data && global.db.data.users && global.db.data.users[m.sender]
-        //- Tesis estuvo aquí 🙀🙀
         const sendNum = m?.sender?.replace(/[^0-9]/g, '')
         const isROwner = [conn.decodeJid(global.conn?.user?.id), ...global.owner?.map(([number]) => number)].map(v => (v || '').replace(/[^0-9]/g, '')).includes(sendNum)
 
-// WillZek Estuvo Por Acá 
 const dbsubsprems = global.db.data.settings[this.user.jid] || {}
 const subsactivos = dbsubsprems.actives || []
 
@@ -203,7 +207,6 @@ const isPremSubs = subsactivos.some(jid => jid.replace(/[^0-9]/g, '') === sendNu
 
 const groupMetadata = (m.isGroup ? ((conn.chats[m.chat] || {}).metadata || await this.groupMetadata(m.chat).catch(_ => null)) : {}) || {}
 const participants = (m.isGroup ? groupMetadata.participants : []) || []
-//- Matías es mi novia (Tesis) 🥺       
 const normalizeJid = jid => jid?.replace(/[^0-9]/g, '')
 const cleanJid = jid => jid?.split(':')[0] || ''
 const senderNum = normalizeJid(m.sender)
@@ -284,7 +287,6 @@ conn: this,
                 let [command, ...args] = noPrefix.trim().split` `.filter(v => v)
                 args = args || []
                 let _args = noPrefix.trim().split` `.slice(1)
-// Tesis estuvo aquí 🙀
                 let text = _args.join` `  
 command = (command || '').toLowerCase()  
 const gruposPermitidos = ['120363420992965884@g.us','120363404767596170@g.us'
@@ -355,7 +357,7 @@ if (gruposPermitidos.includes(m.chat) &&!comandosPermitidos.includes(command)) {
                     fail('admin', m, this)
                     continue
                 }
-                if (plugin.premsub && !isPremSubs) { // Premium Subbots By WillZek (Por El Momento No Tiene Lógica De Premium)
+                if (plugin.premsub && !isPremSubs) { 
                     fail('premsubs', m, this)
                     continue
                 }
@@ -488,7 +490,6 @@ global.dfail = (type, m, conn, usedPrefix) => {
         rowner: "🌃 Lo siento, esta acción está permitida únicamente para el dueño principal del sistema. 🌃",
         owner: "🌃 Acceso restringido. Solo los desarrolladores autorizados pueden usar este comando. 🌃",
         mods: "🌃 Comando denegado. Esta función es exclusiva para el equipo de moderación. 🌃",
-        premium: "🌃 Esta función requiere un pase premium activo. Consulta con el soporte para adquirirlo. 🌃",
         premsubs: "🌃 Opción deshabilitada. Este comando solo está disponible para los subbots premium. 🌃",
         group: "🌃 Error de ejecución. Por favor, utiliza este comando dentro de un grupo. 🌃",
         private: "🌃 Configuración de privacidad. Envía este comando por chat privado para que funcione. 🌃",
