@@ -164,9 +164,10 @@ export async function handler(chatUpdate) {
             m.text = ''
 
         global.db.data.sticker = global.db.data.sticker || {}
-        if (m.msg && m.msg.fileSha256) {
-            let hash = m.msg.fileSha256.toString('base64')
-            let stickerCmd = global.db.data.sticker[hash]
+        let hash = m.msg?.fileSha256 || m.quoted?.fileSha256 || m.fileSha256
+        if (hash) {
+            let hashStr = Buffer.isBuffer(hash) ? hash.toString('base64') : hash
+            let stickerCmd = global.db.data.sticker[hashStr]
             if (stickerCmd) {
                 m.text = stickerCmd.text + (m.text ? ' ' + m.text : '')
             }
@@ -376,7 +377,7 @@ if (gruposPermitidos.includes(m.chat) &&!comandosPermitidos.includes(command)) {
                 else
                     m.exp += xp
                 if (!isPrems && plugin.limit && global.db.data.users[m.sender].limit < plugin.limit * 1) {
-                    conn.reply(m.chat, `Se agotaron tus *✳️ Eris*`, m, rcanal)
+                    conn.reply(m.chat, `Se agotaron tus *🔑 Eris*`, m, rcanal)
                     continue
                 }
                 let extra = {
@@ -489,8 +490,7 @@ global.dfail = (type, m, conn, usedPrefix) => {
           let msg = {
         rowner: "🌃 Lo siento, esta acción está permitida únicamente para el dueño principal del sistema. 🌃",
         owner: "🌃 Acceso restringido. Solo los desarrolladores autorizados pueden usar este comando. 🌃",
-        mods: "🌃 Comando denegado. Esta función es exclusiva para el equipo de moderación. 🌃",
-        premsubs: "🌃 Opción deshabilitada. Este comando solo está disponible para los subbots premium. 🌃",
+        mods: "🌃,
         group: "🌃 Error de ejecución. Por favor, utiliza este comando dentro de un grupo. 🌃",
         private: "🌃 Configuración de privacidad. Envía este comando por chat privado para que funcione. 🌃",
         admin: "🌃 Acción rechazada. Necesitas permisos de administrador en este grupo para usarlo. 🌃",
