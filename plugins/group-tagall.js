@@ -77,7 +77,7 @@ const handler = async (m, { isOwner, isAdmin, conn, participants, args }) => {
 
     messageText += `╰────────────────────────────╯
 
-🛸 *[ BOX BOT MD ]* 🌌
+🛸 *[ NOX BOT MD ]* 🌌
     `;
 
     // Aquí va la imagen (pon tu URL en 'url')
