@@ -12,13 +12,13 @@ let handler = async (m, { conn, isOwner, isAdmin, isROwner, command }) => {
     case 'banchat': case 'banearchat':
       if (chat.isBanned) return m.reply(`🛸 *[ NOX BOT MD ]* 🌌\n\n⚠️ *Este chat ya se encuentra baneado.*`)
       chat.isBanned = true
-      await conn.reply(m.chat, `🛸 *[ NOX BOT MD ]* 🌌\n\n🚫 *Chat Baneado:* El bot ha sido desactivado en este grupo.\n💬 No responderé a ningún comando hasta que sea desbloqueado.\n\n⚙️ *Box Bot MD • Control de Grupos* 🌀`, m)
+      await conn.reply(m.chat, `🛸 *[ NOX BOT MD ]* 🌌\n\n🚫 *Chat Baneado:* El bot ha sido desactivado en este grupo.\n💬 No responderé a ningún comando hasta que sea desbloqueado.\n\n⚙️ *Nox Bot MD • Control de Grupos* 🌀`, m)
       break
 
     case 'unbanchat': case 'desbanearchat':
       if (!chat.isBanned) return m.reply(`🛸 *[ BOX BOT MD ]* 🌌\n\n⚠️ *Este chat no está baneado.*`)
       chat.isBanned = false
-      await conn.reply(m.chat, `🛸 *[ NOX BOT MD ]* 🌌\n\n🌀 *Chat Desbaneado:* El bot vuelve a estar activo en este grupo.\n⚡ Ya pueden utilizar todos los comandos con normalidad.\n\n⚙️ *Box Bot MD • Control de Grupos* 🌀`, m)
+      await conn.reply(m.chat, `🛸 *[ NOX BOT MD ]* 🌌\n\n🌀 *Chat Desbaneado:* El bot vuelve a estar activo en este grupo.\n⚡ Ya pueden utilizar todos los comandos con normalidad.\n\n⚙️ *Nox Bot MD • Control de Grupos* 🌀`, m)
       break
 
     default:
