@@ -12,7 +12,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   let json = await (await fetch(apiUrl)).json()
   if (!json.status) return m.reply(`❌ *Error al procesar el audio.*`)
 
-  let cap = `🛸 *[ BOX BOT MD ]* 🌌\n\n🎶 *Título:* ${vid.title}\n📁 *Formato:* MP3\n\n⚙️ *Box Bot MD • Descargando...* 🌀`
+  let cap = `🛸 *[ Nox BOT MD ]* 🌌\n\n🎶 *Título:* ${vid.title}\n📁 *Formato:* MP3\n\n⚙️ *Nox Bot MD • Descargando...* 🌀`
 
   await conn.sendMessage(m.chat, { image: { url: vid.thumbnail }, caption: cap }, { quoted: m })
   await conn.sendMessage(m.chat, { audio: { url: json.data.dl }, mimetype: 'audio/mpeg' }, { quoted: m })
