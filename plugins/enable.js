@@ -66,10 +66,10 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
 
   let estadoTexto = isEnable ? 'Activado 🌀' : 'Desactivado ✖️'
 
-  let statusTxt = `🛸 *[ BOX BOT MD ]* 🌌\n\n`
+  let statusTxt = `🛸 *[ NOX BOT MD ]* 🌌\n\n`
   statusTxt += `⚙️ *Función:* ${type}\n`
   statusTxt += `📊 *Estado:* ${estadoTexto}\n\n`
-  statusTxt += `⚙️ *Box Bot MD • Sistema Automatizado* 🌀`
+  statusTxt += `⚙️ *Nox Bot MD• Sistema Automatizado* 🌀`
 
   await conn.sendMessage(m.chat, {
     image: catalogoImg.byteLength ? catalogoImg : { url: catalogoImg.url },
