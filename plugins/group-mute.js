@@ -2,7 +2,7 @@ let mutedUsers = new Set();
 
 let handler = async (m, { conn, command, participants }) => {
     let mentionedJid = m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : false;
-    if (!mentionedJid) return m.reply(`🛸 *[ BOX BOT MD ]* 🌌\n\n🚩 Etiqueta a una persona o responde a un mensaje.`);
+    if (!mentionedJid) return m.reply(`🛸 *[ NOX BOT MD ]* 🌌\n\n🚩 Etiqueta a una persona o responde a un mensaje.`);
     
     let isUserAdmin = participants.find(p => p.id === mentionedJid)?.admin;
     if (isUserAdmin) return m.reply(`⚠️ *No puedes mutear a un administrador.*`);
