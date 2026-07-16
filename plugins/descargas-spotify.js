@@ -1,7 +1,7 @@
 import fetch from 'node-fetch'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-  if (!text) return m.reply(`🛸 *[ BOX BOT MD ]* 🌌\n\n🚩 *Escribe el nombre de la canción a buscar.*\n📌 Ejemplo: *${usedPrefix + command} Lupita*`)
+  if (!text) return m.reply(`🛸 *[ NOX BOT MD ]* 🌌\n\n🚩 *Escribe el nombre de la canción a buscar.*\n📌 Ejemplo: *${usedPrefix + command} Lupita*`)
 
   await m.react('🔍')
 
@@ -25,7 +25,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
         return m.reply(`❌ *Error al obtener el enlace de descarga.*`)
     }
 
-    let cap = `🛸 *[ BOX BOT MD ]* 🌌\n\n`
+    let cap = `🛸 *[ NOX BOT MD ]* 🌌\n\n`
     cap += `🎶 *Título:* ${dlData.data.name}\n`
     cap += `👤 *Artista:* ${dlData.data.artist}\n`
     cap += `💿 *Álbum:* ${dlData.data.album}\n`
