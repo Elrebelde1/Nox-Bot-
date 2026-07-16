@@ -6,7 +6,7 @@ let handler = async (m, { conn, usedPrefix }) => {
   
   const img = readFileSync(join(process.cwd(), 'storage', 'img', 'catalogo.png'))
   
-  let menuText = `🛸 *[ BOX BOT MD ]* 🌌\n\n`
+  let menuText = `🛸 *[ NOX BOT MD ]* 🌌\n\n`
   menuText += `👤 *Usuario:* @${taguser.split('@')[0]}\n`
   menuText += `⚙️ *Prefijo:* [ ${usedPrefix} ]\n\n`
   
@@ -32,7 +32,7 @@ let handler = async (m, { conn, usedPrefix }) => {
     menuText += `*───────────────────*\n\n`
   }
   
-  menuText += `⚙️ *Box Bot MD • Sistema Automatizado* 🌀`
+  menuText += `⚙️ *Nox Bot MD • Sistema Automatizado* 🌀`
 
   await conn.sendMessage(m.chat, { 
     image: img, 
