@@ -2,7 +2,7 @@ import yts from 'yt-search'
 import fetch from 'node-fetch'
 
 let handler = async (m, { conn, command, text, usedPrefix }) => {
-  if (!text) return m.reply(`🛸 *[ BOX BOT MD ]* 🌌\n\n🚩 *Escribe el nombre de lo que deseas buscar.*\n📌 Ejemplo: *${usedPrefix + command} king nasir*`)
+  if (!text) return m.reply(`🛸 *[ NOX BOT MD ]* 🌌\n\n🚩 *Escribe el nombre de lo que deseas buscar.*\n📌 Ejemplo: *${usedPrefix + command} king nasir*`)
 
   await m.react('🔍')
 
@@ -26,12 +26,12 @@ let handler = async (m, { conn, command, text, usedPrefix }) => {
     return m.reply(`❌ *Error al procesar la descarga.*`)
   }
 
-  let cap = `🛸 *[ BOX BOT MD ]* 🌌\n\n`
+  let cap = `🛸 *[ NOX BOT MD ]* 🌌\n\n`
   cap += `🎶 *Título:* ${vid.title}\n`
   cap += `⏳ *Duración:* ${vid.timestamp}\n`
   cap += `👤 *Autor:* ${vid.author.name}\n`
   cap += `📁 *Formato:* ${isVideo ? 'VIDEO (MP4)' : 'AUDIO (MP3)'}\n\n`
-  cap += `⚙️ *Box Bot MD • Enviando...* 🌀`
+  cap += `⚙️ *NOX Bot MD • Enviando...* 🌀`
 
   await conn.sendMessage(m.chat, { image: { url: vid.thumbnail }, caption: cap }, { quoted: m })
   
