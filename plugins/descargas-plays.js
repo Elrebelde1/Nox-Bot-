@@ -1,5 +1,9 @@
 import yts from 'yt-search'
 import fetch from 'node-fetch'
+import ffmpeg from 'fluent-ffmpeg'
+import fs from 'fs'
+import path from 'path'
+import { tmpdir } from 'os'
 
 let handler = async (m, { conn, command, text, usedPrefix }) => {
   if (!text) return m.reply(`🛸 *[ NOX BOT MD ]* 🌌\n\n🚩 *Escribe el nombre de lo que deseas buscar.*\n📌 Ejemplo: *${usedPrefix + command} king nasir*`)
@@ -31,14 +35,41 @@ let handler = async (m, { conn, command, text, usedPrefix }) => {
   cap += `⏳ *Duración:* ${vid.timestamp}\n`
   cap += `👤 *Autor:* ${vid.author.name}\n`
   cap += `📁 *Formato:* ${isVideo ? 'VIDEO (MP4)' : 'AUDIO (MP3)'}\n\n`
-  cap += `⚙️ *NOX Bot MD • Enviando...* 🌀`
+  cap += `⚙️ *NOX Bot MD • Procesando con FFmpeg...* 🌀`
 
   await conn.sendMessage(m.chat, { image: { url: vid.thumbnail }, caption: cap }, { quoted: m })
-  
+
+  let ext = isVideo ? 'mp4' : 'mp3'
+  let tmpFilePath = path.join(tmpdir(), `${Date.now()}.${ext}`)
+
+  await new Promise((resolve, reject) => {
+    let process = ffmpeg(json.data.dl)
+    if (isVideo) {
+      process
+        .videoCodec('libx264')
+        .audioCodec('aac')
+        .format('mp4')
+        .outputOptions(['-movflags +faststart', '-pix_fmt yuv420p'])
+    } else {
+      process
+        .audioCodec('libmp3lame')
+        .format('mp3')
+    }
+
+    process
+      .on('end', () => resolve(true))
+      .on('error', (err) => reject(err))
+      .save(tmpFilePath)
+  })
+
+  let mediaBuffer = fs.readFileSync(tmpFilePath)
+
   await conn.sendMessage(m.chat, { 
-    [isVideo ? 'video' : 'audio']: { url: json.data.dl }, 
+    [isVideo ? 'video' : 'audio']: mediaBuffer, 
     mimetype: isVideo ? 'video/mp4' : 'audio/mpeg' 
   }, { quoted: m })
+
+  if (fs.existsSync(tmpFilePath)) fs.unlinkSync(tmpFilePath)
 
   await m.react('✅')
 }
