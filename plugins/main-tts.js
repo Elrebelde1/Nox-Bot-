@@ -1,54 +1,32 @@
-import axios from 'axios'
-import { exec } from 'child_process'
-import fs from 'fs'
-import { join } from 'path'
+import * as googleTTS from 'google-tts-api'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-    let q = m.quoted ? m.quoted.text : text
-    if (!q) return m.reply(`⚠️ Escribe un texto.\n\n> Ejemplo: *${usedPrefix + command}* Hola gey`)
+  let q = m.quoted ? m.quoted : m
+  let txt = text || q.text || q.caption || q.body || ''
 
-    await m.react('⏳')
+  if (!txt) return m.reply(`🛸 *[ NOX BOT MD ]* 🌌\n\n🚩 *Escribe el texto que deseas convertir a audio.*\n📌 Ejemplo: *${usedPrefix + command} Hola, ¿cómo estás?*`)
 
-    try {
-        const url = `https://yosoyyo-api-ofc.onrender.com/api/tts?text=${encodeURIComponent(q)}&apiKey=yosoyyo_sk_cq1h5ccx`
+  await m.react('🎙️')
 
-        // Obtenemos los bytes del audio
-        const res = await axios.get(url, { responseType: 'arraybuffer' })
+  let lang = 'es'
+  let url = googleTTS.getAudioUrl(txt, {
+    lang: lang,
+    slow: false,
+    host: 'https://translate.google.com',
+    timeout: 10000,
+  })
 
-        const tempWav = join(process.cwd(), `temp_${Date.now()}.wav`)
-        const tempOpus = join(process.cwd(), `temp_${Date.now()}.opus`)
+  await conn.sendMessage(m.chat, {
+    audio: { url: url },
+    mimetype: 'audio/mpeg',
+    ptt: true
+  }, { quoted: m })
 
-        // Guardamos el WAV temporalmente
-        fs.writeFileSync(tempWav, res.data)
-
-        // Convertimos a OPUS (formato nativo de notas de voz de WhatsApp)
-        exec(`ffmpeg -i ${tempWav} -c:a libopus -b:a 128k ${tempOpus}`, async (err) => {
-            if (err) {
-                console.error(err)
-                return m.reply('❌ Error al convertir el audio.')
-            }
-
-            await conn.sendMessage(m.chat, { 
-                audio: fs.readFileSync(tempOpus), 
-                mimetype: 'audio/ogg; codecs=opus', 
-                ptt: true 
-            }, { quoted: m })
-
-            // Borramos archivos temporales
-            if (fs.existsSync(tempWav)) fs.unlinkSync(tempWav)
-            if (fs.existsSync(tempOpus)) fs.unlinkSync(tempOpus)
-
-            await m.react('✅')
-        })
-
-    } catch (e) {
-        console.error(e)
-        m.reply('❌ Fallo al procesar la API.')
-    }
+  await m.react('✅')
 }
 
 handler.help = ['tts <texto>']
-handler.tags = ['main']
-handler.command = /^tts$/i
+handler.tags = ['tools']
+handler.command = ['tts']
 
 export default handler
