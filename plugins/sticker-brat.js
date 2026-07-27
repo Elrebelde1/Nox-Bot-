@@ -60,8 +60,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   await m.react('✅')
 }
 
-handler.help = ['brat <texto>', 'bratanim <texto>']
+handler.help = ['brat <texto>',<texto>']
 handler.tags = ['sticker']
-handler.command = /^brat(anim|2)?$/i
+handler.command = /^brat?$/i
 
 export default handler
