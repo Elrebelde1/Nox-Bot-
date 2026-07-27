@@ -1,4 +1,8 @@
 import * as googleTTS from 'google-tts-api'
+import ffmpeg from 'fluent-ffmpeg'
+import fs from 'fs'
+import path from 'path'
+import { tmpdir } from 'os'
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
   let q = m.quoted ? m.quoted : m
@@ -16,11 +20,31 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
     timeout: 10000,
   })
 
+  let tmpFilePath = path.join(tmpdir(), `${Date.now()}.opus`)
+
+  await new Promise((resolve, reject) => {
+    ffmpeg(url)
+      .audioCodec('libopus')
+      .toFormat('opus')
+      .outputOptions([
+        '-avoid_negative_ts make_zero',
+        '-ac 1',
+        '-b:a 64k'
+      ])
+      .on('end', () => resolve(true))
+      .on('error', (err) => reject(err))
+      .save(tmpFilePath)
+  })
+
+  let audioBuffer = fs.readFileSync(tmpFilePath)
+
   await conn.sendMessage(m.chat, {
-    audio: { url: url },
-    mimetype: 'audio/mpeg',
+    audio: audioBuffer,
+    mimetype: 'audio/ogg; codecs=opus',
     ptt: true
   }, { quoted: m })
+
+  if (fs.existsSync(tmpFilePath)) fs.unlinkSync(tmpFilePath)
 
   await m.react('✅')
 }
