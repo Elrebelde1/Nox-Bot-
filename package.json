@@ -103,5 +103,9 @@
   "optionalDependencies": {
     "moment-timezone": "^0.5.37",
     "wa-sticker-formatter": "^4.3.2"
+  },
+  "overrides": {
+    "libsignal-node": "npm:libsignal-js@^1.0.0",
+    "libsignal": "2.0.1"
   }
 }
