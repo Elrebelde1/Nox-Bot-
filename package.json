@@ -1,4 +1,5 @@
-"name": "Jota Bot",
+{
+  "name": "Jota Bot",
   "version": "2.1.0",
   "description": "WhatsApp Bot Multi Device",
   "main": "main.js",
