@@ -1,5 +1,5 @@
-}
-"name": "Jota Bot",
+{
+  "name": "Jota Bot",
   "version": "2.1.0",
   "description": "WhatsApp Bot Multi Device",
   "main": "main.js",
@@ -11,8 +11,8 @@
   },
   "scripts": {
     "start": "node main.js",
-    "qr": "main.js qr",
-    "code": "main.js code",
+    "qr": "node main.js qr",
+    "code": "node main.js code",
     "test": "node test.js",
     "test2": "nodemon main.js",
     "eslint": "eslint .",
@@ -32,7 +32,7 @@
   "license": "GPL-3.0-or-later",
   "dependencies": {
     "@vitalets/google-translate-api": "^8.0.0",
-    "@whiskeysockets/baileys": "^6.7.24",
+    "@whiskeysockets/baileys": "6.6.0",
     "google-libphonenumber": "latest",
     "@adiwajshing/keyed-db": "^0.2.4",
     "@bochilteam/scraper": "^4.2.4",
