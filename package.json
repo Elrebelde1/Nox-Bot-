@@ -32,7 +32,7 @@
   "license": "GPL-3.0-or-later",
   "dependencies": {
     "@vitalets/google-translate-api": "^8.0.0",
-    "@whiskeysockets/baileys": "6.6.0",
+    "@whiskeysockets/baileys": "git+https://github.com/itsliaaa/baileys.git",
     "google-libphonenumber": "latest",
     "@adiwajshing/keyed-db": "^0.2.4",
     "@bochilteam/scraper": "^4.2.4",
@@ -60,7 +60,7 @@
     "didyoumean": "^1.2.2",
     "jsdom": "^20.0.1",
     "ws": "latest",
-    "jimp": "0.16.1",
+    "jimp": "^0.16.1",
     "link-preview-js": "^3.0.0",
     "lodash": "^4.17.21",
     "lowdb": "^3.0.0",
@@ -96,5 +96,8 @@
   "optionalDependencies": {
     "wa-sticker-formatter": "^4.3.2",
     "moment-timezone": "^0.5.37"
+  },
+  "overrides": {
+    "libsignal": "npm:@baileys-md/libsignal@2.0.1"
   }
 }
