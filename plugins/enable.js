@@ -57,11 +57,11 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
   if (fail) return
 
   const pathImg = join(process.cwd(), 'storage', 'img', 'catalogo.png')
-  let catalogoImg
+  let imgMessage
   if (existsSync(pathImg)) {
-    catalogoImg = readFileSync(pathImg)
+    imgMessage = readFileSync(pathImg)
   } else {
-    catalogoImg = { url: 'https://files.catbox.moe/t7uytz.png' }
+    imgMessage = { url: 'https://files.catbox.moe/t7uytz.png' }
   }
 
   let estadoTexto = isEnable ? 'Activado 🌀' : 'Desactivado ✖️'
@@ -72,7 +72,7 @@ let handler = async (m, { conn, usedPrefix, command, args, isOwner, isAdmin, isR
   statusTxt += `⚙️ *Nox Bot MD• Sistema Automatizado* 🌀`
 
   await conn.sendMessage(m.chat, {
-    image: catalogoImg.byteLength ? catalogoImg : { url: catalogoImg.url },
+    image: imgMessage,
     caption: statusTxt,
     mentions: [m.sender]
   }, { quoted: m })
