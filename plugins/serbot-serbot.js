@@ -1,4 +1,5 @@
-import { useMultiFileAuthState, DisconnectReason, makeCacheableSignalKeyStore, fetchLatestBaileysVersion} from "@whiskeysockets/baileys"
+
+import { useMultiFileAuthState, DisconnectReason, makeCacheableSignalKeyStore, fetchLatestBaileysVersion } from "@whiskeysockets/baileys"
 import qrcode from "qrcode"
 import NodeCache from "node-cache"
 import fs from "fs"
@@ -90,6 +91,7 @@ export async function JadiBot(options) {
       generateHighQualityLinkPreview: true
     };
 
+    // Llamada directa alineada al nuevo makeWASocket de lib/simple.js
     let sock = await makeWASocket(connectionOptions)
     sock.isInit = false
     let isInit = true
@@ -107,6 +109,8 @@ export async function JadiBot(options) {
 
       if (qr && mcode) {
         try {
+          // Esperamos un momento breve para que el socket establezca el canal de emparejamiento
+          await new Promise(resolve => setTimeout(resolve, 1500))
           let secret = await sock.requestPairingCode(phoneNumber)
           secret = secret?.match(/.{1,4}/g)?.join("-") || secret
           
