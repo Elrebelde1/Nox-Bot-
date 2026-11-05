@@ -491,7 +491,7 @@ global.dfail = (type, m, conn, usedPrefix) => {
         botAdmin: "🌃 No puedo ejecutar la orden. El bot debe ser administrador del grupo primero. 🌃",
 //       restrict: "> _*`Comando desactivado por mi Owner`*_" 
     }[type]
-    if (msg) return conn.reply(m.chat, msg, m, rcanal).then(_ => m.react('✖️'))
+        if (msg) return conn.reply(m.chat, msg, m, typeof rcanal !== 'undefined' ? rcanal : null).then(_ => m.react('✖️'))
 }
 let file = global.__filename(import.meta.url, true)
 watchFile(file, async () => {
