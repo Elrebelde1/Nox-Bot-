@@ -13,26 +13,11 @@ let handler = async (m, { conn, participants }) => {
     }
 
     try {
-        let groupMetadata = await conn.groupMetadata(m.chat)
-        let participantsList = groupMetadata.participants || participants || []
+        let metadata = await conn.groupMetadata(m.chat)
+        let participantsList = metadata.participants || participants || []
         
         let botNumber = conn.decodeJid(conn.user.id)
-        let botParticipant = participantsList.find(p => p.id === botNumber)
-        let senderParticipant = participantsList.find(p => p.id === m.sender)
-
-        let isBotAdmin = botParticipant && (botParticipant.admin === 'admin' || botParticipant.admin === 'superadmin')
-        let isSenderAdmin = senderParticipant && (senderParticipant.admin === 'admin' || senderParticipant.admin === 'superadmin')
-        let isSenderOwner = global.owner?.flat().map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender)
-
-        if (!isBotAdmin) {
-            return conn.sendMessage(m.chat, { text: '⚠️ ¡Necesito ser Administrador del grupo para poder expulsar usuarios!' }, { quoted: m })
-        }
-
-        if (!isSenderAdmin && !isSenderOwner) {
-            return conn.sendMessage(m.chat, { text: '⚠️ ¡Solo los administradores pueden usar este comando!' }, { quoted: m })
-        }
-
-        let owner = groupMetadata.owner || participantsList.find(p => p.admin === 'superadmin')?.id || `${m.chat.split('-')[0]}@s.whatsapp.net`
+        let owner = metadata.owner || participantsList.find(p => p.admin === 'superadmin')?.id || `${m.chat.split('-')[0]}@s.whatsapp.net`
 
         if (target === botNumber) {
             return conn.sendMessage(m.chat, { text: '🤖 No puedo eliminarme a mí mismo.' }, { quoted: m })
@@ -42,8 +27,15 @@ let handler = async (m, { conn, participants }) => {
             return conn.sendMessage(m.chat, { text: '🩸 No puedo eliminar al propietario del grupo.' }, { quoted: m })
         }
 
-        if (global.owner?.flat().map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(target)) {
-            return conn.sendMessage(m.chat, { text: '🦠 No puedo eliminar al dueño del bot.' }, { quoted: m })
+        if (global.owner) {
+            let ownersList = global.owner.flat().map(v => {
+                if (typeof v === 'number') v = String(v)
+                if (Array.isArray(v)) v = v[0]
+                return String(v || '').replace(/[^0-9]/g, '') + '@s.whatsapp.net'
+            })
+            if (ownersList.includes(target)) {
+                return conn.sendMessage(m.chat, { text: '🦠 No puedo eliminar al dueño del bot.' }, { quoted: m })
+            }
         }
 
         await conn.groupParticipantsUpdate(m.chat, [target], 'remove')
@@ -56,6 +48,5 @@ let handler = async (m, { conn, participants }) => {
 handler.help = ['kick']
 handler.tags = ['grupos']
 handler.command = ['kick', 'echar', 'hechar', 'sacar', 'ban']
-handler.group = true
 
 export default handler
