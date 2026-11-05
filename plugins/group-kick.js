@@ -2,6 +2,15 @@ let handler = async (m, { conn, participants }) => {
     let target = m.mentionedJid?.[0] || m.quoted?.sender
 
     if (!target) {
+        if (m.text) {
+            let match = m.text.match(/@([0-9]{5,16})/g)
+            if (match && match.length > 0) {
+                target = match[0].replace('@', '') + '@s.whatsapp.net'
+            }
+        }
+    }
+
+    if (!target) {
         return conn.sendMessage(m.chat, { text: '🌃 Debes mencionar a un usuario o responder a su mensaje.' }, { quoted: m })
     }
 
