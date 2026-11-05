@@ -1,12 +1,10 @@
 let handler = async (m, { conn, participants }) => {
     let target = m.mentionedJid?.[0] || m.quoted?.sender
 
-    if (!target) {
-        if (m.text) {
-            let match = m.text.match(/@([0-9]{5,16})/g)
-            if (match && match.length > 0) {
-                target = match[0].replace('@', '') + '@s.whatsapp.net'
-            }
+    if (!target && m.text) {
+        let match = m.text.match(/@([0-9]{5,16})/g)
+        if (match && match.length > 0) {
+            target = match[0].replace('@', '') + '@s.whatsapp.net'
         }
     }
 
@@ -15,11 +13,28 @@ let handler = async (m, { conn, participants }) => {
     }
 
     try {
-        let metadata = await conn.groupMetadata(m.chat)
-        let owner = metadata.owner || participants.find(p => p.admin === 'superadmin')?.id || `${m.chat.split('-')[0]}@s.whatsapp.net`
-        let bot = conn.decodeJid(conn.user.id)
+        let groupMetadata = await conn.groupMetadata(m.chat)
+        let participantsList = groupMetadata.participants || participants || []
+        
+        let botNumber = conn.decodeJid(conn.user.id)
+        let botParticipant = participantsList.find(p => p.id === botNumber)
+        let senderParticipant = participantsList.find(p => p.id === m.sender)
 
-        if (target === bot) {
+        let isBotAdmin = botParticipant && (botParticipant.admin === 'admin' || botParticipant.admin === 'superadmin')
+        let isSenderAdmin = senderParticipant && (senderParticipant.admin === 'admin' || senderParticipant.admin === 'superadmin')
+        let isSenderOwner = global.owner?.flat().map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender)
+
+        if (!isBotAdmin) {
+            return conn.sendMessage(m.chat, { text: '⚠️ ¡Necesito ser Administrador del grupo para poder expulsar usuarios!' }, { quoted: m })
+        }
+
+        if (!isSenderAdmin && !isSenderOwner) {
+            return conn.sendMessage(m.chat, { text: '⚠️ ¡Solo los administradores pueden usar este comando!' }, { quoted: m })
+        }
+
+        let owner = groupMetadata.owner || participantsList.find(p => p.admin === 'superadmin')?.id || `${m.chat.split('-')[0]}@s.whatsapp.net`
+
+        if (target === botNumber) {
             return conn.sendMessage(m.chat, { text: '🤖 No puedo eliminarme a mí mismo.' }, { quoted: m })
         }
 
