@@ -56,8 +56,6 @@ let handler = async (m, { conn, participants }) => {
 handler.help = ['kick']
 handler.tags = ['grupos']
 handler.command = ['kick', 'echar', 'hechar', 'sacar', 'ban']
-handler.admin = true
 handler.group = true
-handler.botAdmin = true
 
 export default handler
