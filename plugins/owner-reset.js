@@ -7,6 +7,6 @@ let handler = async (m, { conn }) => {
 handler.help = ['reset']
 handler.tags = ['owner']
 handler.command = ['reset']
-handler.rowner = true
+handler.owner = true
 
 export default handler
