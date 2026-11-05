@@ -494,15 +494,3 @@ global.dfail = (type, m, conn, usedPrefix) => {
     }[type]
         if (msg) return conn.reply(m.chat, msg, m, typeof rcanal !== 'undefined' ? rcanal : null).then(_ => m.react('✖️'))
 }
-let file = global.__filename(import.meta.url, true)
-watchFile(file, async () => {
-  unwatchFile(file)
-  console.log(chalk.magenta("Se actualizo 'handler.js'"))
-  if (global.reloadHandler) {
-    try {
-      await global.reloadHandler()
-    } catch (e) {
-      console.error(e)
-    }
-  }
-})
