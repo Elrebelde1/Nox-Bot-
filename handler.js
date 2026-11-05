@@ -177,7 +177,8 @@ export async function handler(chatUpdate) {
         const isPremSubs = subsactivos.some(jid => jid.replace(/[^0-9]/g, '') === sendNum) || botIds.includes(sendNum) || (global.conns || []).some(conn => conn?.user?.jid?.replace(/[^0-9]/g, '') === sendNum && conn?.ws?.socket?.readyState !== 3
         )
 
-        const isOwner = isROwner || m.fromMe
+     const userNumber = m.sender ? m.sender.replace(/[^0-9]/g, '') : ''
+const isOwner = isROwner || m.fromMe || global.owner.some(([number]) => number.replace(/[^0-9]/g, '') === userNumber)
         const isMods = isOwner || global.mods.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender)
         const isPrems = isROwner || global.prems.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender) || _user.prem == true
 
