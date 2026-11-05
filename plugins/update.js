@@ -34,6 +34,5 @@ const handler = async (m, { conn }) => {
 handler.help = ['update']
 handler.tags = ['owner']
 handler.command = /^(update|actualizar|fix)$/i
-handler.rowner = true
 
 export default handler
