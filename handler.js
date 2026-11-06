@@ -383,7 +383,7 @@ export async function handler(chatUpdate) {
                     isOwner,
                     isRAdmin,
                     isAdmin,
-                    isPremSubs,
+                    IsPremSubs,
                     isBotAdmin,
                     isPrems,
                     chatUpdate,
