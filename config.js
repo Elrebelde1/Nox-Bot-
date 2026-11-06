@@ -7,8 +7,8 @@ import fetch from 'node-fetch'
 import axios from 'axios'
 
 global.owner = [
-  ['5804226483933', 'Barboza  Uchiha ⚡🖤', true],
-  ['5804226480049', 'Sasuke Bot MD ⚔️', true]
+  ['580226483933', 'Barboza  Uchiha ⚡🖤', true],
+  ['584226480049', 'Sasuke Bot MD ⚔️', true]
 ]
 
 global.mods = []
