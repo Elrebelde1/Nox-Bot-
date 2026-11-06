@@ -6,8 +6,10 @@ import * as cheerio from 'cheerio'
 import fetch from 'node-fetch'
 import axios from 'axios'
 
-global.owner = []
-    [ '172056423456949@lid', 'Barboza OFC', true ],
+global.owner = [
+  ['5804226483933', 'Barboza  Uchiha ⚡🖤', true],
+  ['5804226480049', 'Sasuke Bot MD ⚔️', true]
+]
 
 global.mods = []
 global.prems = []
