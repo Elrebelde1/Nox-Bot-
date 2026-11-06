@@ -478,7 +478,7 @@ global.dfail = (type, m, conn, usedPrefix) => {
         owner: "🌃 Acceso restringido. Solo los desarrolladores autorizados pueden usar este comando. 🌃",
         premium: " |𝐀𝐯𝐢𝐬𝐨| *`🔑 𝐍class 𝐄𝐑𝐄𝐒 𝐔𝐒𝐔𝐀𝐑class𝐎 𝐏𝐑𝐄𝐌class𝐔𝐌 𝐇𝐀𝐁𝐋𝐀 𝐂class𝐍 𝐌class 𝐂𝐑𝐄𝐀classclass𝐑⚡`*_",
         premsubs: '《★》Esta función solo puede ser usada por subbots premiums.', 
-        group: "🌃 Error de ejecución. Por favor, utiliza este comando dentro de un grupo. 🌃",
+        group: "🌃 Error de ejecución. Por favor, utiliza este comando dentro de grupo. 🌃",
         private: "🌃 Configuración de privacidad. Envía este comando por chat privado para que funcione. 🌃",
         admin: "🌃 Acción rechazada. Necesitas permisos de administrador en este grupo para usarlo. 🌃",
         botAdmin: "🌃 No puedo ejecutar la orden. El bot debe ser administrador del grupo primero. 🌃",
