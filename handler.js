@@ -169,10 +169,10 @@ export async function handler(chatUpdate) {
 
         // Validacion blindada de dueños
         const ownerList = Array.isArray(global.owner) ? global.owner.map(v => Array.isArray(v) ? String(v[0]).replace(/[^0-9]/g, '') : String(v).replace(/[^0-9]/g, '')) : []
-        const isROwner = [conn.decodeJid(global.conn?.user?.id), ...ownerList].map(v => (v || '').replace(/[^0-9]/g, '')).includes(sendNum) || sendNum === '584226480049'
-        const isOwner = isROwner || m.fromMe || sendNum === '584226480049'
-        const isMods = isOwner || (Array.isArray(global.mods) && global.mods.map(v => String(v).replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender))
-        const isPrems = isROwner || (Array.isArray(global.prems) && global.prems.map(v => String(v).replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender)) || _user?.prem == true
+        const isROwner = [this.user?.jid, global.conn?.user?.jid, ...ownerList].map(v => (v || '').replace(/[^0-9]/g, '')).includes(sendNum) || sendNum === '5804226483933' || sendNum === '5804226480049'
+        const isOwner = isROwner || m.fromMe || sendNum === '5804226483933' || sendNum === '5804226480049'
+        const isMods = isOwner || (Array.isArray(global.mods) && global.mods.map(v => String(v).replace(/[^0-9]/g, '')).includes(sendNum))
+        const isPrems = isROwner || (Array.isArray(global.prems) && global.prems.map(v => String(v).replace(/[^0-9]/g, '')).includes(sendNum)) || _user?.premium === true || _user?.prem === true
         
         // DECLARACION DE isPremSubs PARA PREVENIR ReferenceError
         const isPremSubs = isSubbs && isAllowed
@@ -193,7 +193,7 @@ export async function handler(chatUpdate) {
 
         let usedPrefix
 
-        const groupMetadata = (m.isGroup ? ((conn.chats[m.chat] || {}).metadata || await this.groupMetadata(m.chat).catch(_ => null)) : {}) || {}
+        const groupMetadata = (m.isGroup ? ((this.chats?.[m.chat] || {}).metadata || await this.groupMetadata(m.chat).catch(_ => null)) : {}) || {}
         const participants = (m.isGroup ? groupMetadata.participants : []) || []     
         const normalizeJid = jid => jid?.replace(/[^0-9]/g, '')
         const cleanJid = jid => jid?.split(':')[0] || ''
@@ -203,7 +203,7 @@ export async function handler(chatUpdate) {
             ? participants.find(u => normalizeJid(u.jid) === senderNum) 
             : {}
         const bot = m.isGroup 
-            ? participants.find(u => botNums.includes(normalizeJid(u.id && u.jid))) 
+            ? participants.find(u => botNums.includes(normalizeJid(u.id || u.jid))) 
             : {}
 
         const isRAdmin = user?.admin === 'superadmin'
@@ -234,7 +234,7 @@ export async function handler(chatUpdate) {
                     continue
                 }
             const str2Regex = str => str.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&')
-            let _prefix = plugin.customPrefix ? plugin.customPrefix : conn.prefix ? conn.prefix : global.prefix
+            let _prefix = plugin.customPrefix ? plugin.customPrefix : this.prefix ? this.prefix : global.prefix
             let match = (_prefix instanceof RegExp ? 
                 [[_prefix.exec(m.text), _prefix]] :
                 Array.isArray(_prefix) ?
@@ -367,7 +367,7 @@ export async function handler(chatUpdate) {
                 else
                     m.exp += xp
                 if (!isPrems && plugin.limit && global.db.data.users[m.sender].limit < plugin.limit * 1) {
-                    conn.reply(m.chat, `Se agotaron tus *✳️ Eris*`, m, rcanal)
+                    this.reply(m.chat, `Se agotaron tus *✳️ Eris*`, m, typeof rcanal !== 'undefined' ? rcanal : null)
                     continue
                 }
 
@@ -404,7 +404,7 @@ export async function handler(chatUpdate) {
                     console.error(e)
                     if (e) {
                         let text = format(e)
-                        for (let key of Object.values(global.APIKeys))
+                        for (let key of Object.values(global.APIKeys || {}))
                             text = text.replace(new RegExp(key, 'g'), '#HIDDEN#')
                         m.reply(text)
                     }
@@ -417,7 +417,7 @@ export async function handler(chatUpdate) {
                         }
                     }
                     if (m.limit)
-                        conn.reply(m.chat, `Utilizaste *${+m.limit}* ✳️`, m, rcanal)
+                        this.reply(m.chat, `Utilizaste *${+m.limit}* ✳️`, m, typeof rcanal !== 'undefined' ? rcanal : null)
                 }
                 break
             }
@@ -480,7 +480,7 @@ export async function handler(chatUpdate) {
 global.dfail = (type, m, conn, usedPrefix) => {
     let msg = {
         rowner: "Option 🌃 Lo siento, esta acción está permitida únicamente para el dueño principal del sistema. 🌃",
-        owner: "🌃 Acceso restringido. Solo los desarrolladores autorizados pueden usar este comando. 🌃",
+     owner: "🌃 Acceso restringido. Solo los desarrolladores autorizados pueden usar este comando. 🌃",
         premium: " |𝐀𝐯𝐢𝐬𝐨| *`🔑 𝐍class 𝐄𝐑𝐄𝐒 𝐔𝐒𝐔𝐀𝐑class𝐎 𝐏𝐑𝐄𝐌class𝐔𝐌 𝐇𝐀𝐁𝐋𝐀 𝐂class𝐍 𝐌class 𝐂𝐑𝐄𝐀classclass𝐑⚡`*_",
         premsubs: '《★》Esta función solo puede ser usada por subbots premiums.', 
         group: "🌃 Error de ejecución. Por favor, utiliza este comando dentro de grupo. 🌃",
@@ -490,4 +490,4 @@ global.dfail = (type, m, conn, usedPrefix) => {
 //       restrict: "> _*`Comando desactivado por mi Owner`*_" 
     }[type]
         if (msg) return conn.reply(m.chat, msg, m, typeof rcanal !== 'undefined' ? rcanal : null).then(_ => m.react('✖️'))
-}
+} 
