@@ -6,7 +6,7 @@ import * as cheerio from 'cheerio'
 import fetch from 'node-fetch'
 import axios from 'axios'
 
-global.owner = [
+global.owner = []
     [ '172056423456949@lid', 'Barboza OFC', true ],
 
 global.mods = []
