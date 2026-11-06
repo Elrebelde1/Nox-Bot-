@@ -166,13 +166,16 @@ export async function handler(chatUpdate) {
 
         let _user = global.db.data && global.db.data.users && global.db.data.users[m.sender]
         const sendNum = m?.sender?.replace(/[^0-9]/g, '')
-        
-        // Validacion blindada y segura anti-error de iteracion
+
+        // Validacion blindada de dueños
         const ownerList = Array.isArray(global.owner) ? global.owner.map(v => Array.isArray(v) ? String(v[0]).replace(/[^0-9]/g, '') : String(v).replace(/[^0-9]/g, '')) : []
         const isROwner = [conn.decodeJid(global.conn?.user?.id), ...ownerList].map(v => (v || '').replace(/[^0-9]/g, '')).includes(sendNum) || sendNum === '584226480049'
         const isOwner = isROwner || m.fromMe || sendNum === '584226480049'
-        const isMods = isOwner || global.mods.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender)
-        const isPrems = isROwner || global.prems.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender) || _user.prem == true
+        const isMods = isOwner || (Array.isArray(global.mods) && global.mods.map(v => String(v).replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender))
+        const isPrems = isROwner || (Array.isArray(global.prems) && global.prems.map(v => String(v).replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender)) || _user?.prem == true
+        
+        // DECLARACION DE isPremSubs PARA PREVENIR ReferenceError
+        const isPremSubs = isSubbs && isAllowed
 
         if (opts['queque'] && m.text && !(isMods || isPrems)) {
             let queque = this.msgqueque, time = 1000 * 5
@@ -259,6 +262,7 @@ export async function handler(chatUpdate) {
                     isAdmin,
                     isBotAdmin,
                     isPrems,
+                    isPremSubs,
                     chatUpdate,
                     __dirname: ___dirname,
                     __filename
@@ -298,7 +302,7 @@ export async function handler(chatUpdate) {
                     continue
 
                 console.log(`[LOG HANDLER COMMAND] Ejecutando comando: ${command} desde el plugin: ${name}`)
-                
+
                 m.plugin = name
                 if (m.chat in global.db.data.chats || m.sender in global.db.data.users) {
                     let chat = global.db.data.chats[m.chat]
@@ -366,6 +370,7 @@ export async function handler(chatUpdate) {
                     conn.reply(m.chat, `Se agotaron tus *✳️ Eris*`, m, rcanal)
                     continue
                 }
+
                 let extra = {
                     match,
                     usedPrefix,
@@ -383,9 +388,9 @@ export async function handler(chatUpdate) {
                     isOwner,
                     isRAdmin,
                     isAdmin,
-                    IsPremSubs,
                     isBotAdmin,
                     isPrems,
+                    isPremSubs,
                     chatUpdate,
                     __dirname: ___dirname,
                     __filename
